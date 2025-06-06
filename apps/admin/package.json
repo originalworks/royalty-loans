@@ -1,0 +1,16 @@
+{
+  "name": "@royalty-loans/admin",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "targets": {
+      "build": {
+        "executor": "@nx/vite:build",
+        "options": {
+          "outputPath": "dist/apps/admin",
+          "configFile": "apps/admin/vite.config.ts"
+        }
+      }
+    }
+  }
+}
