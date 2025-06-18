@@ -6,7 +6,9 @@
     "backend:start": "nx run backend:serve",
     "backend:build": "nx run backend:build",
     "admin:start": "nx run admin:serve",
-    "admin:build": "nx run admin:build"
+    "admin:build": "nx run admin:build",
+    "contracts:test": "nx run contracts:test",
+    "contracts:compile": "nx run contracts:compile"
   },
   "private": true,
   "dependencies": {
@@ -29,6 +31,7 @@
     "@refinedev/react-hook-form": "^4.8.14",
     "@refinedev/react-router": "^1.0.0",
     "axios": "^1.6.2",
+    "ethers": "^6.14.3",
     "react": "^18.0.0",
     "react-dom": "18.0.0",
     "react-hook-form": "^7.30.0",
@@ -42,6 +45,9 @@
     "@nestjs/schematics": "^10.0.1",
     "@nestjs/testing": "^10.0.2",
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.9",
+    "@nomicfoundation/hardhat-ethers": "^3.0.9",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.12",
+    "@nomicfoundation/hardhat-verify": "^2.0.14",
     "@nx/eslint": "21.1.2",
     "@nx/eslint-plugin": "21.1.2",
     "@nx/jest": "21.1.2",
@@ -55,6 +61,8 @@
     "@nx/workspace": "21.1.2",
     "@openzeppelin/contracts": "5.3.0",
     "@openzeppelin/contracts-upgradeable": "5.3.0",
+    "@openzeppelin/hardhat-upgrades": "^3.9.0",
+    "@rumblefishdev/hardhat-kms-signer": "^2.0.0",
     "@swc-node/register": "~1.9.1",
     "@swc/cli": "~0.6.0",
     "@swc/core": "~1.5.7",
@@ -65,6 +73,7 @@
     "@typechain/ethers-v6": "^0.5.1",
     "@typechain/hardhat": "^9.1.0",
     "@types/jest": "^29.5.12",
+    "@types/mocha": "^10.0.10",
     "@types/node": "^20.0.0",
     "@types/react": "18.0.0",
     "@types/react-dom": "18.0.0",
@@ -75,9 +84,10 @@
     "@vitest/ui": "^3.0.0",
     "dotenv": "^16.5.0",
     "eslint": "^9.8.0",
-    "eslint-config-prettier": "^10.0.0",
+    "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-import": "2.31.0",
     "eslint-plugin-jsx-a11y": "6.10.1",
+    "eslint-plugin-prettier": "^5.4.1",
     "eslint-plugin-react": "7.35.0",
     "eslint-plugin-react-hooks": "5.0.0",
     "hardhat": "^2.24.2",
@@ -86,9 +96,9 @@
     "jiti": "2.4.2",
     "jsdom": "~22.1.0",
     "nx": "21.1.2",
-    "prettier": "^2.6.2",
+    "prettier": "^3.5.3",
     "ts-jest": "^29.1.0",
-    "ts-node": "10.9.1",
+    "ts-node": "^10.9.2",
     "tslib": "^2.3.0",
     "typechain": "^8.3.2",
     "typescript": "~5.7.2",
@@ -112,6 +122,7 @@
   },
   "workspaces": [
     "apps/*",
-    "libs"
-  ]
+    "libs/*"
+  ],
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

@@ -2,7 +2,6 @@
   "name": "@royalty-loans/contracts",
   "version": "0.0.1",
   "private": true,
-  "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
@@ -13,5 +12,23 @@
     },
     "./package.json": "./package.json"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "nx": {
+    "targets": {
+      "test": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "npx hardhat test",
+          "cwd": "libs/contracts"
+        }
+      },
+      "compile": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "npx hardhat compile",
+          "cwd": "libs/contracts"
+        }
+      }
+    }
+  }
 }

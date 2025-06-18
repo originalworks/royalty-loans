@@ -21,8 +21,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "allowJs": false,
-    "noEmit": true, // ?
-    "useDefineForClassFields": true, //?
+    "useDefineForClassFields": true,
   },
   "exclude": [
     "out-tsc",
