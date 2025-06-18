@@ -3,68 +3,75 @@ pragma solidity ^0.8.20;
 
 import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
-import '@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol';
-import '../Whitelist/WhitelistConsumer.sol';
-import '@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol';
-import '@openzeppelin/contracts/proxy/Clones.sol';
+import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts/interfaces/IERC1155.sol';
-
-import '../interfaces/IRoyaltyLoan.sol';
+import '@openzeppelin/contracts/proxy/Clones.sol';
+import './IRoyaltyLoan.sol';
+import '../Whitelist/WhitelistConsumer.sol';
 
 contract RoyaltyLoanFactory is
   WhitelistConsumer,
   Initializable,
   OwnableUpgradeable,
-  ReentrancyGuardUpgradeable
+  UUPSUpgradeable
 {
-  event TemplateChanged(address _previousAddress, address _newAddress);
+  event TemplateChanged(address previousAddress, address newAddress);
+
+  event LoanContractCreated(
+    address loanContract,
+    address borrower,
+    address collateralToken,
+    uint256 collateralTokenId,
+    uint256 collateralAmount,
+    uint256 loanAmount,
+    uint256 feePpm
+  );
 
   bytes1 public constant OPERATIONAL_WHITELIST = 0x01;
-  address public immutable usdc;
 
-  uint256 public fee;
+  address public paymentTokenAddress;
   uint256 public offerDuration;
   address public templateAddress;
 
-  event LoanContractCreated(
-    address indexed loanContract,
-    address indexed borrower,
-    address collateralToken,
-    uint256 loanAmount
-  );
+  uint256[50] __gap;
 
-  constructor(address _usdc) {
+  /// @custom:oz-upgrades-unsafe-allow constructor
+  constructor() {
     _disableInitializers();
-    require(_usdc != address(0), 'Invalid USDC address');
-    usdc = _usdc;
   }
 
   function initialize(
     address _templateAddress,
-    address _owner,
     address _operationalWhitelistAddress,
-    uint256 _fee,
+    address _paymentTokenAddress,
     uint256 _offerDuration
   ) public initializer {
-    __Ownable_init();
-    __ReentrancyGuard_init();
-    _transferOwnership(_owner);
-
     _setTemplateAddress(_templateAddress);
     _setWhitelistAddress(_operationalWhitelistAddress, OPERATIONAL_WHITELIST);
-
-    _setFee(_fee);
     _setOfferDuration(_offerDuration);
+    _setPaymentTokenAddress(_paymentTokenAddress);
+    __Ownable_init(msg.sender);
   }
 
-  function _setOfferDuration(uint256 _duration) private {
-    require(_duration > 0, 'Duration must be greater than 0');
-    offerDuration = _duration;
+  function setWhitelistAddress(
+    address _whitelistAddress
+  ) external isWhitelistedOn(OPERATIONAL_WHITELIST) {
+    require(
+      _whitelistAddress != address(0),
+      'RoyaltyLoanFactory: _whitelistAddress address is the zero address'
+    );
+    _setWhitelistAddress(_whitelistAddress, OPERATIONAL_WHITELIST);
   }
 
-  function _setFee(uint256 _fee) private {
-    require(_fee > 0, 'Fee must be greater than 0');
-    fee = _fee;
+  function _setWhitelistAddress(
+    address _whitelistAddress,
+    bytes1 _whitelistId
+  ) internal override {
+    require(
+      _whitelistAddress != address(0),
+      'RoyaltyLoanFactory: _whitelistAddress address is the zero address'
+    );
+    super._setWhitelistAddress(_whitelistAddress, _whitelistId);
   }
 
   function _setTemplateAddress(address _templateAddress) private {
@@ -77,18 +84,18 @@ contract RoyaltyLoanFactory is
     emit TemplateChanged(previousAddress, _templateAddress);
   }
 
-  function setWhitelistAddress(address _whitelistAddress) external onlyOwner {
-    _setWhitelistAddress(_whitelistAddress, OPERATIONAL_WHITELIST);
-  }
-
-  function setTemplateAddress(address _templateAddress) external onlyOwner {
+  function setTemplateAddress(
+    address _templateAddress
+  ) external isWhitelistedOn(OPERATIONAL_WHITELIST) {
     _setTemplateAddress(_templateAddress);
   }
 
-  function setFee(
-    uint256 _fee
-  ) external isWhitelistedOn(OPERATIONAL_WHITELIST) {
-    _setFee(_fee);
+  function _setOfferDuration(uint256 _duration) private {
+    require(
+      _duration > 0,
+      'RoyaltyLoanFactory: _duration must be greater than 0'
+    );
+    offerDuration = _duration;
   }
 
   function setOfferDuration(
@@ -97,33 +104,30 @@ contract RoyaltyLoanFactory is
     _setOfferDuration(_duration);
   }
 
+  function _setPaymentTokenAddress(address _paymentTokenAddress) private {
+    require(
+      _paymentTokenAddress != address(0),
+      'RoyaltyLoanFactory: _paymentTokenAddress is the zero address'
+    );
+    paymentTokenAddress = _paymentTokenAddress;
+  }
+
+  function setPaymentTokenAddress(
+    address _paymentTokenAddress
+  ) external isWhitelistedOn(OPERATIONAL_WHITELIST) {
+    _setPaymentTokenAddress(_paymentTokenAddress);
+  }
+
   function createLoanContract(
-    address collateralToken,
+    address collateralTokenAddress,
     uint256 collateralTokenId,
     uint256 collateralAmount,
-    uint256 loanAmount
-  ) external nonReentrant returns (address) {
-    require(collateralToken != address(0), 'Invalid collateral token address');
-    require(collateralAmount > 0, 'Collateral amount must be greater than 0');
-    require(loanAmount > 0, 'Loan amount must be greater than 0');
-
-    // Create clone
+    uint256 loanAmount,
+    uint256 feePpm // 0.01% = 100
+  ) external returns (address) {
     address clone = Clones.clone(templateAddress);
 
-    // Initialize loan contract
-    IRoyaltyLoan(clone).initialize(
-      usdc,
-      collateralToken,
-      msg.sender,
-      fee,
-      collateralTokenId,
-      collateralAmount,
-      loanAmount,
-      offerDuration
-    );
-
-    // Transfer collateral tokens to loan contract
-    IERC1155(collateralToken).safeTransferFrom(
+    IERC1155(collateralTokenAddress).safeTransferFrom(
       msg.sender,
       clone,
       collateralTokenId,
@@ -131,8 +135,29 @@ contract RoyaltyLoanFactory is
       ''
     );
 
-    emit LoanContractCreated(clone, msg.sender, collateralToken, loanAmount);
+    IRoyaltyLoan(clone).initialize(
+      collateralTokenAddress,
+      collateralTokenId,
+      collateralAmount,
+      paymentTokenAddress,
+      msg.sender,
+      feePpm,
+      loanAmount,
+      offerDuration
+    );
+
+    emit LoanContractCreated(
+      clone,
+      msg.sender,
+      collateralTokenAddress,
+      collateralTokenId,
+      collateralAmount,
+      loanAmount,
+      feePpm
+    );
 
     return clone;
   }
+
+  function _authorizeUpgrade(address) internal override onlyOwner {}
 }

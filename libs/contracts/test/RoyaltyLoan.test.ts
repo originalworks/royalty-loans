@@ -1,1023 +1,581 @@
-import { ethers } from 'hardhat'
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { expect } from 'chai'
-import {
-  AgreementFactory,
-  deployProxy,
-  FeeManager,
-} from '@original-works/contracts-agreements-typechain'
-import { AgreementERC1155 } from '@original-works/contracts-agreements-typechain/dist/typechain/contracts/agreements/AgreementERC1155'
-import { time } from '@nomicfoundation/hardhat-network-helpers'
-import { BigNumber } from 'ethers'
-import {
-  ERC20TokenMock,
-  RoyaltyLoan,
-  RoyaltyLoan__factory,
-  RoyaltyLoanFactory,
-  RoyaltyLoanFactory__factory,
-  TransparentUpgradeableProxy__factory,
-  Whitelist,
-  Whitelist__factory,
-} from '../typechain'
-import { createERC1155, getEvent, initialDeployment } from './utils'
-
-const createLoan = async (
-  agreement: AgreementERC1155,
-  collateralAmount: BigNumber,
-  loanAmount: BigNumber,
-  factory: RoyaltyLoanFactory,
-  borrower: SignerWithAddress,
-): Promise<RoyaltyLoan> => {
-  const collateralToken = agreement.address
-  const collateralTokenId = 1
-
-  const approvalTx = await agreement
-    .connect(borrower)
-    .setApprovalForAll(factory.address, true)
-  await approvalTx.wait()
-
-  const loanCreationTx = factory
-    .connect(borrower)
-    .createLoanContract(
-      collateralToken,
-      collateralTokenId,
-      collateralAmount,
-      loanAmount,
-    )
-
-  const royaltyLoanCretionEvent = await getEvent(
-    loanCreationTx,
-    factory,
-    'LoanContractCreated(address,address,address,uint256)',
-  )
-  const [royaltyLoanAddress] = royaltyLoanCretionEvent.args
-
-  const royaltyLoan = new RoyaltyLoan__factory(borrower).attach(
-    royaltyLoanAddress,
-  )
-  return royaltyLoan
-}
-
-const provideLoan = async (
-  collateralAmount: BigNumber,
-  loanAmount: BigNumber,
-  borrower: SignerWithAddress,
-  lender: SignerWithAddress,
-  agreement: AgreementERC1155,
-  factory: RoyaltyLoanFactory,
-  trackedToken: ERC20TokenMock,
-) => {
-  const loan = await createLoan(
-    agreement,
-    collateralAmount,
-    loanAmount,
-    factory,
-    borrower,
-  )
-  const approveTx = await trackedToken
-    .connect(lender)
-    .approve(loan.address, loanAmount)
-  await approveTx.wait()
-  const provideLoanTx = await loan.connect(lender).provideLoan()
-  await provideLoanTx.wait()
-
-  return loan
-}
+import { ethers } from 'hardhat';
+import { expect } from 'chai';
+import { time } from '@nomicfoundation/hardhat-network-helpers';
+import { AgreementERC1155Mock, ERC20TokenMock } from '../typechain';
+import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
+import { fixture } from './fixture';
 
 describe('RoyaltyLoanFactory', () => {
-  let whitelist: Whitelist
+  let deployer: SignerWithAddress;
+  let borrower: SignerWithAddress;
+  let lender: SignerWithAddress;
 
-  let deployer: SignerWithAddress
-  let operationalAcc: SignerWithAddress
-  let proxyAdmin: SignerWithAddress
-  let borrower: SignerWithAddress
-  let holder2: SignerWithAddress
-  let lender: SignerWithAddress
-  let lenderWithoutTrackedTokens: SignerWithAddress
+  let paymentToken: ERC20TokenMock;
+  let collateralToken: AgreementERC1155Mock;
 
-  let trackedToken: ERC20TokenMock
-  let agreementFactory: AgreementFactory
-  let feeManager: FeeManager
-  let factory: RoyaltyLoanFactory
-  let template: RoyaltyLoan
+  let defaults: Awaited<ReturnType<typeof fixture>>['defaults'];
 
-  const fee = ethers.utils.parseUnits('1', 6)
-  const offerDuration = 10 // 10 seconds
+  let getCurrentBalances: Awaited<
+    ReturnType<typeof fixture>
+  >['getCurrentBalances'];
+
+  let createLoanWithFactory: Awaited<
+    ReturnType<typeof fixture>
+  >['createLoanWithFactory'];
+
+  let deployLoan: Awaited<ReturnType<typeof fixture>>['deployLoan'];
 
   beforeEach(async () => {
-    ;[
-      deployer,
-      operationalAcc,
-      proxyAdmin,
-      borrower,
-      holder2,
-      lender,
-      lenderWithoutTrackedTokens,
-    ] = await ethers.getSigners()
+    const deployment = await fixture();
 
-    whitelist = await new Whitelist__factory(deployer).deploy(deployer.address)
+    [deployer, borrower, lender] = deployment.signers;
+    ({
+      paymentToken,
+      collateralToken,
+      deployLoan,
+      getCurrentBalances,
+      createLoanWithFactory,
+      defaults,
+    } = deployment);
 
-    await whitelist.addToWhitelist(operationalAcc.address)
-    template = await new RoyaltyLoan__factory(deployer).deploy()
+    await (
+      await collateralToken.mint(
+        borrower.address,
+        defaults.collateralTokenId,
+        defaults.collateralAmount,
+      )
+    ).wait();
 
-    const initialContracts = await initialDeployment(deployer)
-    trackedToken = initialContracts.trackedToken
-    agreementFactory = initialContracts.agreementFactory
-    feeManager = initialContracts.feeManager
-
-    const factoryImplementation = await new RoyaltyLoanFactory__factory(
-      deployer,
-    ).deploy(trackedToken.address)
-
-    const { data } = await factoryImplementation.populateTransaction.initialize(
-      template.address,
-      deployer.address,
-      whitelist.address,
-      fee,
-      offerDuration,
-    )
-
-    const factoryProxy = await new TransparentUpgradeableProxy__factory(
-      deployer,
-    ).deploy(factoryImplementation.address, proxyAdmin.address, data ?? '0x')
-
-    factory = RoyaltyLoanFactory__factory.connect(
-      factoryProxy.address,
-      deployer,
-    )
-
-    const mintTx = await trackedToken.mintTo(
-      lender.address,
-      ethers.utils.parseUnits(`100000`, 6),
-    )
-    await mintTx.wait()
-  })
+    await (
+      await paymentToken.mintTo(lender.address, defaults.loanAmount)
+    ).wait();
+  });
 
   describe('initialize', () => {
-    it('successfully using factory', async () => {
-      const royaltyLoanFactory = new RoyaltyLoan__factory()
-      const holders = [
-        { account: borrower.address, balance: 600, isAdmin: true },
-        { account: holder2.address, balance: 400, isAdmin: true },
-      ]
+    it('reverts with invalid args', async () => {
+      await expect(
+        deployLoan(borrower, {
+          collateralTokenAddress: ethers.ZeroAddress,
+        }),
+      ).to.be.revertedWith('RoyaltyLoan: Invalid collateral token address');
 
-      const agreement = await createERC1155(
-        deployer,
-        holders,
-        agreementFactory,
-        feeManager,
-      )
+      await expect(
+        deployLoan(borrower, { collateralAmount: '0' }),
+      ).to.be.revertedWith(
+        'RoyaltyLoan: Collateral amount must be greater than 0',
+      );
 
-      const collateralTokenId = 1
-      const collateralAmount = 400
-      const loanAmount = 0
-      const royaltyLoan = await deployProxy(
-        royaltyLoanFactory.connect(deployer),
-        [
-          trackedToken.address,
-          agreement.address,
-          borrower.address,
-          fee,
-          collateralTokenId,
-          collateralAmount,
-          loanAmount,
-          offerDuration,
-        ],
-      )
+      await expect(
+        deployLoan(borrower, { loanAmount: '0' }),
+      ).to.be.revertedWith('RoyaltyLoan: Loan amount must be greater than 0');
 
-      expect(royaltyLoan.address).to.properAddress
-    })
+      await expect(
+        deployLoan(borrower, { feePpm: '1000001' }),
+      ).to.be.revertedWith('RoyaltyLoan: FeePpm exceeds 100%');
 
-    it('fails as wrong tracked token address', async () => {
-      const royaltyLoanFactory = new RoyaltyLoan__factory()
+      await expect(
+        deployLoan(borrower, { paymentTokenAddress: ethers.ZeroAddress }),
+      ).to.be.revertedWith('RoyaltyLoan: Invalid payment token address');
 
-      const collateralToken = '0x0000000000000000000000000000000000000000'
+      await expect(deployLoan(borrower, { duration: 0 })).to.be.revertedWith(
+        'RoyaltyLoan: Duration must be greater than 0',
+      );
 
-      const collateralTokenId = 1
-      const collateralAmount = 400
-      const loanAmount = 0
-      const royaltyLoan = await deployProxy(
-        royaltyLoanFactory.connect(deployer),
-        [
-          trackedToken.address,
-          collateralToken,
-          borrower.address,
-          fee,
-          collateralTokenId,
-          collateralAmount,
-          loanAmount,
-          offerDuration,
-        ],
-      )
+      await expect(deployLoan(borrower)).to.be.revertedWith(
+        'RoyaltyLoan: Collateral was not transferred in the required amount',
+      );
 
-      expect(royaltyLoan.address).to.properAddress
-    })
-  })
+      await expect(
+        createLoanWithFactory(borrower, { noApprove: true }),
+      ).to.be.revertedWithCustomError(
+        collateralToken,
+        'ERC1155MissingApprovalForAll',
+      );
+
+      await expect(createLoanWithFactory(borrower)).not.to.be.reverted;
+    });
+  });
 
   describe('provide loan', () => {
-    it('successfully provide loan', async () => {
-      const holders = [
-        { account: borrower.address, balance: 600, isAdmin: true },
-        { account: holder2.address, balance: 400, isAdmin: true },
-      ]
-      const agreement = await createERC1155(
-        deployer,
-        holders,
-        agreementFactory,
-        feeManager,
-      )
+    it('successfully provides a loan', async () => {
+      const [borrowerBalancesBefore, lenderBalancesBefore] =
+        await getCurrentBalances([borrower.address, lender.address]);
+      expect(borrowerBalancesBefore.ERC1155).to.equal(
+        defaults.collateralAmount,
+      );
+      expect(borrowerBalancesBefore.ERC20).to.equal(0n);
+      expect(lenderBalancesBefore.ERC20).to.equal(defaults.loanAmount);
 
-      const collateralAmount = ethers.BigNumber.from(400)
-      const loanAmount = ethers.BigNumber.from(3)
+      const loan = await createLoanWithFactory(borrower);
 
-      const loan = await createLoan(
-        agreement,
-        collateralAmount,
-        loanAmount,
-        factory,
-        borrower,
-      )
+      await expect(loan.connect(lender).provideLoan()).not.to.be.reverted;
 
-      const borrowerBalanceBeforeLoan = await trackedToken.balanceOf(
-        borrower.address,
-      )
-      expect(borrowerBalanceBeforeLoan.toString()).to.equal('0')
+      const [borrowerBalancesAfter, lenderBalancesAfter, loanBalancesAfter] =
+        await getCurrentBalances([
+          borrower.address,
+          lender.address,
+          await loan.getAddress(),
+        ]);
 
-      const approveTx = await trackedToken
-        .connect(lender)
-        .approve(loan.address, loanAmount)
-      await approveTx.wait()
+      expect(borrowerBalancesAfter.ERC1155).to.equal(0n);
+      expect(borrowerBalancesAfter.ERC20).to.equal(defaults.loanAmount);
+      expect(lenderBalancesAfter.ERC20).to.equal(0n);
+      expect(loanBalancesAfter.ERC1155).to.equal(defaults.collateralAmount);
 
-      const provideLoanTx = loan.connect(lender).provideLoan()
+      expect(await loan.loanOfferActive()).to.equal(false);
+      expect(await loan.loanActive()).to.equal(true);
+    });
 
-      await getEvent(provideLoanTx, template, 'LoanProvided')
-
-      const borrowerBalanceAfterLoan = await trackedToken.balanceOf(
-        borrower.address,
-      )
-      expect(borrowerBalanceAfterLoan.toString()).to.equal(
-        loanAmount.toString(),
-      )
-    })
-
-    it('successfully provide loan then throws as cannot provide loan twice', async () => {
-      const holders = [
-        { account: borrower.address, balance: 600, isAdmin: true },
-        { account: holder2.address, balance: 400, isAdmin: true },
-      ]
-      const agreement = await createERC1155(
-        deployer,
-        holders,
-        agreementFactory,
-        feeManager,
-      )
-
-      const collateralAmount = ethers.BigNumber.from(400)
-      const loanAmount = ethers.BigNumber.from(3)
-
-      const loan = await createLoan(
-        agreement,
-        collateralAmount,
-        loanAmount,
-        factory,
-        borrower,
-      )
-
-      const borrowerBalanceBeforeLoan = await trackedToken.balanceOf(
-        borrower.address,
-      )
-      expect(borrowerBalanceBeforeLoan.toString()).to.equal('0')
-
-      const approveTx = await trackedToken
-        .connect(lender)
-        .approve(loan.address, loanAmount)
-      await approveTx.wait()
-
-      const provideLoanTx = loan.connect(lender).provideLoan()
-
-      await getEvent(provideLoanTx, template, 'LoanProvided')
-
-      const borrowerBalanceAfterLoan = await trackedToken.balanceOf(
-        borrower.address,
-      )
-      expect(borrowerBalanceAfterLoan.toString()).to.equal(
-        loanAmount.toString(),
-      )
-
+    it('successfully provides a loan then throws as cannot provide loan twice', async () => {
+      const loan = await createLoanWithFactory(borrower);
+      await expect(loan.connect(lender).provideLoan()).not.to.be.reverted;
       await expect(loan.connect(lender).provideLoan()).to.be.revertedWith(
-        'Loan is already provided',
-      )
-    })
+        'RoyaltyLoan: Loan is already active',
+      );
+    });
 
     it('throws as loan is not active', async () => {
-      const holders = [
-        { account: borrower.address, balance: 600, isAdmin: true },
-        { account: holder2.address, balance: 400, isAdmin: true },
-      ]
-      const agreement = await createERC1155(
-        deployer,
-        holders,
-        agreementFactory,
-        feeManager,
-      )
+      const [lenderBalanceBefore] = await getCurrentBalances([lender.address]);
+      expect(lenderBalanceBefore.ERC20).to.equal(defaults.loanAmount);
 
-      const collateralAmount = ethers.BigNumber.from(400)
-      const loanAmount = ethers.BigNumber.from(3)
-
-      const loan = await createLoan(
-        agreement,
-        collateralAmount,
-        loanAmount,
-        factory,
-        borrower,
-      )
-
-      const borrowerBalanceBeforeLoan = await trackedToken.balanceOf(
-        borrower.address,
-      )
-      expect(borrowerBalanceBeforeLoan.toString()).to.equal('0')
-
-      const approveTx = await trackedToken
-        .connect(lender)
-        .approve(loan.address, loanAmount)
-      await approveTx.wait()
-
-      const revokeLoanTx = await loan.connect(borrower).revokeLoan()
-      await revokeLoanTx.wait()
+      const loan = await createLoanWithFactory(borrower);
+      await expect(loan.connect(borrower).revokeLoan()).not.to.be.reverted;
       await expect(loan.connect(lender).provideLoan()).to.be.revertedWith(
-        'Loan offer is revoked',
-      )
-    })
+        'RoyaltyLoan: Loan offer is revoked',
+      );
 
-    it('throws as lender does not have allowance set to provide loan', async () => {
-      const holders = [
-        { account: borrower.address, balance: 600, isAdmin: true },
-        { account: holder2.address, balance: 400, isAdmin: true },
-      ]
-      const agreement = await createERC1155(
-        deployer,
-        holders,
-        agreementFactory,
-        feeManager,
-      )
+      const [lenderBalanceAfter] = await getCurrentBalances([lender.address]);
+      expect(lenderBalanceAfter.ERC20).to.equal(defaults.loanAmount);
+    });
 
-      const collateralAmount = ethers.BigNumber.from(400)
-      const loanAmount = ethers.BigNumber.from(3)
+    it('throws as loan is expired', async () => {
+      const [lenderBalanceBefore] = await getCurrentBalances([lender.address]);
+      expect(lenderBalanceBefore.ERC20).to.equal(defaults.loanAmount);
 
-      const loan = await createLoan(
-        agreement,
-        collateralAmount,
-        loanAmount,
-        factory,
-        borrower,
-      )
+      const loan = await createLoanWithFactory(borrower);
+      await time.increase(defaults.duration + 1n);
 
       await expect(loan.connect(lender).provideLoan()).to.be.revertedWith(
-        'ERC20: insufficient allowance',
-      )
-    })
+        'RoyaltyLoan: Loan offer expired',
+      );
 
-    it('throws as loan expired', async () => {
-      const holders = [
-        { account: borrower.address, balance: 600, isAdmin: true },
-        { account: holder2.address, balance: 400, isAdmin: true },
-      ]
-      const agreement = await createERC1155(
-        deployer,
-        holders,
-        agreementFactory,
-        feeManager,
-      )
-
-      const collateralAmount = ethers.BigNumber.from(400)
-      const loanAmount = ethers.BigNumber.from(3)
-
-      const loan = await createLoan(
-        agreement,
-        collateralAmount,
-        loanAmount,
-        factory,
-        borrower,
-      )
-
-      const borrowerBalanceBeforeLoan = await trackedToken.balanceOf(
-        borrower.address,
-      )
-      expect(borrowerBalanceBeforeLoan.toString()).to.equal('0')
-
-      const approveTx = await trackedToken
-        .connect(lender)
-        .approve(loan.address, loanAmount)
-      await approveTx.wait()
-      // increses block time to simulate loan expiration
-      await time.increase(offerDuration + 1)
-
-      await expect(loan.connect(lender).provideLoan()).to.be.revertedWith(
-        'Loan offer expired',
-      )
-    })
-
-    it('throws as collateral not transfered', async () => {
-      const holders = [
-        { account: borrower.address, balance: 600, isAdmin: true },
-        { account: holder2.address, balance: 400, isAdmin: true },
-      ]
-      const agreement = await createERC1155(
-        deployer,
-        holders,
-        agreementFactory,
-        feeManager,
-      )
-
-      const collateralAmount = 400
-      const loanAmount = 3
-      const collateralTokenId = 1
-      const royaltyLoanFactory = new RoyaltyLoan__factory()
-
-      const loan = await deployProxy(royaltyLoanFactory.connect(deployer), [
-        trackedToken.address,
-        agreement.address,
-        borrower.address,
-        fee,
-        collateralTokenId,
-        collateralAmount,
-        loanAmount,
-        offerDuration,
-      ])
-
-      const borrowerBalanceBeforeLoan = await trackedToken.balanceOf(
-        borrower.address,
-      )
-      expect(borrowerBalanceBeforeLoan.toString()).to.equal('0')
-
-      const approveTx = await trackedToken
-        .connect(lender)
-        .approve(loan.address, loanAmount)
-      await approveTx.wait()
-
-      await expect(loan.connect(lender).provideLoan()).to.be.revertedWith(
-        'Collateral was not transferred in the required amount',
-      )
-    })
-
-    it('throws as not balance to provide loan', async () => {
-      const holders = [
-        { account: borrower.address, balance: 600, isAdmin: true },
-        { account: holder2.address, balance: 400, isAdmin: true },
-      ]
-      const agreement = await createERC1155(
-        deployer,
-        holders,
-        agreementFactory,
-        feeManager,
-      )
-
-      const collateralAmount = ethers.BigNumber.from(400)
-      const loanAmount = ethers.utils.parseUnits('3', 6)
-
-      const loan = await createLoan(
-        agreement,
-        collateralAmount,
-        loanAmount,
-        factory,
-        borrower,
-      )
-
-      const borrowerBalanceBeforeLoan = await trackedToken.balanceOf(
-        borrower.address,
-      )
-      expect(borrowerBalanceBeforeLoan.toString()).to.equal('0')
-
-      const approveTx = await trackedToken
-        .connect(lenderWithoutTrackedTokens)
-        .approve(loan.address, loanAmount)
-      await approveTx.wait()
-
-      await expect(
-        loan.connect(lenderWithoutTrackedTokens).provideLoan(),
-      ).to.be.revertedWith('ERC20: transfer amount exceeds balance')
-    })
-
-    it('throws as loan is not active', async () => {
-      const loanAmount = ethers.utils.parseUnits('3', 6)
-      const loanFactory = new RoyaltyLoan__factory()
-      const loan = await loanFactory.connect(deployer).deploy()
-
-      const approveTx = await trackedToken
-        .connect(lenderWithoutTrackedTokens)
-        .approve(loan.address, loanAmount)
-      await approveTx.wait()
-
-      await expect(loan.connect(lender).provideLoan()).to.be.revertedWith(
-        'Loan offer is revoked',
-      )
-    })
-  })
+      const [lenderBalanceAfter] = await getCurrentBalances([lender.address]);
+      expect(lenderBalanceAfter.ERC20).to.equal(defaults.loanAmount);
+    });
+  });
 
   describe('processRepayment', () => {
-    it('sucesfull full repayment', async () => {
-      const holders = [
-        { account: borrower.address, balance: 600, isAdmin: true },
-        { account: holder2.address, balance: 400, isAdmin: true },
-      ]
-      const agreement = await createERC1155(
-        deployer,
-        holders,
-        agreementFactory,
-        feeManager,
-      )
+    it('successfully makes full repayment', async () => {
+      const loan = await createLoanWithFactory(borrower);
+      await (await loan.connect(lender).provideLoan()).wait();
 
-      const collateralAmount = ethers.BigNumber.from(400)
-      const loanAmount = ethers.utils.parseUnits('3', 6)
+      const [borrowerBalancesBefore, lenderBalancesBefore, loanBalancesBefore] =
+        await getCurrentBalances([
+          borrower.address,
+          lender.address,
+          await loan.getAddress(),
+        ]);
 
-      const loan = await provideLoan(
-        collateralAmount,
-        loanAmount,
-        borrower,
-        lender,
-        agreement,
-        factory,
-        trackedToken,
-      )
-      const borrowerBalance = await trackedToken.balanceOf(borrower.address)
-      expect(borrowerBalance.toString()).to.equal(loanAmount.toString())
-
-      const mintTx = await trackedToken.mintTo(borrower.address, fee)
-      await mintTx.wait()
-      const loanRepaymentValue = loanAmount.add(fee)
+      expect(borrowerBalancesBefore.ERC1155).to.equal(0n);
+      expect(borrowerBalancesBefore.ERC20).to.equal(defaults.loanAmount);
+      expect(lenderBalancesBefore.ERC1155).to.equal(0n);
+      expect(lenderBalancesBefore.ERC20).to.equal(0n);
+      expect(loanBalancesBefore.ERC1155).to.equal(defaults.collateralAmount);
+      expect(loanBalancesBefore.ERC20).to.equal(0n);
 
       // repay loan
-      const transferTx = await trackedToken
-        .connect(borrower)
-        .transfer(loan.address, loanRepaymentValue)
-      await transferTx.wait()
+      const totalDue = defaults.feeAmount + defaults.loanAmount;
 
-      const loanTrackedTokenBalanceBeforeRepayment =
-        await trackedToken.balanceOf(loan.address)
-      expect(loanTrackedTokenBalanceBeforeRepayment.toString()).to.equal(
-        loanRepaymentValue.toString(),
-      )
-
-      const loanAgreementBalanceBeforeRepayment = await agreement.balanceOf(
-        loan.address,
-        1,
-      )
-      expect(loanAgreementBalanceBeforeRepayment.toString()).to.equal(
-        collateralAmount.toString(),
-      )
-
-      const lenderBalance = await trackedToken.balanceOf(lender.address)
+      await (
+        await paymentToken.mintTo(borrower.address, defaults.feeAmount)
+      ).wait();
+      await (
+        await paymentToken
+          .connect(borrower)
+          .transfer(await loan.getAddress(), totalDue)
+      ).wait();
 
       // processes repayment
-      await loan.connect(borrower).processRepayment()
+      await expect(loan.connect(borrower).processRepayment()).not.to.be
+        .reverted;
 
-      const loanAgreementBalanceAfterRepayment = await agreement.balanceOf(
-        loan.address,
-        1,
-      )
-      expect(loanAgreementBalanceAfterRepayment.toString()).to.equal('0')
+      const [borrowerBalancesAfter, lenderBalancesAfter, loanBalancesAfter] =
+        await getCurrentBalances([
+          borrower.address,
+          lender.address,
+          await loan.getAddress(),
+        ]);
 
-      const loanTrackedTokenBalanceAfterRepayment =
-        await trackedToken.balanceOf(loan.address)
-      expect(loanTrackedTokenBalanceAfterRepayment.toString()).to.equal('0')
+      expect(borrowerBalancesAfter.ERC1155).to.equal(defaults.collateralAmount);
+      expect(borrowerBalancesAfter.ERC20).to.equal(0n);
+      expect(lenderBalancesAfter.ERC1155).to.equal(0n);
+      expect(lenderBalancesAfter.ERC20).to.equal(totalDue);
+      expect(loanBalancesAfter.ERC1155).to.equal(0n);
+      expect(loanBalancesAfter.ERC20).to.equal(0n);
 
-      const lenderBalanceAfterRepayment = await trackedToken.balanceOf(
-        lender.address,
-      )
-      expect(lenderBalanceAfterRepayment.toString()).to.equal(
-        lenderBalance.add(loanAmount).add(fee).toString(),
-      )
+      expect(await loan.loanOfferActive()).to.equal(false);
+      expect(await loan.loanActive()).to.equal(false);
+    });
 
-      const borrowerBalanceAfterRepayment = await trackedToken.balanceOf(
-        borrower.address,
-      )
-      expect(borrowerBalanceAfterRepayment.toString()).to.equal('0')
+    it('successfully makes full repayment with exceeded balance', async () => {
+      const loan = await createLoanWithFactory(borrower);
+      await (await loan.connect(lender).provideLoan()).wait();
 
-      const borrowerAgreementBalanceAfterRepayment = await agreement.balanceOf(
-        borrower.address,
-        1,
-      )
-      expect(borrowerAgreementBalanceAfterRepayment.toString()).to.equal('600')
-    })
+      const [borrowerBalancesBefore, lenderBalancesBefore, loanBalancesBefore] =
+        await getCurrentBalances([
+          borrower.address,
+          lender.address,
+          await loan.getAddress(),
+        ]);
 
-    it('sucesfull full repayment with exceeded balance', async () => {
-      const holders = [
-        { account: borrower.address, balance: 600, isAdmin: true },
-        { account: holder2.address, balance: 400, isAdmin: true },
-      ]
-      const agreement = await createERC1155(
-        deployer,
-        holders,
-        agreementFactory,
-        feeManager,
-      )
-
-      const collateralAmount = ethers.BigNumber.from(400)
-      const loanAmount = ethers.utils.parseUnits('3', 6)
-      const exceededAmount = ethers.utils.parseUnits('1', 6)
-
-      const loan = await provideLoan(
-        collateralAmount,
-        loanAmount,
-        borrower,
-        lender,
-        agreement,
-        factory,
-        trackedToken,
-      )
-      const borrowerBalance = await trackedToken.balanceOf(borrower.address)
-      expect(borrowerBalance.toString()).to.equal(loanAmount.toString())
-
-      const mintTx = await trackedToken.mintTo(
-        borrower.address,
-        fee.add(exceededAmount),
-      )
-      await mintTx.wait()
-      const loanRepaymentValue = loanAmount.add(fee).add(exceededAmount)
+      expect(borrowerBalancesBefore.ERC1155).to.equal(0n);
+      expect(borrowerBalancesBefore.ERC20).to.equal(defaults.loanAmount);
+      expect(lenderBalancesBefore.ERC1155).to.equal(0n);
+      expect(lenderBalancesBefore.ERC20).to.equal(0n);
+      expect(loanBalancesBefore.ERC1155).to.equal(defaults.collateralAmount);
+      expect(loanBalancesBefore.ERC20).to.equal(0n);
 
       // repay loan
-      const transferTx = await trackedToken
-        .connect(borrower)
-        .transfer(loan.address, loanRepaymentValue)
-      await transferTx.wait()
+      const totalDue = defaults.feeAmount + defaults.loanAmount;
+      const excessBalance = defaults.loanAmount;
 
-      const loanTrackedTokenBalanceBeforeRepayment =
-        await trackedToken.balanceOf(loan.address)
-      expect(loanTrackedTokenBalanceBeforeRepayment.toString()).to.equal(
-        loanRepaymentValue.toString(),
-      )
-
-      const loanAgreementBalanceBeforeRepayment = await agreement.balanceOf(
-        loan.address,
-        1,
-      )
-      expect(loanAgreementBalanceBeforeRepayment.toString()).to.equal(
-        collateralAmount.toString(),
-      )
-
-      const lenderBalance = await trackedToken.balanceOf(lender.address)
+      await (
+        await paymentToken.mintTo(
+          borrower.address,
+          defaults.feeAmount + excessBalance,
+        )
+      ).wait();
+      await (
+        await paymentToken
+          .connect(borrower)
+          .transfer(await loan.getAddress(), totalDue + excessBalance)
+      ).wait();
 
       // processes repayment
-      await loan.connect(borrower).processRepayment()
+      await expect(loan.connect(borrower).processRepayment()).not.to.be
+        .reverted;
 
-      const loanAgreementBalanceAfterRepayment = await agreement.balanceOf(
-        loan.address,
-        1,
-      )
-      expect(loanAgreementBalanceAfterRepayment.toString()).to.equal('0')
+      const [borrowerBalancesAfter, lenderBalancesAfter, loanBalancesAfter] =
+        await getCurrentBalances([
+          borrower.address,
+          lender.address,
+          await loan.getAddress(),
+        ]);
 
-      const loanTrackedTokenBalanceAfterRepayment =
-        await trackedToken.balanceOf(loan.address)
-      expect(loanTrackedTokenBalanceAfterRepayment.toString()).to.equal('0')
+      expect(borrowerBalancesAfter.ERC1155).to.equal(defaults.collateralAmount);
+      expect(borrowerBalancesAfter.ERC20).to.equal(defaults.loanAmount);
+      expect(lenderBalancesAfter.ERC1155).to.equal(0n);
+      expect(lenderBalancesAfter.ERC20).to.equal(totalDue);
+      expect(loanBalancesAfter.ERC1155).to.equal(0n);
+      expect(loanBalancesAfter.ERC20).to.equal(0n);
 
-      const lenderBalanceAfterRepayment = await trackedToken.balanceOf(
+      expect(await loan.loanOfferActive()).to.equal(false);
+      expect(await loan.loanActive()).to.equal(false);
+    });
+
+    it('successfully makes partial repayments', async () => {
+      const loan = await createLoanWithFactory(borrower);
+      await (await loan.connect(lender).provideLoan()).wait();
+
+      const [borrowerBalancesBefore, lenderBalancesBefore, loanBalancesBefore] =
+        await getCurrentBalances([
+          borrower.address,
+          lender.address,
+          await loan.getAddress(),
+        ]);
+
+      expect(borrowerBalancesBefore.ERC1155).to.equal(0n);
+      expect(borrowerBalancesBefore.ERC20).to.equal(defaults.loanAmount);
+      expect(lenderBalancesBefore.ERC1155).to.equal(0n);
+      expect(lenderBalancesBefore.ERC20).to.equal(0n);
+      expect(loanBalancesBefore.ERC1155).to.equal(defaults.collateralAmount);
+      expect(loanBalancesBefore.ERC20).to.equal(0n);
+
+      const totalDue = defaults.feeAmount + defaults.loanAmount;
+
+      const firstInstallment = ethers.parseUnits('5', 6);
+      const secondInstallment = ethers.parseUnits('4', 6);
+      const thirdInstallment = totalDue - firstInstallment - secondInstallment;
+
+      await (
+        await paymentToken.mintTo(borrower.address, defaults.feeAmount)
+      ).wait();
+
+      // First round
+      expect(await loan.connect(lender).getRemainingTotalDue()).to.equal(
+        totalDue,
+      );
+      await (
+        await paymentToken
+          .connect(borrower)
+          .transfer(await loan.getAddress(), firstInstallment)
+      ).wait();
+
+      await expect(loan.connect(borrower).processRepayment()).not.to.be
+        .reverted;
+
+      const [
+        borrowerBalancesAfterFirst,
+        lenderBalancesAfterFirst,
+        loanBalancesAfterFirst,
+      ] = await getCurrentBalances([
+        borrower.address,
         lender.address,
-      )
-      expect(lenderBalanceAfterRepayment.toString()).to.equal(
-        lenderBalance.add(loanAmount).add(fee).toString(),
-      )
+        await loan.getAddress(),
+      ]);
 
-      const borrowerAgreementBalanceAfterRepayment = await agreement.balanceOf(
+      expect(borrowerBalancesAfterFirst.ERC20).to.equal(
+        totalDue - firstInstallment,
+      );
+      expect(lenderBalancesAfterFirst.ERC20).to.equal(firstInstallment);
+      expect(loanBalancesAfterFirst.ERC20).to.equal(0n);
+
+      expect(await loan.loanActive()).to.equal(true);
+
+      // Second round
+      expect(await loan.connect(lender).getRemainingTotalDue()).to.equal(
+        totalDue - firstInstallment,
+      );
+
+      await (
+        await paymentToken
+          .connect(borrower)
+          .transfer(await loan.getAddress(), secondInstallment)
+      ).wait();
+
+      await expect(loan.connect(borrower).processRepayment()).not.to.be
+        .reverted;
+
+      const [
+        borrowerBalancesAfterSecond,
+        lenderBalancesAfterSecond,
+        loanBalancesAfterSecond,
+      ] = await getCurrentBalances([
         borrower.address,
-        1,
-      )
-      expect(borrowerAgreementBalanceAfterRepayment.toString()).to.equal('600')
-
-      const borrowerBalanceAfterRepayment = await trackedToken.balanceOf(
-        borrower.address,
-      )
-      expect(borrowerBalanceAfterRepayment.toString()).to.equal(exceededAmount)
-    })
-
-    it('sucesfull partial then full repayment', async () => {
-      const holders = [
-        { account: borrower.address, balance: 600, isAdmin: true },
-        { account: holder2.address, balance: 400, isAdmin: true },
-      ]
-      const agreement = await createERC1155(
-        deployer,
-        holders,
-        agreementFactory,
-        feeManager,
-      )
-
-      const collateralAmount = ethers.BigNumber.from(400)
-      const loanAmount = ethers.utils.parseUnits('3', 6)
-      const partialRepaymentAmount = ethers.utils.parseUnits('2', 6)
-
-      const loan = await provideLoan(
-        collateralAmount,
-        loanAmount,
-        borrower,
-        lender,
-        agreement,
-        factory,
-        trackedToken,
-      )
-      const borrowerBalance = await trackedToken.balanceOf(borrower.address)
-      expect(borrowerBalance.toString()).to.equal(loanAmount.toString())
-
-      const mintTx = await trackedToken.mintTo(borrower.address, fee)
-      await mintTx.wait()
-
-      // repay loan
-      const transferPartialTx = await trackedToken
-        .connect(borrower)
-        .transfer(loan.address, partialRepaymentAmount)
-      await transferPartialTx.wait()
-
-      // const loanRepaymentValue = loanAmount.add(fee)
-      const loanTrackedTokenBalanceBeforeRepayment =
-        await trackedToken.balanceOf(loan.address)
-      expect(loanTrackedTokenBalanceBeforeRepayment.toString()).to.equal(
-        partialRepaymentAmount.toString(),
-      )
-
-      const loanAgreementBalanceBeforeRepayment = await agreement.balanceOf(
-        loan.address,
-        1,
-      )
-      expect(loanAgreementBalanceBeforeRepayment.toString()).to.equal(
-        collateralAmount.toString(),
-      )
-
-      const lenderBalance = await trackedToken.balanceOf(lender.address)
-
-      // processes partial repayment
-      await loan.connect(borrower).processRepayment()
-
-      const loanAgreementBalanceAfterPartialRepayment =
-        await agreement.balanceOf(loan.address, 1)
-      expect(loanAgreementBalanceAfterPartialRepayment.toString()).to.equal(
-        collateralAmount.toString(),
-      )
-
-      const loanTrackedTokenBalanceAfterPartialRepayment =
-        await trackedToken.balanceOf(loan.address)
-      expect(loanTrackedTokenBalanceAfterPartialRepayment.toString()).to.equal(
-        '0',
-      )
-
-      const loanAmountAfterPartialRepayment = await loan.loanAmount()
-      expect(loanAmountAfterPartialRepayment).to.equal(
-        loanAmount.sub(partialRepaymentAmount),
-      )
-
-      const lenderBalanceAfterPartialRepayment = await trackedToken.balanceOf(
         lender.address,
-      )
-      expect(lenderBalanceAfterPartialRepayment.toString()).to.equal(
-        lenderBalance.add(partialRepaymentAmount),
-      )
+        await loan.getAddress(),
+      ]);
 
-      const borrowerAgreementBalanceAfterPartialRepayment =
-        await agreement.balanceOf(borrower.address, 1)
-      expect(borrowerAgreementBalanceAfterPartialRepayment.toString()).to.equal(
-        '200',
-      )
+      expect(borrowerBalancesAfterSecond.ERC20).to.equal(
+        totalDue - firstInstallment - secondInstallment,
+      );
+      expect(lenderBalancesAfterSecond.ERC20).to.equal(
+        firstInstallment + secondInstallment,
+      );
+      expect(loanBalancesAfterSecond.ERC20).to.equal(0n);
 
-      // processes full repayment
+      expect(await loan.loanActive()).to.equal(true);
 
-      const loanRepaymentValue = loanAmount.add(fee).sub(partialRepaymentAmount)
+      // Final round
 
-      // repay loan
-      const transferTx = await trackedToken
-        .connect(borrower)
-        .transfer(loan.address, loanRepaymentValue)
-      await transferTx.wait()
+      expect(await loan.connect(lender).getRemainingTotalDue()).to.equal(
+        totalDue - firstInstallment - secondInstallment,
+      );
+      await (
+        await paymentToken
+          .connect(borrower)
+          .transfer(await loan.getAddress(), thirdInstallment)
+      ).wait();
 
-      await loan.connect(borrower).processRepayment()
+      await expect(loan.connect(borrower).processRepayment()).not.to.be
+        .reverted;
 
-      const loanAgreementBalanceAfterRepayment = await agreement.balanceOf(
-        loan.address,
-        1,
-      )
-      expect(loanAgreementBalanceAfterRepayment.toString()).to.equal('0')
-
-      const loanTrackedTokenBalanceAfterRepayment =
-        await trackedToken.balanceOf(loan.address)
-      expect(loanTrackedTokenBalanceAfterRepayment.toString()).to.equal('0')
-
-      const lenderBalanceAfterRepayment = await trackedToken.balanceOf(
+      const [
+        borrowerBalancesAfterFinal,
+        lenderBalancesAfterFinal,
+        loanBalancesAfterFinal,
+      ] = await getCurrentBalances([
+        borrower.address,
         lender.address,
-      )
-      expect(lenderBalanceAfterRepayment.toString()).to.equal(
-        lenderBalance.add(loanAmount).add(fee).toString(),
-      )
+        await loan.getAddress(),
+      ]);
 
-      const borrowerAgreementBalanceAfterRepayment = await agreement.balanceOf(
-        borrower.address,
-        1,
-      )
-      expect(borrowerAgreementBalanceAfterRepayment.toString()).to.equal('600')
+      expect(borrowerBalancesAfterFinal.ERC20).to.equal(0n);
+      expect(lenderBalancesAfterFinal.ERC20).to.equal(totalDue);
+      expect(loanBalancesAfterFinal.ERC20).to.equal(0n);
 
-      const borrowerBalanceAfterRepayment = await trackedToken.balanceOf(
-        borrower.address,
-      )
-      expect(borrowerBalanceAfterRepayment.toString()).to.equal('0')
-    })
+      expect(await loan.loanActive()).to.equal(false);
+    });
 
     it('throws as loan is not provided', async () => {
-      const holders = [
-        { account: borrower.address, balance: 600, isAdmin: true },
-        { account: holder2.address, balance: 400, isAdmin: true },
-      ]
-      const agreement = await createERC1155(
-        deployer,
-        holders,
-        agreementFactory,
-        feeManager,
-      )
-
-      const collateralAmount = ethers.BigNumber.from(400)
-      const loanAmount = ethers.BigNumber.from(3)
-
-      const loan = await createLoan(
-        agreement,
-        collateralAmount,
-        loanAmount,
-        factory,
-        borrower,
-      )
+      const loan = await createLoanWithFactory(borrower);
 
       await expect(
         loan.connect(borrower).processRepayment(),
-      ).to.be.revertedWith('Loan is not provided')
-    })
+      ).to.be.revertedWith('RoyaltyLoan: Loan is inactive');
+    });
 
     it('throws as no USDC to process', async () => {
-      const holders = [
-        { account: borrower.address, balance: 600, isAdmin: true },
-        { account: holder2.address, balance: 400, isAdmin: true },
-      ]
-      const agreement = await createERC1155(
-        deployer,
-        holders,
-        agreementFactory,
-        feeManager,
-      )
+      const loan = await createLoanWithFactory(borrower);
+      await (await loan.connect(lender).provideLoan()).wait();
 
-      const collateralAmount = ethers.BigNumber.from(400)
-      const loanAmount = ethers.utils.parseUnits('3', 6)
-
-      const loan = await provideLoan(
-        collateralAmount,
-        loanAmount,
-        borrower,
-        lender,
-        agreement,
-        factory,
-        trackedToken,
-      )
-
-      // processes repayment
       await expect(
         loan.connect(borrower).processRepayment(),
-      ).to.be.revertedWith('No USDC to process')
-    })
-  })
+      ).to.be.revertedWith('RoyaltyLoan: No payment token to process');
+    });
+  });
 
   describe('revokeLoan', () => {
-    it('successfully revoke loan', async () => {
-      const holders = [
-        { account: borrower.address, balance: 600, isAdmin: true },
-        { account: holder2.address, balance: 400, isAdmin: true },
-      ]
-      const agreement = await createERC1155(
-        deployer,
-        holders,
-        agreementFactory,
-        feeManager,
-      )
+    it('successfully revokes a loan', async () => {
+      const loan = await createLoanWithFactory(borrower);
 
-      const collateralAmount = ethers.BigNumber.from(400)
-      const loanAmount = ethers.BigNumber.from(3)
+      const isLoanActive = await loan.loanOfferActive();
+      expect(isLoanActive).to.equal(true);
 
-      const loan = await createLoan(
-        agreement,
-        collateralAmount,
-        loanAmount,
-        factory,
-        borrower,
-      )
+      await expect(loan.connect(borrower).revokeLoan()).not.to.be.reverted;
 
-      const isLoanActive = await loan.loanOfferActive()
-      expect(isLoanActive).to.equal(true)
-
-      const revokeTx = await loan.connect(borrower).revokeLoan()
-      await revokeTx.wait()
-
-      const isLoanActiveAfterTx = await loan.loanOfferActive()
-      expect(isLoanActiveAfterTx).to.equal(false)
-    })
+      const isLoanActiveAfterTx = await loan.loanOfferActive();
+      expect(isLoanActiveAfterTx).to.equal(false);
+    });
 
     it('throws as msg sender is not borrower', async () => {
-      const holders = [
-        { account: borrower.address, balance: 600, isAdmin: true },
-        { account: holder2.address, balance: 400, isAdmin: true },
-      ]
-      const agreement = await createERC1155(
-        deployer,
-        holders,
-        agreementFactory,
-        feeManager,
-      )
-
-      const collateralAmount = ethers.BigNumber.from(400)
-      const loanAmount = ethers.BigNumber.from(3)
-
-      const loan = await createLoan(
-        agreement,
-        collateralAmount,
-        loanAmount,
-        factory,
-        borrower,
-      )
-
-      const isLoanActive = await loan.loanOfferActive()
-      expect(isLoanActive).to.equal(true)
+      const loan = await createLoanWithFactory(borrower);
 
       await expect(loan.connect(lender).revokeLoan()).to.be.revertedWith(
-        'Only borrower can revoke the loan',
-      )
-    })
+        'RoyaltyLoan: Only borrower can revoke the loan',
+      );
+    });
 
     it('throws as cannot revoke twice', async () => {
-      const holders = [
-        { account: borrower.address, balance: 600, isAdmin: true },
-        { account: holder2.address, balance: 400, isAdmin: true },
-      ]
-      const agreement = await createERC1155(
-        deployer,
-        holders,
-        agreementFactory,
-        feeManager,
-      )
-
-      const collateralAmount = ethers.BigNumber.from(400)
-      const loanAmount = ethers.BigNumber.from(3)
-
-      const loan = await createLoan(
-        agreement,
-        collateralAmount,
-        loanAmount,
-        factory,
-        borrower,
-      )
-
-      const isLoanActive = await loan.loanOfferActive()
-      expect(isLoanActive).to.equal(true)
-
-      const revokeTx = await loan.connect(borrower).revokeLoan()
-      await revokeTx.wait()
-
-      const isLoanActiveAfterTx = await loan.loanOfferActive()
-      expect(isLoanActiveAfterTx).to.equal(false)
-
+      const loan = await createLoanWithFactory(borrower);
+      await expect(loan.connect(borrower).revokeLoan()).not.to.be.reverted;
       await expect(loan.connect(borrower).revokeLoan()).to.be.revertedWith(
-        'Loan offer is revoked',
-      )
-    })
+        'RoyaltyLoan: Loan offer is revoked',
+      );
+    });
 
     it('throws as loan is provided', async () => {
-      const holders = [
-        { account: borrower.address, balance: 600, isAdmin: true },
-        { account: holder2.address, balance: 400, isAdmin: true },
-      ]
-      const agreement = await createERC1155(
-        deployer,
-        holders,
-        agreementFactory,
-        feeManager,
-      )
-
-      const collateralAmount = ethers.BigNumber.from(400)
-      const loanAmount = ethers.BigNumber.from(3)
-
-      const loan = await createLoan(
-        agreement,
-        collateralAmount,
-        loanAmount,
-        factory,
-        borrower,
-      )
-
-      const borrowerBalanceBeforeLoan = await trackedToken.balanceOf(
-        borrower.address,
-      )
-      expect(borrowerBalanceBeforeLoan.toString()).to.equal('0')
-
-      const approveTx = await trackedToken
-        .connect(lender)
-        .approve(loan.address, loanAmount)
-      await approveTx.wait()
-
-      const provideLoanTx = await loan.connect(lender).provideLoan()
-      await provideLoanTx.wait()
-
+      const loan = await createLoanWithFactory(borrower);
+      await (await loan.connect(lender).provideLoan()).wait();
       await expect(loan.connect(borrower).revokeLoan()).to.be.revertedWith(
-        'Loan is already provided',
-      )
-    })
-  })
-})
+        'RoyaltyLoan: Loan is already active',
+      );
+    });
+  });
+
+  describe('getRemainingTotalDue', () => {
+    it('shows remaining total due', async () => {
+      const loan = await createLoanWithFactory(borrower);
+      await (await loan.connect(lender).provideLoan()).wait();
+
+      await (
+        await paymentToken
+          .connect(borrower)
+          .transfer(await loan.getAddress(), defaults.feeAmount)
+      ).wait();
+
+      expect(await loan.connect(borrower).getRemainingTotalDue()).to.equal(
+        defaults.loanAmount + defaults.feeAmount,
+      );
+
+      await (await loan.processRepayment()).wait();
+
+      expect(await loan.connect(borrower).getRemainingTotalDue()).to.equal(
+        defaults.loanAmount,
+      );
+    });
+    it('throws when loan is inactive', async () => {
+      const loan = await createLoanWithFactory(borrower);
+
+      await expect(
+        loan.connect(borrower).getRemainingTotalDue(),
+      ).to.be.revertedWith('RoyaltyLoan: Loan is inactive');
+
+      await (await loan.connect(lender).provideLoan()).wait();
+
+      await expect(loan.connect(lender).getRemainingTotalDue()).not.to.be
+        .reverted;
+
+      await expect(
+        loan.connect(deployer).getRemainingTotalDue(),
+      ).to.be.revertedWith(
+        'RoyaltyLoan: Only borrower and lender can see remaining total due',
+      );
+    });
+    it('throws when called by non-lender/non-borrower', async () => {
+      const loan = await createLoanWithFactory(borrower);
+
+      await (await loan.connect(lender).provideLoan()).wait();
+
+      await expect(loan.connect(lender).getRemainingTotalDue()).not.to.be
+        .reverted;
+
+      await expect(loan.connect(borrower).getRemainingTotalDue()).not.to.be
+        .reverted;
+
+      await expect(
+        loan.connect(deployer).getRemainingTotalDue(),
+      ).to.be.revertedWith(
+        'RoyaltyLoan: Only borrower and lender can see remaining total due',
+      );
+    });
+  });
+
+  describe('reclaimExcessPaymentToken', () => {
+    it('reclaims excess tokens before loan is active', async () => {
+      const loan = await createLoanWithFactory(borrower);
+      await (
+        await paymentToken.mintTo(await loan.getAddress(), defaults.loanAmount)
+      ).wait();
+      const [borrowerBalanceBefore, loanBalanceBefore] =
+        await getCurrentBalances([borrower.address, await loan.getAddress()]);
+      expect(borrowerBalanceBefore.ERC20).to.equal(0n);
+      expect(loanBalanceBefore.ERC20).to.equal(defaults.loanAmount);
+
+      await expect(loan.reclaimExcessPaymentToken()).not.to.be.reverted;
+
+      const [borrowerBalanceAfter, loanBalanceAfter] = await getCurrentBalances(
+        [borrower.address, await loan.getAddress()],
+      );
+      expect(borrowerBalanceAfter.ERC20).to.equal(defaults.loanAmount);
+      expect(loanBalanceAfter.ERC20).to.equal(0n);
+    });
+
+    it('reclaims excess tokens after loan is repaid', async () => {
+      const loan = await createLoanWithFactory(borrower);
+      await (await loan.connect(lender).provideLoan()).wait();
+      await (
+        await paymentToken.mintTo(
+          await loan.getAddress(),
+          defaults.loanAmount + defaults.feeAmount,
+        )
+      ).wait();
+
+      await (await loan.processRepayment()).wait();
+
+      const [borrowerBalanceBefore, loanBalanceBefore] =
+        await getCurrentBalances([borrower.address, await loan.getAddress()]);
+      expect(borrowerBalanceBefore.ERC20).to.equal(defaults.loanAmount);
+      expect(loanBalanceBefore.ERC20).to.equal(0n);
+
+      await (
+        await paymentToken.mintTo(await loan.getAddress(), defaults.loanAmount)
+      ).wait();
+
+      await expect(loan.reclaimExcessPaymentToken()).not.to.be.reverted;
+
+      const [borrowerBalanceAfter, loanBalanceAfter] = await getCurrentBalances(
+        [borrower.address, await loan.getAddress()],
+      );
+      expect(borrowerBalanceAfter.ERC20).to.equal(defaults.loanAmount * 2n);
+      expect(loanBalanceAfter.ERC20).to.equal(0n);
+    });
+
+    it('throws when loan is active', async () => {
+      const loan = await createLoanWithFactory(borrower);
+      await (await loan.connect(lender).provideLoan()).wait();
+
+      await expect(loan.reclaimExcessPaymentToken()).to.be.revertedWith(
+        'RoyaltyLoan: Loan is active',
+      );
+    });
+
+    it('throws when loan balance is 0', async () => {
+      const loan = await createLoanWithFactory(borrower);
+
+      await expect(loan.reclaimExcessPaymentToken()).to.be.revertedWith(
+        'RoyaltyLoan: No payment token to process',
+      );
+    });
+  });
+});

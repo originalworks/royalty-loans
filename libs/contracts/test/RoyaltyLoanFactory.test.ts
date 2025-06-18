@@ -1,403 +1,232 @@
-import { ethers } from 'hardhat'
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { expect } from 'chai'
+import { ethers } from 'hardhat';
+import { expect } from 'chai';
 import {
-  AgreementFactory,
-  FeeManager,
-} from '@original-works/contracts-agreements-typechain'
-import {
+  AgreementERC1155Mock,
   ERC20TokenMock,
   RoyaltyLoan,
   RoyaltyLoan__factory,
   RoyaltyLoanFactory,
   RoyaltyLoanFactory__factory,
-  TransparentUpgradeableProxy__factory,
   Whitelist,
   Whitelist__factory,
-} from '../typechain'
-import { createERC1155, getEvent, initialDeployment } from './utils'
+} from '../typechain';
+import { fixture, deployProxy } from './fixture';
+import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 
 describe('RoyaltyLoanFactory', () => {
-  let whitelist: Whitelist
+  let deployer: SignerWithAddress;
+  let borrower: SignerWithAddress;
+  let operator: SignerWithAddress;
 
-  let template: RoyaltyLoan
-  let factory: RoyaltyLoanFactory
+  let whitelist: Whitelist;
+  let loanFactory: RoyaltyLoanFactory;
+  let loanTemplate: RoyaltyLoan;
+  let paymentToken: ERC20TokenMock;
+  let collateralToken: AgreementERC1155Mock;
 
-  let deployer: SignerWithAddress
-  let operationalAcc: SignerWithAddress
-  let proxyAdmin: SignerWithAddress
-  let borrower: SignerWithAddress
-  let holder2: SignerWithAddress
-
-  let trackedToken: ERC20TokenMock
-  let agreementFactory: AgreementFactory
-  let feeManager: FeeManager
-
-  const fee = 10
-  const offerDuration = 10
+  let defaults: Awaited<ReturnType<typeof fixture>>['defaults'];
+  let createLoanWithFactory: Awaited<
+    ReturnType<typeof fixture>
+  >['createLoanWithFactory'];
 
   beforeEach(async () => {
-    ;[deployer, operationalAcc, proxyAdmin, borrower, holder2] =
-      await ethers.getSigners()
+    const deployment = await fixture();
+    [deployer, borrower, operator] = deployment.signers;
 
-    whitelist = await new Whitelist__factory(deployer).deploy(deployer.address)
-
-    await whitelist.addToWhitelist(operationalAcc.address)
-
-    template = await new RoyaltyLoan__factory(deployer).deploy()
-    const initialContracts = await initialDeployment(deployer)
-    trackedToken = initialContracts.trackedToken
-    agreementFactory = initialContracts.agreementFactory
-    feeManager = initialContracts.feeManager
-
-    const factoryImplementation = await new RoyaltyLoanFactory__factory(
-      deployer,
-    ).deploy(trackedToken.address)
-
-    const { data } = await factoryImplementation.populateTransaction.initialize(
-      template.address,
-      deployer.address,
-      whitelist.address,
-      fee,
-      offerDuration,
-    )
-
-    const factoryProxy = await new TransparentUpgradeableProxy__factory(
-      deployer,
-    ).deploy(factoryImplementation.address, proxyAdmin.address, data ?? '0x')
-
-    factory = RoyaltyLoanFactory__factory.connect(
-      factoryProxy.address,
-      deployer,
-    )
-  })
+    ({
+      whitelist,
+      loanTemplate,
+      loanFactory,
+      collateralToken,
+      paymentToken,
+      defaults,
+      createLoanWithFactory,
+    } = deployment);
+  });
 
   describe('initialize', () => {
-    it('is locked for implementation contract', async () => {
+    it('initializes correctly', async () => {
       await expect(
-        factory.initialize(
-          ethers.constants.AddressZero,
-          ethers.constants.AddressZero,
-          ethers.constants.AddressZero,
-          fee,
-          offerDuration,
+        deployProxy(new RoyaltyLoanFactory__factory(deployer), [
+          await loanTemplate.getAddress(),
+          await whitelist.getAddress(),
+          await paymentToken.getAddress(),
+          defaults.duration,
+        ]),
+      ).not.to.be.reverted;
+    });
+
+    it('throws on reinitialization', async () => {
+      loanFactory = await deployProxy(
+        new RoyaltyLoanFactory__factory(deployer),
+        [
+          await loanTemplate.getAddress(),
+          await whitelist.getAddress(),
+          await paymentToken.getAddress(),
+          defaults.duration,
+        ],
+      );
+      await expect(
+        loanFactory.initialize(
+          await loanTemplate.getAddress(),
+          await whitelist.getAddress(),
+          await paymentToken.getAddress(),
+          defaults.duration,
         ),
-      ).to.be.revertedWith('Initializable: contract is already initialized')
-    })
-  })
+      ).to.be.reverted;
+    });
 
-  describe('templateAddress', () => {
-    it('can be changed by owner', async () => {
-      const newTemplate = await new RoyaltyLoan__factory(deployer).deploy()
+    it('throws with invalid args', async () => {
+      await expect(
+        deployProxy(new RoyaltyLoanFactory__factory(deployer), [
+          ethers.ZeroAddress,
+          await whitelist.getAddress(),
+          await paymentToken.getAddress(),
+          defaults.duration,
+        ]),
+      ).to.be.revertedWith(
+        'RoyaltyLoanFactory: _templateAddress is the zero address',
+      );
 
       await expect(
-        factory.connect(operationalAcc).setTemplateAddress(newTemplate.address),
-      ).to.be.revertedWith('Ownable: caller is not the owner')
+        deployProxy(new RoyaltyLoanFactory__factory(deployer), [
+          await loanTemplate.getAddress(),
+          ethers.ZeroAddress,
+          await paymentToken.getAddress(),
+          defaults.duration,
+        ]),
+      ).to.be.revertedWith(
+        'RoyaltyLoanFactory: _whitelistAddress address is the zero address',
+      );
 
-      const tx = factory.setTemplateAddress(newTemplate.address)
+      await expect(
+        deployProxy(new RoyaltyLoanFactory__factory(deployer), [
+          await loanTemplate.getAddress(),
+          await whitelist.getAddress(),
+          ethers.ZeroAddress,
+          defaults.duration,
+        ]),
+      ).to.be.revertedWith(
+        'RoyaltyLoanFactory: _paymentTokenAddress is the zero address',
+      );
 
-      const templateChangedEvent = await getEvent(
-        tx,
-        factory,
-        'TemplateChanged(address,address)',
-      )
+      await expect(
+        deployProxy(new RoyaltyLoanFactory__factory(deployer), [
+          await loanTemplate.getAddress(),
+          await whitelist.getAddress(),
+          await paymentToken.getAddress(),
+          0n,
+        ]),
+      ).to.be.revertedWith(
+        'RoyaltyLoanFactory: _duration must be greater than 0',
+      );
 
-      expect(templateChangedEvent.args[0]).eq(template.address)
-      expect(templateChangedEvent.args[1]).eq(newTemplate.address)
+      await expect(
+        deployProxy(new RoyaltyLoanFactory__factory(deployer), [
+          await loanTemplate.getAddress(),
+          await whitelist.getAddress(),
+          await paymentToken.getAddress(),
+          defaults.duration,
+        ]),
+      ).not.to.be.reverted;
+    });
+  });
 
-      expect(await factory.templateAddress()).to.equal(newTemplate.address)
-    })
-  })
+  describe('setTemplateAddress', () => {
+    it('can be changed only by whitelisted address', async () => {
+      const newTemplate = await new RoyaltyLoan__factory(deployer).deploy();
+      expect(await whitelist.isWhitelisted(operator.address)).to.equal(false);
+      await expect(
+        loanFactory
+          .connect(operator)
+          .setTemplateAddress(await newTemplate.getAddress()),
+      ).to.be.reverted;
 
-  describe('whitelist', () => {
-    it('can be changed by owner', async () => {
-      const newWhitelist = await new Whitelist__factory(deployer).deploy(
+      await (
+        await whitelist.connect(deployer).addToWhitelist(operator.address)
+      ).wait();
+
+      await expect(
+        loanFactory.setTemplateAddress(await newTemplate.getAddress()),
+      ).not.to.be.reverted;
+    });
+
+    it('throws on zero address', async () => {
+      await expect(loanFactory.setTemplateAddress(ethers.ZeroAddress)).to.be
+        .reverted;
+    });
+  });
+
+  describe('setWhitelistAddress', () => {
+    it('can be changed only by whitelisted address', async () => {
+      const newTemplate = await new Whitelist__factory(deployer).deploy(
         deployer.address,
-      )
+      );
+      expect(await whitelist.isWhitelisted(operator.address)).to.equal(false);
+      await expect(
+        loanFactory
+          .connect(operator)
+          .setWhitelistAddress(await newTemplate.getAddress()),
+      ).to.be.reverted;
+
+      await (
+        await whitelist.connect(deployer).addToWhitelist(operator.address)
+      ).wait();
 
       await expect(
-        factory
-          .connect(operationalAcc)
-          .setWhitelistAddress(newWhitelist.address),
-      ).to.be.revertedWith('Ownable: caller is not the owner')
+        loanFactory.setWhitelistAddress(await newTemplate.getAddress()),
+      ).not.to.be.reverted;
+    });
 
-      const tx = factory.setWhitelistAddress(newWhitelist.address)
-      const whitelistChangedEvent = await getEvent(
-        tx,
-        factory,
-        'WhitelistChanged(bytes1,address,address)',
-      )
+    it('throws on zero address', async () => {
+      await expect(loanFactory.setWhitelistAddress(ethers.ZeroAddress)).to.be
+        .reverted;
+    });
+  });
 
-      const [_whitelistId, _previousAddress, _newAddress] =
-        whitelistChangedEvent.args
+  describe('setOfferDuration', () => {
+    it('can be changed only by whitelisted address', async () => {
+      expect(await whitelist.isWhitelisted(operator.address)).to.equal(false);
+      await expect(loanFactory.connect(operator).setOfferDuration(1n)).to.be
+        .reverted;
 
-      expect(_newAddress).to.equal(newWhitelist.address)
-      expect(_previousAddress).to.equal(whitelist.address)
-      expect(_whitelistId).to.equal(await factory.OPERATIONAL_WHITELIST())
+      await (
+        await whitelist.connect(deployer).addToWhitelist(operator.address)
+      ).wait();
 
-      expect(
-        await factory.whitelists(await factory.OPERATIONAL_WHITELIST()),
-      ).to.equal(newWhitelist.address)
-    })
+      await expect(loanFactory.setOfferDuration(1n)).not.to.be.reverted;
+    });
 
-    it('fails if address is not a whitelist', async () => {
-      await expect(
-        factory.setWhitelistAddress(ethers.Wallet.createRandom().address),
-      ).to.be.revertedWith('Interface not supported')
-    })
-  })
+    it('throws on duration = 0', async () => {
+      await expect(loanFactory.setOfferDuration(0n)).to.be.reverted;
+    });
+  });
 
   describe('createLoanContract', () => {
     it('creates loan contract and sends shares', async () => {
-      const holders = [
-        { account: borrower.address, balance: 600, isAdmin: true },
-        { account: holder2.address, balance: 400, isAdmin: true },
-      ]
+      await (await collateralToken.mint(borrower.address, 1n, 1n)).wait();
 
-      const agreement = await createERC1155(
-        deployer,
-        holders,
-        agreementFactory,
-        feeManager,
-      )
-
-      const collateralToken = agreement.address
-      const collateralTokenId = 1
-      const collateralAmount = 400
-      const loanAmount = 3
-
-      const balanceBeforeLoan = await agreement.balanceOf(
+      const borrowerBalanceBefore = await collateralToken.balanceOf(
         borrower.address,
-        collateralTokenId,
-      )
-      expect(balanceBeforeLoan.toString()).to.equal('600')
+        1n,
+      );
 
-      const approvalTx = await agreement
-        .connect(borrower)
-        .setApprovalForAll(factory.address, true)
-      await approvalTx.wait()
+      expect(borrowerBalanceBefore).to.equal(1n);
 
-      const loanCreationTx = factory
-        .connect(borrower)
-        .createLoanContract(
-          collateralToken,
-          collateralTokenId,
-          collateralAmount,
-          loanAmount,
-        )
+      const loan = await createLoanWithFactory(borrower, {
+        collateralAmount: 1n,
+        feePpm: 100n,
+        loanAmount: 1n,
+      });
 
-      const royaltyLoanCretionEvent = await getEvent(
-        loanCreationTx,
-        factory,
-        'LoanContractCreated(address,address,address,uint256)',
-      )
-      const [royaltyLoanAddress] = royaltyLoanCretionEvent.args
+      const [borrowerBalanceAfter, loanContractBalanceAfter] =
+        await collateralToken.balanceOfBatch(
+          [borrower.address, await loan.getAddress()],
+          [1n, 1n],
+        );
 
-      const royaltyLoan = factory.attach(royaltyLoanAddress)
-      expect(royaltyLoan.address).to.properAddress
-
-      const balanceAfterLoan = await agreement.balanceOf(
-        borrower.address,
-        collateralTokenId,
-      )
-      expect(balanceAfterLoan.toString()).to.equal('200')
-      const loanContractBalance = await agreement.balanceOf(
-        royaltyLoan.address,
-        collateralTokenId,
-      )
-      expect(loanContractBalance.toString()).to.equal('400')
-    })
-
-    it('fails as loan amount exceeds holder balance', async () => {
-      const holders = [
-        { account: borrower.address, balance: 600, isAdmin: true },
-        { account: holder2.address, balance: 400, isAdmin: true },
-      ]
-
-      const agreement = await createERC1155(
-        deployer,
-        holders,
-        agreementFactory,
-        feeManager,
-      )
-
-      const collateralToken = agreement.address
-      const collateralTokenId = 1
-      const collateralAmount = 800
-      const loanAmount = 3
-
-      const balanceBeforeLoan = await agreement.balanceOf(
-        borrower.address,
-        collateralTokenId,
-      )
-      expect(balanceBeforeLoan.toString()).to.equal('600')
-
-      const approvalTx = await agreement
-        .connect(borrower)
-        .setApprovalForAll(factory.address, true)
-      await approvalTx.wait()
-      await expect(
-        factory
-          .connect(borrower)
-          .createLoanContract(
-            collateralToken,
-            collateralTokenId,
-            collateralAmount,
-            loanAmount,
-          ),
-      ).to.be.revertedWith('ERC1155: insufficient balance for transfer')
-    })
-
-    it('fails as invalid token collateral', async () => {
-      const collateralToken = '0x0000000000000000000000000000000000000000'
-      const collateralTokenId = 1
-      const collateralAmount = 800
-      const loanAmount = 3
-
-      await expect(
-        factory
-          .connect(borrower)
-          .createLoanContract(
-            collateralToken,
-            collateralTokenId,
-            collateralAmount,
-            loanAmount,
-          ),
-      ).to.be.revertedWith('Invalid collateral token address')
-    })
-
-    it('fails as collateral amount is zero', async () => {
-      const holders = [
-        { account: borrower.address, balance: 600, isAdmin: true },
-        { account: holder2.address, balance: 400, isAdmin: true },
-      ]
-
-      const agreement = await createERC1155(
-        deployer,
-        holders,
-        agreementFactory,
-        feeManager,
-      )
-
-      const collateralToken = agreement.address
-      const collateralTokenId = 1
-      const collateralAmount = 0
-      const loanAmount = 3
-
-      const approvalTx = await agreement
-        .connect(borrower)
-        .setApprovalForAll(factory.address, true)
-      await approvalTx.wait()
-      await expect(
-        factory
-          .connect(borrower)
-          .createLoanContract(
-            collateralToken,
-            collateralTokenId,
-            collateralAmount,
-            loanAmount,
-          ),
-      ).to.be.revertedWith('Collateral amount must be greater than 0')
-    })
-
-    it('fails as loan amount is zero', async () => {
-      const holders = [
-        { account: borrower.address, balance: 600, isAdmin: true },
-        { account: holder2.address, balance: 400, isAdmin: true },
-      ]
-
-      const agreement = await createERC1155(
-        deployer,
-        holders,
-        agreementFactory,
-        feeManager,
-      )
-
-      const collateralToken = agreement.address
-      const collateralTokenId = 1
-      const collateralAmount = 400
-      const loanAmount = 0
-
-      const approvalTx = await agreement
-        .connect(borrower)
-        .setApprovalForAll(factory.address, true)
-      await approvalTx.wait()
-      await expect(
-        factory
-          .connect(borrower)
-          .createLoanContract(
-            collateralToken,
-            collateralTokenId,
-            collateralAmount,
-            loanAmount,
-          ),
-      ).to.be.revertedWith('Loan amount must be greater than 0')
-    })
-  })
-
-  describe('setFee', () => {
-    it('sets new fee', async () => {
-      const newFee = 20
-      const fee = await factory.fee()
-      expect(fee.toString()).to.equal('10')
-      const setFeeTx = await factory.connect(operationalAcc).setFee(newFee)
-      await setFeeTx.wait()
-
-      const feeAfterChange = await factory.fee()
-      expect(feeAfterChange.toString()).to.equal(newFee.toString())
-    })
-
-    it('throws as new fee is zero', async () => {
-      const newFee = 0
-      const fee = await factory.fee()
-      expect(fee.toString()).to.equal('10')
-      await expect(
-        factory.connect(operationalAcc).setFee(newFee),
-      ).to.be.revertedWith('Fee must be greater than 0')
-    })
-
-    it('throws as sender is not whitelisted', async () => {
-      const newFee = 20
-      const fee = await factory.fee()
-      expect(fee.toString()).to.equal('10')
-      await expect(factory.connect(holder2).setFee(newFee)).to.be.revertedWith(
-        'Sender is not whitelisted',
-      )
-    })
-  })
-
-  describe('setOfferDuration', () => {
-    it('sets new offer duration', async () => {
-      const newOfferDuration = 20
-      const offerDuration = await factory.offerDuration()
-      expect(offerDuration.toString()).to.equal('10')
-      const setOfferDuration = await factory
-        .connect(operationalAcc)
-        .setOfferDuration(newOfferDuration)
-      await setOfferDuration.wait()
-
-      const offerDurationAfterChange = await factory.offerDuration()
-      expect(offerDurationAfterChange.toString()).to.equal(
-        newOfferDuration.toString(),
-      )
-    })
-
-    it('throws as new offer duration is zero', async () => {
-      const newOfferDuration = 0
-      const offerDuration = await factory.offerDuration()
-      expect(offerDuration.toString()).to.equal('10')
-      await expect(
-        factory.connect(operationalAcc).setOfferDuration(newOfferDuration),
-      ).to.be.revertedWith('Duration must be greater than 0')
-    })
-
-    it('throws as sender is not whitelisted', async () => {
-      const newOfferDuration = 20
-      const offerDuration = await factory.offerDuration()
-      expect(offerDuration.toString()).to.equal('10')
-      await expect(
-        factory.connect(holder2).setOfferDuration(newOfferDuration),
-      ).to.be.revertedWith('Sender is not whitelisted')
-    })
-  })
-})
+      expect(borrowerBalanceAfter).to.equal(0n);
+      expect(loanContractBalanceAfter).to.equal(1n);
+    });
+  });
+});
