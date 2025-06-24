@@ -1,4 +1,4 @@
-import { Initialized as InitializedEvent } from '../generated/RoyaltyLoanFactory/RoyaltyLoanFactory';
+import { Initialized as InitializedEvent } from '../generated/RoyaltyLoan/RoyaltyLoanc';
 import { Initialized } from '../generated/schema';
 
 export function handleInitialized(event: InitializedEvent): void {

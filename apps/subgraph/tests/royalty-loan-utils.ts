@@ -1,6 +1,6 @@
 import { newMockEvent } from 'matchstick-as';
 import { ethereum, BigInt } from '@graphprotocol/graph-ts';
-import { Initialized } from '../generated/RoyaltyLoanFactory/RoyaltyLoanFactory';
+import { Initialized } from '../generated/RoyaltyLoan/RoyaltyLoan';
 
 export function createInitializedEvent(version: BigInt): Initialized {
   const initializedEvent = changetype<Initialized>(newMockEvent());

@@ -7,37 +7,25 @@
       "codegen": {
         "executor": "nx:run-commands",
         "options": {
-          "command": "graph codegen",
-          "args": [
-            "node-env=production"
-          ]
+          "command": "graph codegen"
         }
       },
       "build": {
         "executor": "nx:run-commands",
         "options": {
-          "command": "graph build",
-          "args": [
-            "node-env=production"
-          ]
+          "command": "graph build"
         }
       },
       "deploy": {
         "executor": "nx:run-commands",
         "options": {
-          "command": "graph deploy --node https://api.studio.thegraph.com/deploy/ royalty-loans",
-          "args": [
-            "node-env=production"
-          ]
+          "command": "graph deploy --node https://api.studio.thegraph.com/deploy/ royalty-loans"
         }
       },
       "test": {
         "executor": "nx:run-commands",
         "options": {
-          "command": "graph test",
-          "args": [
-            "node-env=production"
-          ]
+          "command": "graph test"
         }
       }
     }
