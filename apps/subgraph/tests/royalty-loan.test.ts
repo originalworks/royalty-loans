@@ -7,8 +7,8 @@ import {
   afterAll,
 } from 'matchstick-as/assembly/index';
 import { BigInt } from '@graphprotocol/graph-ts';
-import { handleInitialized } from '../src/royalty-loan-factory';
-import { createInitializedEvent } from './royalty-loan-factory-utils';
+import { handleInitialized } from '../src/royalty-loan';
+import { createInitializedEvent } from './royalty-loan-utils';
 
 // Tests structure (matchstick-as >=0.5.0)
 // https://thegraph.com/docs/en/subgraphs/developing/creating/unit-testing-framework/#tests-structure
