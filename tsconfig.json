@@ -11,6 +11,9 @@
     },
     {
       "path": "./apps/admin"
+    },
+    {
+      "path": "./libs/contracts"
     }
   ]
 }
