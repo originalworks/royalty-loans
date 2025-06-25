@@ -1,10 +1,10 @@
 import { DynamicModule, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { config } from './config/config';
-// import { UploadModule } from './upload/upload.module';
-// import { PinoLoggerModule } from './pinoLogger/pinoLogger.module';
+import { PinoLoggerModule } from './pinoLogger/pinoLogger.module';
 import { DataSourceOptions } from 'typeorm';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { LoanTermsModule } from './loanTerms/loanTerms.module';
 
 @Module({})
 export class AppModule {
@@ -15,8 +15,8 @@ export class AppModule {
         isGlobal: true,
       }),
       TypeOrmModule.forRoot({ ...dbConfig }),
-      // PinoLoggerModule,
-      // UploadModule,
+      PinoLoggerModule,
+      LoanTermsModule,
     ];
 
     return {
