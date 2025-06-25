@@ -7,25 +7,29 @@
       "codegen": {
         "executor": "nx:run-commands",
         "options": {
-          "command": "graph codegen"
+          "command": "graph codegen",
+          "cwd": "apps/subgraph"
         }
       },
       "build": {
         "executor": "nx:run-commands",
         "options": {
-          "command": "graph build"
+          "command": "graph build",
+          "cwd": "apps/subgraph"
         }
       },
       "deploy": {
         "executor": "nx:run-commands",
         "options": {
-          "command": "graph deploy --node https://api.studio.thegraph.com/deploy/ royalty-loans"
+          "command": "graph deploy --node https://api.studio.thegraph.com/deploy/ royalty-loans",
+          "cwd": "apps/subgraph"
         }
       },
       "test": {
         "executor": "nx:run-commands",
         "options": {
-          "command": "graph test"
+          "command": "graph test",
+          "cwd": "apps/subgraph"
         }
       }
     }
