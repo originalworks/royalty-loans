@@ -24,3 +24,11 @@ type InitializedLoan @entity(immutable: true) {
   blockTimestamp: BigInt!
   transactionHash: Bytes!
 }
+
+type LoanProvided @entity(immutable: true) {
+  id: Bytes!
+  lender: Bytes!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}

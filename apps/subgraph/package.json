@@ -14,7 +14,7 @@
       "build": {
         "executor": "nx:run-commands",
         "options": {
-          "command": "graph build",
+          "command": "graph build --network base-sepolia",
           "cwd": "apps/subgraph"
         }
       },
