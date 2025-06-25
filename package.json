@@ -37,6 +37,8 @@
     "@refinedev/react-hook-form": "^4.8.14",
     "@refinedev/react-router": "^1.0.0",
     "axios": "^1.6.2",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.2",
     "ethers": "^6.14.3",
     "jwks-rsa": "^3.2.0",
     "nestjs-pino": "^4.4.0",
