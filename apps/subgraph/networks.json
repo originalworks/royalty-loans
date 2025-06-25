@@ -1,6 +1,6 @@
 {
   "base-sepolia": {
-    "Contract": {
+    "RoyaltyLoanFactory": {
       "address": "0x",
       "startBlock": 1
     }
