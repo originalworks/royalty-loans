@@ -9,7 +9,7 @@ dataSources:
     network: base-sepolia
     source:
       abi: RoyaltyLoanFactory
-      address: "0x"
+      address: "0x4e3830902E59820D5d12379e973559A99Ef0aFc8"
       startBlock: 1
     mapping:
       kind: ethereum/events
@@ -39,10 +39,13 @@ templates:
       language: wasm/assemblyscript
       entities:
         - InitializedLoan
+        - LoanProvided
       abis:
         - name: RoyaltyLoan
           file: ./abis/RoyaltyLoan.json
       eventHandlers:
         - event: Initialized(uint64)
           handler: handleInitialized
+        - event: LoanProvided(address)
+          handler: handleLoanProvided
       file: ./src/royalty-loan.ts

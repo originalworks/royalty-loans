@@ -1,7 +1,7 @@
 {
   "base-sepolia": {
     "RoyaltyLoanFactory": {
-      "address": "0x",
+      "address": "0x4e3830902E59820D5d12379e973559A99Ef0aFc8",
       "startBlock": 1
     }
   }
