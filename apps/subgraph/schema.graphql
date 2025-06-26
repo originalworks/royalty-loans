@@ -6,7 +6,7 @@ type InitializedFactory @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
-type LoanContractCreated @entity(immutable: true) {
+type LoanContract @entity(immutable: true) {
   id: Bytes!
   loanContract: Bytes! # address
   borrower: Bytes! # address
@@ -15,6 +15,7 @@ type LoanContractCreated @entity(immutable: true) {
   collateralAmount: BigInt!
   loanAmount: BigInt!
   feePpm: BigInt!
+  status: String! # pending / active / revoked / repaid
   timestamp: BigInt!
   transactionHash: Bytes!
 }
