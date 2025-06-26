@@ -10,20 +10,16 @@ export function handleInitialized(event: InitializedEvent): void {
     event.transaction.hash.concatI32(event.logIndex.toI32()),
   );
   entity.version = event.params.version;
-
   entity.blockNumber = event.block.number;
-  entity.blockTimestamp = event.block.timestamp;
+  entity.timestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
-
   entity.save();
 }
 
 export function handleLoanContractCreated(
   event: LoanContractCreatedEvent,
 ): void {
-  const entity = new LoanContractCreated(
-    event.transaction.hash.concatI32(event.logIndex.toI32()),
-  );
+  const entity = new LoanContractCreated(event.params.loanContract);
   entity.loanContract = event.params.loanContract;
   entity.borrower = event.params.borrower;
   entity.collateralToken = event.params.collateralToken;
@@ -31,6 +27,8 @@ export function handleLoanContractCreated(
   entity.collateralAmount = event.params.collateralAmount;
   entity.loanAmount = event.params.loanAmount;
   entity.feePpm = event.params.feePpm;
+  entity.timestamp = event.block.timestamp;
+  entity.transactionHash = event.transaction.hash;
   entity.save();
 
   RoyaltyLoan.create(event.params.loanContract);
