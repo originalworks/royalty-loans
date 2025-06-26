@@ -3,7 +3,7 @@ import {
   Initialized as InitializedEvent,
   LoanContractCreated as LoanContractCreatedEvent,
 } from '../generated/RoyaltyLoanFactory/RoyaltyLoanFactory';
-import { InitializedFactory, LoanContractCreated } from '../generated/schema';
+import { InitializedFactory, LoanContract } from '../generated/schema';
 
 export function handleInitialized(event: InitializedEvent): void {
   const entity = new InitializedFactory(
@@ -19,7 +19,7 @@ export function handleInitialized(event: InitializedEvent): void {
 export function handleLoanContractCreated(
   event: LoanContractCreatedEvent,
 ): void {
-  const entity = new LoanContractCreated(event.params.loanContract);
+  const entity = new LoanContract(event.params.loanContract);
   entity.loanContract = event.params.loanContract;
   entity.borrower = event.params.borrower;
   entity.collateralToken = event.params.collateralToken;
@@ -27,6 +27,7 @@ export function handleLoanContractCreated(
   entity.collateralAmount = event.params.collateralAmount;
   entity.loanAmount = event.params.loanAmount;
   entity.feePpm = event.params.feePpm;
+  entity.status = 'pending';
   entity.timestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
   entity.save();

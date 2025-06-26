@@ -17,7 +17,7 @@ dataSources:
       language: wasm/assemblyscript
       entities:
         - Initialized
-        - LoanContractCreated
+        - LoanContract
       abis:
         - name: RoyaltyLoanFactory
           file: ./abis/RoyaltyLoanFactory.json
@@ -38,6 +38,7 @@ templates:
       apiVersion: 0.0.9
       language: wasm/assemblyscript
       entities:
+        - LoanContract
         - InitializedLoan
         - LoanProvided
         - LoanPartialyRepaid

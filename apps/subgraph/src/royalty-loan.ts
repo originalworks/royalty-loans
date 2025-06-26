@@ -1,9 +1,10 @@
 import {
   LoanRepaid,
   LoanRevoked,
+  LoanContract,
   LoanProvided,
   InitializedLoan,
-  LoanPartialyRepaid,
+  LoanPartialyRepaid
 } from '../generated/schema';
 import {
   LoanRepaid as LoanRepaidEvent,
@@ -30,6 +31,12 @@ export function handleLoanProvided(event: LoanProvidedEvent): void {
   entity.timestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
   entity.save();
+
+  const loan = LoanContract.load(event.address);
+  if (loan !== null) {
+    loan.status = 'active';
+    loan.save();
+  }
 }
 
 export function handleLoanPartialyRepaid(event: LoanPartialyRepaidEvent): void {
@@ -52,6 +59,12 @@ export function handleLoanRepaid(event: LoanRepaidEvent): void {
   entity.timestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
   entity.save();
+
+  const loan = LoanContract.load(event.address);
+  if (loan !== null) {
+    loan.status = 'repaid';
+    loan.save();
+  }
 }
 
 export function handleLoanRevoked(event: LoanRevokedEvent): void {
@@ -60,4 +73,10 @@ export function handleLoanRevoked(event: LoanRevokedEvent): void {
   entity.timestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
   entity.save();
+
+  const loan = LoanContract.load(event.address);
+  if (loan !== null) {
+    loan.status = 'revoked';
+    loan.save();
+  }
 }
