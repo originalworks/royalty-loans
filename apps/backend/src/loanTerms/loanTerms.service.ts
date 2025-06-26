@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LoanTerm } from './loanTerms.entity';
-import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import { TypeOrmCrudService } from '@dataui/crud-typeorm';
 
@@ -11,7 +10,6 @@ export class LoanTermsService extends TypeOrmCrudService<LoanTerm> {
   constructor(
     @InjectRepository(LoanTerm)
     private loanTermsRepo: Repository<LoanTerm>,
-    private configService: ConfigService,
   ) {
     super(loanTermsRepo);
   }
