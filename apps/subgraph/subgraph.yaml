@@ -40,6 +40,9 @@ templates:
       entities:
         - InitializedLoan
         - LoanProvided
+        - LoanPartialyRepaid
+        - LoanRepaid
+        - LoanRevoked
       abis:
         - name: RoyaltyLoan
           file: ./abis/RoyaltyLoan.json
@@ -48,4 +51,10 @@ templates:
           handler: handleInitialized
         - event: LoanProvided(address)
           handler: handleLoanProvided
+        - event: LoanPartialyRepaid(uint256)
+          handler: handleLoanPartialyRepaid
+        - event: LoanRepaid(uint256)
+          handler: handleLoanRepaid
+        - event: LoanRevoked()
+          handler: handleLoanRevoked
       file: ./src/royalty-loan.ts
