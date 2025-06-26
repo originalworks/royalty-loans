@@ -1,0 +1,59 @@
+type InitializedFactory @entity(immutable: true) {
+  id: Bytes!
+  version: BigInt! # uint64
+  blockNumber: BigInt!
+  timestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type LoanContract @entity(immutable: true) {
+  id: Bytes!
+  loanContract: Bytes! # address
+  borrower: Bytes! # address
+  collateralToken: Bytes! # address
+  collateralTokenId: BigInt!
+  collateralAmount: BigInt!
+  loanAmount: BigInt!
+  feePpm: BigInt!
+  status: String! # pending / active / revoked / repaid
+  timestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type InitializedLoan @entity(immutable: true) {
+  id: Bytes!
+  version: BigInt! # uint64
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type LoanProvided @entity(immutable: true) {
+  id: Bytes!
+  lender: Bytes!
+  timestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type LoanPartialyRepaid @entity(immutable: true) {
+  id: Bytes!
+  loanContract: Bytes!
+  repaymentAmount: BigInt!
+  timestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type LoanRepaid @entity(immutable: true) {
+  id: Bytes!
+  loanContract: Bytes!
+  repaymentAmount: BigInt!
+  timestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type LoanRevoked @entity(immutable: true) {
+  id: Bytes!
+  loanContract: Bytes!
+  timestamp: BigInt!
+  transactionHash: Bytes!
+}

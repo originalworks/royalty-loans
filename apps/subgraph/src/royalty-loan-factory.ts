@@ -1,0 +1,36 @@
+import { RoyaltyLoan } from '../generated/templates';
+import {
+  Initialized as InitializedEvent,
+  LoanContractCreated as LoanContractCreatedEvent,
+} from '../generated/RoyaltyLoanFactory/RoyaltyLoanFactory';
+import { InitializedFactory, LoanContract } from '../generated/schema';
+
+export function handleInitialized(event: InitializedEvent): void {
+  const entity = new InitializedFactory(
+    event.transaction.hash.concatI32(event.logIndex.toI32()),
+  );
+  entity.version = event.params.version;
+  entity.blockNumber = event.block.number;
+  entity.timestamp = event.block.timestamp;
+  entity.transactionHash = event.transaction.hash;
+  entity.save();
+}
+
+export function handleLoanContractCreated(
+  event: LoanContractCreatedEvent,
+): void {
+  const entity = new LoanContract(event.params.loanContract);
+  entity.loanContract = event.params.loanContract;
+  entity.borrower = event.params.borrower;
+  entity.collateralToken = event.params.collateralToken;
+  entity.collateralTokenId = event.params.collateralTokenId;
+  entity.collateralAmount = event.params.collateralAmount;
+  entity.loanAmount = event.params.loanAmount;
+  entity.feePpm = event.params.feePpm;
+  entity.status = 'pending';
+  entity.timestamp = event.block.timestamp;
+  entity.transactionHash = event.transaction.hash;
+  entity.save();
+
+  RoyaltyLoan.create(event.params.loanContract);
+}

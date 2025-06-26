@@ -45,6 +45,7 @@ Thumbs.db
 .github/instructions/nx.instructions.md
 
 test-output
+.latest.json
 
 vite.config.*.timestamp*
 vitest.config.*.timestamp*
