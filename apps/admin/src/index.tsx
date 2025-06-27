@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { Auth0Provider } from '@auth0/auth0-react';
 
 import App from './App';
+import { Web3Provider } from './Web3Provider';
 import { AUTH0_AUDIENCE, AUTH0_CLIENT_ID, AUTH0_ISSUER } from './config/config';
 
 const container = document.getElementById('root') as HTMLElement;
@@ -16,7 +17,9 @@ root.render(
       audience={AUTH0_AUDIENCE}
       redirectUri={window.location.origin}
     >
-      <App />
+      <Web3Provider>
+        <App />
+      </Web3Provider>
     </Auth0Provider>
   </React.StrictMode>,
 );
