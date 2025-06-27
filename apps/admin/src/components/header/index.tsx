@@ -1,16 +1,18 @@
-import DarkModeOutlined from '@mui/icons-material/DarkModeOutlined';
-import LightModeOutlined from '@mui/icons-material/LightModeOutlined';
+import React, { useContext } from 'react';
+import { ConnectKitButton } from 'connectkit';
+
+import Stack from '@mui/material/Stack';
 import AppBar from '@mui/material/AppBar';
 import Avatar from '@mui/material/Avatar';
-import IconButton from '@mui/material/IconButton';
-import Stack from '@mui/material/Stack';
 import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
 import { useGetIdentity } from '@refinedev/core';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import DarkModeOutlined from '@mui/icons-material/DarkModeOutlined';
+import LightModeOutlined from '@mui/icons-material/LightModeOutlined';
 import { HamburgerMenu, RefineThemedLayoutV2HeaderProps } from '@refinedev/mui';
-import React, { useContext } from 'react';
+
 import { ColorModeContext } from '../../contexts/color-mode';
-import { ConnectKitButton } from "connectkit";
 
 type IUser = {
   id: number;
@@ -40,7 +42,7 @@ export const Header: React.FC<RefineThemedLayoutV2HeaderProps> = ({
             width="100%"
             justifyContent="flex-end"
             alignItems="center"
-            gap={1}
+            gap={2}
           >
             <IconButton
               color="inherit"
@@ -75,7 +77,7 @@ export const Header: React.FC<RefineThemedLayoutV2HeaderProps> = ({
               </Stack>
             )}
 
-            <ConnectKitButton />
+            <ConnectKitButton theme="auto" mode={mode} />
           </Stack>
         </Stack>
       </Toolbar>
