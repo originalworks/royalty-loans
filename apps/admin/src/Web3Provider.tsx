@@ -22,6 +22,7 @@ const config = createConfig(
         batch: true,
       }),
     },
+    enableFamily: false,
   }),
 );
 
