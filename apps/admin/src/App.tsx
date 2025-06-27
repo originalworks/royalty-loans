@@ -1,47 +1,42 @@
-import {
-  Refine,
-  GitHubBanner,
-  Authenticated,
-  AuthProvider,
-} from '@refinedev/core';
-import { DevtoolsPanel, DevtoolsProvider } from '@refinedev/devtools';
-import { RefineKbar, RefineKbarProvider } from '@refinedev/kbar';
+import axios from 'axios';
+import { BrowserRouter, Route, Routes, Outlet } from 'react-router';
 
 import {
   ErrorComponent,
-  useNotificationProvider,
-  RefineSnackbarProvider,
   ThemedLayoutV2,
+  RefineSnackbarProvider,
+  useNotificationProvider,
 } from '@refinedev/mui';
-
-import nestjsxCrudDataProvider from '@refinedev/nestjsx-crud';
+import routerBindings, {
+  CatchAllNavigate,
+  NavigateToResource,
+  DocumentTitleHandler,
+  UnsavedChangesNotifier,
+} from '@refinedev/react-router';
+import { useAuth0 } from '@auth0/auth0-react';
 import CssBaseline from '@mui/material/CssBaseline';
 import GlobalStyles from '@mui/material/GlobalStyles';
-import axios from 'axios';
-import { useAuth0 } from '@auth0/auth0-react';
-import { BrowserRouter, Route, Routes, Outlet } from 'react-router';
-import routerBindings, {
-  NavigateToResource,
-  CatchAllNavigate,
-  UnsavedChangesNotifier,
-  DocumentTitleHandler,
-} from '@refinedev/react-router';
+import nestjsxCrudDataProvider from '@refinedev/nestjsx-crud';
+import { RefineKbar, RefineKbarProvider } from '@refinedev/kbar';
+import { DevtoolsPanel, DevtoolsProvider } from '@refinedev/devtools';
+import { Refine, AuthProvider, Authenticated } from '@refinedev/core';
+
 import {
-  BlogPostList,
-  BlogPostCreate,
   BlogPostEdit,
+  BlogPostList,
   BlogPostShow,
+  BlogPostCreate,
 } from './pages/blog-posts';
 import {
-  CategoryList,
-  CategoryCreate,
   CategoryEdit,
+  CategoryList,
   CategoryShow,
+  CategoryCreate,
 } from './pages/categories';
+import { Login } from './pages/login';
+import { Header } from './components';
 import { AppIcon } from './components/app-icon';
 import { ColorModeContextProvider } from './contexts/color-mode';
-import { Header } from './components/header';
-import { Login } from './pages/login';
 
 function App() {
   const { isLoading, user, logout, getIdTokenClaims } = useAuth0();
@@ -113,7 +108,6 @@ function App() {
 
   return (
     <BrowserRouter>
-      <GitHubBanner />
       <RefineKbarProvider>
         <ColorModeContextProvider>
           <CssBaseline />

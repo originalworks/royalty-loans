@@ -1,15 +1,18 @@
-import DarkModeOutlined from "@mui/icons-material/DarkModeOutlined";
-import LightModeOutlined from "@mui/icons-material/LightModeOutlined";
-import AppBar from "@mui/material/AppBar";
-import Avatar from "@mui/material/Avatar";
-import IconButton from "@mui/material/IconButton";
-import Stack from "@mui/material/Stack";
-import Toolbar from "@mui/material/Toolbar";
-import Typography from "@mui/material/Typography";
-import { useGetIdentity } from "@refinedev/core";
-import { HamburgerMenu, RefineThemedLayoutV2HeaderProps } from "@refinedev/mui";
-import React, { useContext } from "react";
-import { ColorModeContext } from "../../contexts/color-mode";
+import React, { useContext } from 'react';
+import { ConnectKitButton } from 'connectkit';
+
+import Stack from '@mui/material/Stack';
+import AppBar from '@mui/material/AppBar';
+import Avatar from '@mui/material/Avatar';
+import Toolbar from '@mui/material/Toolbar';
+import { useGetIdentity } from '@refinedev/core';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import DarkModeOutlined from '@mui/icons-material/DarkModeOutlined';
+import LightModeOutlined from '@mui/icons-material/LightModeOutlined';
+import { HamburgerMenu, RefineThemedLayoutV2HeaderProps } from '@refinedev/mui';
+
+import { ColorModeContext } from '../../contexts/color-mode';
 
 type IUser = {
   id: number;
@@ -25,7 +28,7 @@ export const Header: React.FC<RefineThemedLayoutV2HeaderProps> = ({
   const { data: user } = useGetIdentity<IUser>();
 
   return (
-    <AppBar position={sticky ? "sticky" : "relative"}>
+    <AppBar position={sticky ? 'sticky' : 'relative'}>
       <Toolbar>
         <Stack
           direction="row"
@@ -39,6 +42,7 @@ export const Header: React.FC<RefineThemedLayoutV2HeaderProps> = ({
             width="100%"
             justifyContent="flex-end"
             alignItems="center"
+            gap={2}
           >
             <IconButton
               color="inherit"
@@ -46,7 +50,7 @@ export const Header: React.FC<RefineThemedLayoutV2HeaderProps> = ({
                 setMode();
               }}
             >
-              {mode === "dark" ? <LightModeOutlined /> : <DarkModeOutlined />}
+              {mode === 'dark' ? <LightModeOutlined /> : <DarkModeOutlined />}
             </IconButton>
 
             {(user?.avatar || user?.name) && (
@@ -60,8 +64,8 @@ export const Header: React.FC<RefineThemedLayoutV2HeaderProps> = ({
                   <Typography
                     sx={{
                       display: {
-                        xs: "none",
-                        sm: "inline-block",
+                        xs: 'none',
+                        sm: 'inline-block',
                       },
                     }}
                     variant="subtitle2"
@@ -72,6 +76,8 @@ export const Header: React.FC<RefineThemedLayoutV2HeaderProps> = ({
                 <Avatar src={user?.avatar} alt={user?.name} />
               </Stack>
             )}
+
+            <ConnectKitButton theme="auto" mode={mode} />
           </Stack>
         </Stack>
       </Toolbar>
