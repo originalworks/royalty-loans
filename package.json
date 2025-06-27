@@ -33,7 +33,10 @@
     "@refinedev/nestjsx-crud": "^5.0.1",
     "@refinedev/react-hook-form": "^4.8.14",
     "@refinedev/react-router": "^1.0.0",
+    "@tanstack/react-query": "^5.81.2",
+    "@wagmi/connectors": "^5.8.5",
     "axios": "^1.6.2",
+    "connectkit": "^1.9.1",
     "ethers": "^6.14.3",
     "jwks-rsa": "^3.2.0",
     "passport": "^0.7.0",
@@ -44,8 +47,8 @@
     "react-router": "^7.0.2",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.0",
-    "web3": "^4.16.0",
-    "web3modal": "^1.9.12"
+    "viem": "^2.31.4",
+    "wagmi": "^2.15.6"
   },
   "devDependencies": {
     "@emotion/babel-plugin": "11.11.0",
