@@ -7,7 +7,7 @@ import { ThemedTitleV2 } from '@refinedev/mui';
 import { useAuth0 } from '@auth0/auth0-react';
 
 export const Login: React.FC = () => {
-  const { loginWithRedirect } = useAuth0();
+  const { loginWithRedirect, isAuthenticated } = useAuth0();
 
   return (
     <Container
@@ -32,14 +32,16 @@ export const Login: React.FC = () => {
           }}
         />
 
-        <Button
-          style={{ width: '240px' }}
-          size="large"
-          variant="contained"
-          onClick={() => loginWithRedirect()}
-        >
-          Sign in
-        </Button>
+        {!isAuthenticated && (
+          <Button
+            style={{ width: '240px' }}
+            size="large"
+            variant="contained"
+            onClick={() => loginWithRedirect()}
+          >
+            Sign in
+          </Button>
+        )}
         <Typography align="center" color={'text.secondary'} fontSize="12px">
           Powered by
           <img
