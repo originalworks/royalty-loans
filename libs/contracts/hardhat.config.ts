@@ -17,17 +17,14 @@ const config: HardhatUserConfig = {
     settings: { evmVersion: 'cancun' },
   },
   networks: {
-    holesky: {
-      url: `${process.env.RPC_URL}`,
-      kmsKeyId: `${process.env.KMS_KEY_ID_DEV}`,
+    base_sepolia: {
+      url: `https://base-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,
+      kmsKeyId: `${process.env.KMS_KEY_ID}`,
+      minMaxPriorityFeePerGas: 1500000000,
     },
-    sepolia: {
-      url: `${process.env.RPC_URL}`,
-      kmsKeyId: `${process.env.KMS_KEY_ID_DEV}`,
-    },
-    chiado: {
-      url: `${process.env.RPC_URL}`,
-      kmsKeyId: `${process.env.KMS_KEY_ID_DEV}`,
+    base: {
+      url: `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,
+      kmsKeyId: `${process.env.KMS_KEY_ID}`,
     },
   },
   etherscan: {
@@ -35,7 +32,18 @@ const config: HardhatUserConfig = {
       holesky: process.env.ETHERSCAN_API_KEY || '',
       sepolia: process.env.ETHERSCAN_API_KEY || '',
       chiado: process.env.BLOCKSCOUT_API_KEY || '',
+      base_sepolia: process.env.BASESCAN_API_KEY ?? '',
     },
+    customChains: [
+      {
+        network: 'base_sepolia',
+        chainId: 84532,
+        urls: {
+          apiURL: 'https://api-sepolia.basescan.org/api',
+          browserURL: 'https://sepolia-explorer.base.org',
+        },
+      },
+    ],
   },
   typechain: {
     outDir: 'typechain',
