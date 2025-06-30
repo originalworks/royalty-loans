@@ -5,15 +5,17 @@
     "types": [
       "node"
     ],
-    "rootDir": "src",
+    "rootDir": ".",
     "tsBuildInfoFile": "dist/tsconfig.app.tsbuildinfo",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "target": "es2021",
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    "strictPropertyInitialization": false
   },
   "include": [
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "tests"
   ],
   "exclude": [
     "out-tsc",
