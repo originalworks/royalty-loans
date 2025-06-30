@@ -18,6 +18,15 @@ export const LoanOffersList = () => {
   const columns = React.useMemo<GridColDef[]>(
     () => [
       {
+        field: 'id',
+        headerName: 'ID',
+        type: 'string',
+        minWidth: 100,
+        display: 'flex',
+        align: 'left',
+        headerAlign: 'left',
+      },
+      {
         field: 'loanContract',
         headerName: 'Contract Address',
         type: 'string',
