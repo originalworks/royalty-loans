@@ -43,7 +43,7 @@ import {
 import { Login } from './pages/login';
 import { Header } from './components';
 import { AppIcon } from './components/app-icon';
-import { LoanOffersList } from './pages/loan-offers';
+import { LoanOfferShow, LoanOffersList } from './pages/loan-offers';
 import { BASE_SEPOLIA_SUBGRAPH_URL } from './config/config';
 import { ColorModeContextProvider } from './contexts/color-mode';
 
@@ -198,7 +198,7 @@ function App() {
                     />
                     <Route path="/loan-offers">
                       <Route index element={<LoanOffersList />} />
-                      {/*<Route path="show/:id" element={<BlogPostShow />} />*/}
+                      <Route path="show/:id" element={<LoanOfferShow />} />
                     </Route>
                     <Route path="/blog-posts">
                       <Route index element={<BlogPostList />} />
