@@ -37,9 +37,12 @@
     "@refinedev/nestjsx-crud": "^5.0.1",
     "@refinedev/react-hook-form": "^4.8.14",
     "@refinedev/react-router": "^1.0.0",
+    "@tanstack/react-query": "^5.81.2",
+    "@wagmi/connectors": "^5.8.5",
     "axios": "^1.6.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
+    "connectkit": "^1.9.1",
     "ethers": "^6.14.3",
     "factory-girl": "^5.0.4",
     "jwks-rsa": "^3.2.0",
@@ -54,7 +57,9 @@
     "react-router": "^7.0.2",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.0",
-    "typeorm": "^0.3.25"
+    "typeorm": "^0.3.25",
+    "viem": "^2.31.4",
+    "wagmi": "^2.15.6"
   },
   "devDependencies": {
     "@emotion/babel-plugin": "11.11.0",
@@ -125,6 +130,9 @@
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.19.0",
     "webpack-cli": "^5.1.4"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-darwin-x64": "^4.0.0"
   },
   "browserslist": {
     "production": [

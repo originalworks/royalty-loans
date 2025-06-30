@@ -1,6 +1,6 @@
-import { Box, TextField } from "@mui/material";
-import { Create } from "@refinedev/mui";
-import { useForm } from "@refinedev/react-hook-form";
+import { Create } from '@refinedev/mui';
+import { Box, TextField } from '@mui/material';
+import { useForm } from '@refinedev/react-hook-form';
 
 export const CategoryCreate = () => {
   const {
@@ -14,20 +14,22 @@ export const CategoryCreate = () => {
     <Create isLoading={formLoading} saveButtonProps={saveButtonProps}>
       <Box
         component="form"
-        sx={{ display: "flex", flexDirection: "column" }}
+        sx={{ display: 'flex', flexDirection: 'column' }}
         autoComplete="off"
       >
         <TextField
-          {...register("title", {
-            required: "This field is required",
+          {...register('title', {
+            required: 'This field is required',
           })}
           error={!!(errors as any)?.title}
           helperText={(errors as any)?.title?.message}
           margin="normal"
           fullWidth
-          InputLabelProps={{ shrink: true }}
+          slotProps={{
+            inputLabel: { shrink: true },
+          }}
           type="text"
-          label={"Title"}
+          label={'Title'}
           name="title"
         />
       </Box>

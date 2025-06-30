@@ -1,43 +1,46 @@
 import React, {
-  PropsWithChildren,
-  createContext,
-  useEffect,
   useState,
-} from "react";
-import { ThemeProvider } from "@mui/material/styles";
-import { RefineThemes } from "@refinedev/mui";
+  useEffect,
+  createContext,
+  PropsWithChildren,
+} from 'react';
+
+import { RefineThemes } from '@refinedev/mui';
+import { ThemeProvider } from '@mui/material/styles';
+
+export type Mode = 'light' | 'dark';
 
 type ColorModeContextType = {
-  mode: string;
+  mode: Mode;
   setMode: () => void;
 };
 
 export const ColorModeContext = createContext<ColorModeContextType>(
-  {} as ColorModeContextType
+  {} as ColorModeContextType,
 );
 
-export const ColorModeContextProvider: React.FC<PropsWithChildren> = ({
+export const ColorModeContextProvider: React.FC<PropsWithChildren<unknown>> = ({
   children,
 }) => {
-  const colorModeFromLocalStorage = localStorage.getItem("colorMode");
+  const colorModeFromLocalStorage = localStorage.getItem('colorMode') as Mode;
   const isSystemPreferenceDark = window?.matchMedia(
-    "(prefers-color-scheme: dark)"
+    '(prefers-color-scheme: dark)',
   ).matches;
 
-  const systemPreference = isSystemPreferenceDark ? "dark" : "light";
+  const systemPreference: Mode = isSystemPreferenceDark ? 'dark' : 'light';
   const [mode, setMode] = useState(
-    colorModeFromLocalStorage || systemPreference
+    colorModeFromLocalStorage || systemPreference,
   );
 
   useEffect(() => {
-    window.localStorage.setItem("colorMode", mode);
+    window.localStorage.setItem('colorMode', mode);
   }, [mode]);
 
   const setColorMode = () => {
-    if (mode === "light") {
-      setMode("dark");
+    if (mode === 'light') {
+      setMode('dark');
     } else {
-      setMode("light");
+      setMode('light');
     }
   };
 
@@ -50,7 +53,7 @@ export const ColorModeContextProvider: React.FC<PropsWithChildren> = ({
     >
       <ThemeProvider
         // you can change the theme colors here. example: mode === "light" ? RefineThemes.Magenta : RefineThemes.MagentaDark
-        theme={mode === "light" ? RefineThemes.Blue : RefineThemes.BlueDark}
+        theme={mode === 'light' ? RefineThemes.Blue : RefineThemes.BlueDark}
       >
         {children}
       </ThemeProvider>
