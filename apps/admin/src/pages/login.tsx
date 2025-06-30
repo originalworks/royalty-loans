@@ -1,10 +1,11 @@
+import React from 'react';
+
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import { useAuth0 } from '@auth0/auth0-react';
+import { ThemedTitleV2 } from '@refinedev/mui';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
-import { ThemedTitleV2 } from '@refinedev/mui';
-
-import { useAuth0 } from '@auth0/auth0-react';
 
 export const Login: React.FC = () => {
   const { loginWithRedirect } = useAuth0();

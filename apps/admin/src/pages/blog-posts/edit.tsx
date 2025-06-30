@@ -1,9 +1,9 @@
-import { Autocomplete, Box, Select, TextField } from "@mui/material";
-import MenuItem from "@mui/material/MenuItem";
-import { Edit, useAutocomplete } from "@refinedev/mui";
-import { useForm } from "@refinedev/react-hook-form";
-import React from "react";
-import { Controller } from "react-hook-form";
+import { Controller } from 'react-hook-form';
+
+import MenuItem from '@mui/material/MenuItem';
+import { useForm } from '@refinedev/react-hook-form';
+import { Edit, useAutocomplete } from '@refinedev/mui';
+import { Autocomplete, Box, Select, TextField } from '@mui/material';
 
 export const BlogPostEdit = () => {
   const {
@@ -17,7 +17,7 @@ export const BlogPostEdit = () => {
   const blogPostsData = queryResult?.data?.data;
 
   const { autocompleteProps: categoryAutocompleteProps } = useAutocomplete({
-    resource: "categories",
+    resource: 'categories',
     defaultValue: blogPostsData?.category?.id,
   });
 
@@ -25,41 +25,44 @@ export const BlogPostEdit = () => {
     <Edit isLoading={formLoading} saveButtonProps={saveButtonProps}>
       <Box
         component="form"
-        sx={{ display: "flex", flexDirection: "column" }}
+        sx={{ display: 'flex', flexDirection: 'column' }}
         autoComplete="off"
       >
         <TextField
-          {...register("title", {
-            required: "This field is required",
+          {...register('title', {
+            required: 'This field is required',
           })}
           error={!!(errors as any)?.title}
           helperText={(errors as any)?.title?.message}
           margin="normal"
           fullWidth
-          InputLabelProps={{ shrink: true }}
+          slotProps={{
+            inputLabel: { shrink: true },
+          }}
           type="text"
-          label={"Title"}
+          label={'Title'}
           name="title"
         />
         <TextField
-          {...register("content", {
-            required: "This field is required",
+          {...register('content', {
+            required: 'This field is required',
           })}
           error={!!(errors as any)?.content}
           helperText={(errors as any)?.content?.message}
           margin="normal"
           fullWidth
-          InputLabelProps={{ shrink: true }}
+          slotProps={{
+            inputLabel: { shrink: true },
+          }}
           multiline
-          label={"Content"}
+          label={'Content'}
           name="content"
           rows={4}
         />
         <Controller
           control={control}
-          name={"category.id"}
-          rules={{ required: "This field is required" }}
-          // eslint-disable-next-line
+          name={'category.id'}
+          rules={{ required: 'This field is required' }}
           defaultValue={null as any}
           render={({ field }) => (
             <Autocomplete
@@ -72,18 +75,18 @@ export const BlogPostEdit = () => {
                 return (
                   categoryAutocompleteProps?.options?.find((p) => {
                     const itemId =
-                      typeof item === "object"
+                      typeof item === 'object'
                         ? item?.id?.toString()
                         : item?.toString();
                     const pId = p?.id?.toString();
                     return itemId === pId;
-                  })?.title ?? ""
+                  })?.title ?? ''
                 );
               }}
               isOptionEqualToValue={(option, value) => {
                 const optionId = option?.id?.toString();
                 const valueId =
-                  typeof value === "object"
+                  typeof value === 'object'
                     ? value?.id?.toString()
                     : value?.toString();
                 return value === undefined || optionId === valueId;
@@ -91,7 +94,7 @@ export const BlogPostEdit = () => {
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  label={"Category"}
+                  label={'Category'}
                   margin="normal"
                   variant="outlined"
                   error={!!(errors as any)?.category?.id}
@@ -109,8 +112,8 @@ export const BlogPostEdit = () => {
             return (
               <Select
                 {...field}
-                value={field?.value || "draft"}
-                label={"Status"}
+                value={field?.value || 'draft'}
+                label={'Status'}
               >
                 <MenuItem value="draft">Draft</MenuItem>
                 <MenuItem value="published">Published</MenuItem>
