@@ -10,7 +10,8 @@
     "contracts:test": "nx run contracts:test",
     "contracts:compile": "nx run contracts:compile",
     "subgraph:codegen": "nx run subgraph:codegen",
-    "subgraph:build": "nx run subgraph:build",
+    "subgraph:build-sepolia": "nx run subgraph:build --network base-sepolia",
+    "subgraph:build-base": "nx run subgraph:build --network base",
     "subgraph:deploy": "nx run subgraph:deploy",
     "subgraph:test": "nx run subgraph:test"
   },
