@@ -37,6 +37,14 @@ import { Login } from './pages/login';
 import { Header } from './components';
 import { AppIcon } from './components/app-icon';
 import { ColorModeContextProvider } from './contexts/color-mode';
+import { Client, fetchExchange } from '@urql/core';
+import createDataProvider from '@refinedev/graphql';
+
+export const API_URL = 'https://api.nestjs-query.refine.dev/graphql';
+
+const gqlClient = new Client({ url: API_URL, exchanges: [fetchExchange] });
+
+const graphQlDataProvider = createDataProvider(gqlClient);
 
 function App() {
   const { isLoading, user, logout, getIdTokenClaims } = useAuth0();
@@ -115,7 +123,10 @@ function App() {
           <RefineSnackbarProvider>
             <DevtoolsProvider>
               <Refine
-                dataProvider={dataProvider}
+                dataProvider={{
+                  default: dataProvider,
+                  graphQl: graphQlDataProvider,
+                }}
                 notificationProvider={useNotificationProvider}
                 authProvider={authProvider}
                 routerProvider={routerBindings}

@@ -10,6 +10,13 @@
           "outputPath": "dist/apps/admin",
           "configFile": "apps/admin/vite.config.ts"
         }
+      },
+      "codegen": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "graphql-codegen",
+          "cwd": "apps/admin"
+        }
       }
     }
   }
