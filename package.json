@@ -5,6 +5,7 @@
   "scripts": {
     "backend:start": "nx run backend:serve",
     "backend:build": "nx run backend:build",
+    "backend:test": "nx run backend:test",
     "admin:start": "nx run admin:serve",
     "admin:build": "nx run admin:build",
     "contracts:test": "nx run contracts:test",
@@ -13,6 +14,8 @@
   "private": true,
   "dependencies": {
     "@auth0/auth0-react": "^1.5.0",
+    "@dataui/crud": "^5.3.4",
+    "@dataui/crud-typeorm": "^5.3.4",
     "@emotion/react": "^11.8.2",
     "@emotion/styled": "^11.8.1",
     "@mui/icons-material": "^6.1.6",
@@ -25,6 +28,7 @@
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^10.0.2",
+    "@nestjs/typeorm": "^11.0.0",
     "@refinedev/cli": "^2.16.21",
     "@refinedev/core": "^4.47.1",
     "@refinedev/devtools": "^1.1.32",
@@ -33,17 +37,29 @@
     "@refinedev/nestjsx-crud": "^5.0.1",
     "@refinedev/react-hook-form": "^4.8.14",
     "@refinedev/react-router": "^1.0.0",
+    "@tanstack/react-query": "^5.81.2",
+    "@wagmi/connectors": "^5.8.5",
     "axios": "^1.6.2",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.2",
+    "connectkit": "^1.9.1",
     "ethers": "^6.14.3",
+    "factory-girl": "^5.0.4",
     "jwks-rsa": "^3.2.0",
+    "nestjs-pino": "^4.4.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "pg": "^8.16.2",
+    "pino-http": "^10.5.0",
     "react": "^18.0.0",
     "react-dom": "18.0.0",
     "react-hook-form": "^7.30.0",
     "react-router": "^7.0.2",
     "reflect-metadata": "^0.1.13",
-    "rxjs": "^7.8.0"
+    "rxjs": "^7.8.0",
+    "typeorm": "^0.3.25",
+    "viem": "^2.31.4",
+    "wagmi": "^2.15.6"
   },
   "devDependencies": {
     "@emotion/babel-plugin": "11.11.0",
@@ -78,12 +94,14 @@
     "@testing-library/react": "16.1.0",
     "@typechain/ethers-v6": "^0.5.1",
     "@typechain/hardhat": "^9.1.0",
+    "@types/factory-girl": "^5.0.12",
     "@types/jest": "^29.5.12",
     "@types/mocha": "^10.0.10",
     "@types/node": "^20.0.0",
     "@types/passport-jwt": "^4.0.1",
     "@types/react": "18.0.0",
     "@types/react-dom": "18.0.0",
+    "@types/supertest": "^6.0.3",
     "@typescript-eslint/eslint-plugin": "^8.33.1",
     "@typescript-eslint/parser": "^8.33.1",
     "@vitejs/plugin-react": "^4.2.0",
@@ -104,6 +122,7 @@
     "jsdom": "~22.1.0",
     "nx": "21.1.2",
     "prettier": "^3.5.3",
+    "supertest": "^7.1.1",
     "ts-jest": "^29.1.0",
     "ts-node": "^10.9.2",
     "tslib": "^2.3.0",
@@ -111,6 +130,9 @@
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.19.0",
     "webpack-cli": "^5.1.4"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-darwin-x64": "^4.0.0"
   },
   "browserslist": {
     "production": [
