@@ -8,30 +8,11 @@ import {
   useDataGrid,
   DeleteButton,
 } from '@refinedev/mui';
-import { useList, useMany } from '@refinedev/core';
+import { useMany } from '@refinedev/core';
 import { Typography } from '@mui/material';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
-import { POSTS_LIST_QUERY } from './queries';
 
 export const BlogPostList = () => {
-  const { data } = useList({
-    resource: 'blogPosts',
-    meta: {
-      gqlQuery: POSTS_LIST_QUERY,
-    },
-    dataProviderName: 'graphQl',
-    queryOptions: {
-      retry(failureCount, error) {
-        console.log('error', error);
-        if (error?.message.includes('Network Error') && failureCount <= 3)
-          return true;
-        return false;
-      },
-    },
-  });
-
-  console.log('data', data);
-
   const { dataGridProps } = useDataGrid({});
 
   const { data: categoryData, isLoading: categoryIsLoading } = useMany({

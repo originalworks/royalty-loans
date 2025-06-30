@@ -1,7 +1,7 @@
 import type { IGraphQLConfig } from 'graphql-config';
 
 const config: IGraphQLConfig = {
-  schema: 'https://api.nestjs-query.refine.dev/graphql',
+  schema: process.env.VITE_BASE_SEPOLIA_SUBGRAPH_URL,
   extensions: {
     codegen: {
       hooks: {
