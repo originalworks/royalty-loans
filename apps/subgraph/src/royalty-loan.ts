@@ -4,7 +4,7 @@ import {
   LoanContract,
   LoanProvided,
   InitializedLoan,
-  LoanPartialyRepaid
+  LoanPartialyRepaid,
 } from '../generated/schema';
 import {
   LoanRepaid as LoanRepaidEvent,

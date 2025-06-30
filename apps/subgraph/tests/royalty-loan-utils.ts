@@ -1,5 +1,7 @@
-import {  newMockEvent } from 'matchstick-as';
+import { newMockEvent } from 'matchstick-as';
+
 import { ethereum, BigInt } from '@graphprotocol/graph-ts';
+
 import { Initialized } from '../generated/templates/RoyaltyLoan/RoyaltyLoan';
 
 export function createInitializedEvent(version: BigInt): Initialized {

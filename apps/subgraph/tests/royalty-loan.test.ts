@@ -1,11 +1,7 @@
-import {
-  test,
-  assert,
-  describe,
-  afterEach,
-  clearStore,
-} from 'matchstick-as';
+import { test, assert, describe, afterEach, clearStore } from 'matchstick-as';
+
 import { BigInt } from '@graphprotocol/graph-ts';
+
 import { handleInitialized } from '../src/royalty-loan';
 import { createInitializedEvent } from './royalty-loan-utils';
 
@@ -14,8 +10,8 @@ import { createInitializedEvent } from './royalty-loan-utils';
 
 describe('Describe entity assertions', () => {
   afterEach(() => {
-    clearStore()
-  })
+    clearStore();
+  });
 
   // For more test scenarios, see:
   // https://thegraph.com/docs/en/subgraphs/developing/creating/unit-testing-framework/#write-a-unit-test
