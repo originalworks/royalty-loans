@@ -1,13 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
-// import { Logger } from 'nestjs-pino';
 import { testDbConfig } from './config/dbConfig';
 import { AppModule } from './app.module';
+import { Logger } from 'nestjs-pino';
 
 const createApp = (appInstance: NestExpressApplication) => {
   appInstance.enableCors();
-  // appInstance.useLogger(appInstance.get(Logger));
+  appInstance.useLogger(appInstance.get(Logger));
 
   return appInstance.useGlobalPipes(
     new ValidationPipe({
