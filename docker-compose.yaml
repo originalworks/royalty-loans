@@ -37,12 +37,11 @@ services:
       ENVIRONMENT: local
     command: >
       sh -c "
-        echo '🛠 Building app...' &&
-        npm run build &&
         echo '📦 Running migrations...' &&
-        npm run migration:run &&
+        npx nx run backend:esbuild && 
+        npx nx run backend:typeorm-migration-run &&
         echo '🚀 Starting local app...' &&
-        npm run start:dev
+        npx nx run backend:serve
       "
   
   db:
