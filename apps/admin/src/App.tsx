@@ -43,22 +43,28 @@ import {
 import { Login } from './pages/login';
 import { Header } from './components';
 import { AppIcon } from './components/app-icon';
-import { LoanOfferShow, LoanOffersList } from './pages/loan-offers';
-import { BASE_SEPOLIA_SUBGRAPH_URL } from './config/config';
 import { ColorModeContextProvider } from './contexts/color-mode';
+import { LoanOfferShow, LoanOffersList } from './pages/loan-offers';
+import { BASE_SUBGRAPH_URL, BASE_SEPOLIA_SUBGRAPH_URL } from './config/config';
 
-const gqlClient = new Client({
+const gqlBaseClient = new Client({
+  url: BASE_SUBGRAPH_URL,
+  exchanges: [fetchExchange],
+});
+
+const gqlBaseSepoliaClient = new Client({
   url: BASE_SEPOLIA_SUBGRAPH_URL,
   exchanges: [fetchExchange],
 });
 
-const graphQlDataProvider = createDataProvider(gqlClient, {
-  getList: {
-    dataMapper: (response: OperationResult<any>, params: GetListParams) => {
-      return response.data?.[params.resource];
+const gqlDataProvider = (client: Client) =>
+  createDataProvider(client, {
+    getList: {
+      dataMapper: (response: OperationResult<any>, params: GetListParams) => {
+        return response.data?.[params.resource];
+      },
     },
-  },
-});
+  });
 
 function App() {
   const { isLoading, user, logout, getIdTokenClaims } = useAuth0();
@@ -139,7 +145,8 @@ function App() {
               <Refine
                 dataProvider={{
                   default: dataProvider,
-                  graphQl: graphQlDataProvider,
+                  graphQlBase: gqlDataProvider(gqlBaseClient),
+                  graphQlBaseSepolia: gqlDataProvider(gqlBaseSepoliaClient),
                 }}
                 notificationProvider={useNotificationProvider}
                 authProvider={authProvider}
