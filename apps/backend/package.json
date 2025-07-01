@@ -44,6 +44,39 @@
         "options": {
           "passWithNoTests": true
         }
+      },
+      "typeorm": {
+        "executor": "nx:run-commands",
+        "outputs": [],
+        "options": {
+          "commands": [
+            {
+              "command": "TS_NODE_PROJECT=apps/backend/tsconfig.app.json node --require ts-node/register ./node_modules/typeorm/cli.js"
+            }
+          ]
+        }
+      },
+      "typeorm-migration-generate": {
+        "executor": "nx:run-commands",
+        "outputs": [],
+        "options": {
+          "commands": [
+            {
+              "command": "nx run backend:typeorm migration:generate apps/backend/src/migrations/{args.name} -d apps/backend/src/dataSource.ts --pretty"
+            }
+          ]
+        }
+      },
+      "typeorm-migration-run": {
+        "executor": "nx:run-commands",
+        "outputs": [],
+        "options": {
+          "commands": [
+            {
+              "command": "nx run backend:typeorm migration:run -d apps/backend/src/dataSource.ts"
+            }
+          ]
+        }
       }
     }
   }
