@@ -1,29 +1,5 @@
 import gql from 'graphql-tag';
 
-// export const LOAN_FACTORIES_LIST_QUERY = gql`
-//   query LoanFactoriesList {
-//     initializedFactories {
-//       id
-//       version
-//       blockNumber
-//       timestamp
-//       transactionHash
-//     }
-//   }
-// `;
-//
-// export const LOAN_FACTORY_SHOW_QUERY = gql`
-//   query LoanFactory($id: ID!) {
-//     initializedFactory(id: $id) {
-//       id
-//       version
-//       blockNumber
-//       timestamp
-//       transactionHash
-//     }
-//   }
-// `;
-
 export const LOAN_OFFERS_LIST_QUERY = gql`
   query LoanOffersList {
     loanContracts {

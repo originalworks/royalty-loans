@@ -1,0 +1,4 @@
+# Add files here to ignore them from prettier formatting
+src/config/*
+src/graphql/*
+src/generated/*

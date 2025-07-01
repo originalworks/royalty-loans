@@ -17,6 +17,13 @@
           "command": "graphql-codegen",
           "cwd": "apps/admin"
         }
+      },
+      "generate": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "wagmi generate",
+          "cwd": "apps/admin"
+        }
       }
     }
   }
