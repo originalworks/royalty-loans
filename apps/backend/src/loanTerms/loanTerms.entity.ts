@@ -25,7 +25,7 @@ export class LoanTerm {
   @Column({ type: 'bigint', nullable: false, transformer: bigintTransformer })
   maxLoanAmount: string;
 
-  @Column({ nullable: false })
+  @Column('decimal', { precision: 5, scale: 2 })
   ratio: number;
 
   @CreateDateColumn()
