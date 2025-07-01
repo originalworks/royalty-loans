@@ -8,27 +8,28 @@ const config: IGraphQLConfig = {
         afterOneFileWrite: ['eslint --fix', 'prettier --write'],
       },
       generates: {
-        'src/graphql/schema.types.ts': {
+        'src/generated/graphql/schema.types.ts': {
           plugins: ['typescript'],
           config: {
             skipTypename: true,
             enumsAsTypes: true,
           },
         },
-        'src/graphql/types.ts': {
-          preset: 'import-types',
-          documents: ['src/**/*.{ts,tsx}'],
-          plugins: ['typescript-operations'],
-          config: {
-            skipTypename: true,
-            enumsAsTypes: true,
-            preResolveTypes: false,
-            useTypeImports: true,
-          },
-          presetConfig: {
-            typesPath: './schema.types',
-          },
-        },
+        // Uncomment this if you need these types.
+        // 'src/generated/graphql/types.ts': {
+        //   preset: 'import-types',
+        //   documents: ['src/**/*.{ts,tsx}'],
+        //   plugins: ['typescript-operations'],
+        //   config: {
+        //     skipTypename: true,
+        //     enumsAsTypes: true,
+        //     preResolveTypes: false,
+        //     useTypeImports: true,
+        //   },
+        //   presetConfig: {
+        //     typesPath: './schema.types',
+        //   },
+        // },
       },
     },
   },

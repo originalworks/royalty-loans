@@ -4,9 +4,12 @@ import { Button } from '@mui/material';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { List, ShowButton, useDataGrid, DateField } from '@refinedev/mui';
 
+import { useProvideLoan } from '../../hooks/useProvideLoan';
 import { LOAN_OFFERS_LIST_QUERY } from './queries';
 
 export const LoanOffersList = () => {
+  const { isLoading, provideLoanFn } = useProvideLoan();
+
   const { dataGridProps } = useDataGrid({
     resource: 'loanContracts',
     meta: {
@@ -103,15 +106,22 @@ export const LoanOffersList = () => {
           return (
             <>
               <ShowButton hideText recordItemId={row.id} />
-              <Button size="large" variant="contained">
-                Accept Offer
-              </Button>
+              {row.status === 'pending' && (
+                <Button
+                  size="large"
+                  variant="contained"
+                  loading={isLoading === row.loanContract}
+                  onClick={() => provideLoanFn(row.loanContract)}
+                >
+                  Accept Offer
+                </Button>
+              )}
             </>
           );
         },
       },
     ],
-    [],
+    [isLoading, provideLoanFn],
   );
 
   return (
