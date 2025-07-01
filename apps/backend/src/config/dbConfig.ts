@@ -1,4 +1,5 @@
 import { DataSourceOptions } from 'typeorm';
+import { entities } from './entities';
 
 export const testDbConfig = (): DataSourceOptions => ({
   host: process.env.DB_HOST,
@@ -7,7 +8,7 @@ export const testDbConfig = (): DataSourceOptions => ({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
   type: 'postgres',
-  entities: ['src/**/**.entity.ts'],
+  entities,
   migrations: ['dist/migrations/*.js'],
   synchronize: true,
   dropSchema: true,
