@@ -8,6 +8,7 @@ import {
   GetLoanTermByCollateralTokenAddressParamDto,
   UpdateLoanTermsDto,
 } from './loanTerms.dto';
+import { Public } from '../auth/auth.decorator';
 
 @Crud({
   model: {
@@ -35,7 +36,7 @@ import {
 export class LoanTermsController implements CrudController<LoanTerm> {
   constructor(public service: LoanTermsService) {}
 
-  @UseGuards() // Bypass
+  @Public()
   @Get('collateral/:collateralTokenAddress')
   async getByWalletAddress(
     @Param() params: GetLoanTermByCollateralTokenAddressParamDto,
