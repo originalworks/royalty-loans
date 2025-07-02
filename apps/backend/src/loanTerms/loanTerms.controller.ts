@@ -1,12 +1,30 @@
-import { Controller, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { Crud, CrudController } from '@dataui/crud';
 import { Auth0Guard } from '../auth/auth.guard';
 import { LoanTerm } from './loanTerms.entity';
 import { LoanTermsService } from './loanTerms.service';
+import {
+  CreateLoanTermsDto,
+  GetLoanTermByCollateralTokenAddressParamDto,
+  UpdateLoanTermsDto,
+} from './loanTerms.dto';
 
 @Crud({
   model: {
     type: LoanTerm,
+  },
+  dto: {
+    create: CreateLoanTermsDto,
+    update: UpdateLoanTermsDto,
+  },
+  routes: {
+    only: [
+      'getOneBase',
+      'getManyBase',
+      'deleteOneBase',
+      'updateOneBase',
+      'createOneBase',
+    ],
   },
   query: {
     alwaysPaginate: true,
@@ -17,16 +35,13 @@ import { LoanTermsService } from './loanTerms.service';
 export class LoanTermsController implements CrudController<LoanTerm> {
   constructor(public service: LoanTermsService) {}
 
-  // get base(): CrudController<UpdateRequest> {
-  //   return this;
-  // }
-
-  // @Override('createOneBase')
-  // async createUpdateRequest(
-  //   @ParsedRequest() req: CrudRequest,
-  //   @ParsedBody() dto: CreateUpdateRequestDto,
-  //   @Body(ValidateInput) validatedBody: CreateUpdateRequestDto,
-  // ) {
-  //   return this.service.createUpdateRequest(dto);
-  // }
+  @UseGuards() // Bypass
+  @Get('collateral/:collateralTokenAddress')
+  async getByWalletAddress(
+    @Param() params: GetLoanTermByCollateralTokenAddressParamDto,
+  ) {
+    return this.service.findByCollateralTokenAddress(
+      params.collateralTokenAddress,
+    );
+  }
 }
