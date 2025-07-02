@@ -58,7 +58,7 @@ const gqlBaseSepoliaClient = new Client({
 const gqlDataProvider = (client: Client) =>
   createDataProvider(client, {
     getList: {
-      dataMapper: (response: OperationResult<any>, params: GetListParams) => {
+      dataMapper: (response: OperationResult, params: GetListParams) => {
         return response.data?.[params.resource];
       },
     },
