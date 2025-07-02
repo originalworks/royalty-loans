@@ -29,6 +29,11 @@ import { Client, fetchExchange, OperationResult } from '@urql/core';
 import { DevtoolsPanel, DevtoolsProvider } from '@refinedev/devtools';
 
 import {
+  BACKEND_URL,
+  BASE_SUBGRAPH_URL,
+  BASE_SEPOLIA_SUBGRAPH_URL,
+} from './config/config';
+import {
   BlogPostEdit,
   BlogPostList,
   BlogPostShow,
@@ -44,8 +49,8 @@ import { Login } from './pages/login';
 import { Header } from './components';
 import { AppIcon } from './components/app-icon';
 import { ColorModeContextProvider } from './contexts/color-mode';
+import { LoanTermsList, LoanTermsShow } from './pages/loan-terms';
 import { LoanOfferShow, LoanOffersList } from './pages/loan-offers';
-import { BASE_SUBGRAPH_URL, BASE_SEPOLIA_SUBGRAPH_URL } from './config/config';
 
 const gqlBaseClient = new Client({
   url: BASE_SUBGRAPH_URL,
@@ -67,11 +72,10 @@ const gqlDataProvider = (client: Client) =>
   });
 
 function App() {
-  const { isLoading, user, logout, getIdTokenClaims } = useAuth0();
+  const { isLoading, user, logout, getAccessTokenSilently } = useAuth0();
 
   const API_URL = 'https://api.nestjsx-crud.refine.dev';
   const dataProvider = nestjsxCrudDataProvider(API_URL);
-
   if (isLoading) {
     return <span>loading...</span>;
   }
@@ -94,10 +98,10 @@ function App() {
     },
     check: async () => {
       try {
-        const token = await getIdTokenClaims();
+        const token = await getAccessTokenSilently();
         if (token) {
           axios.defaults.headers.common = {
-            Authorization: `Bearer ${token.__raw}`,
+            Authorization: `Bearer ${token}`,
           };
           return {
             authenticated: true,
@@ -144,7 +148,7 @@ function App() {
             <DevtoolsProvider>
               <Refine
                 dataProvider={{
-                  default: dataProvider,
+                  default: nestjsxCrudDataProvider(BACKEND_URL, axios),
                   graphQlBase: gqlDataProvider(gqlBaseClient),
                   graphQlBaseSepolia: gqlDataProvider(gqlBaseSepoliaClient),
                 }}
@@ -153,9 +157,19 @@ function App() {
                 routerProvider={routerBindings}
                 resources={[
                   {
-                    name: 'loan_offers',
+                    name: 'loan-offers',
                     list: '/loan-offers',
+                    create: '/loan-offers/create',
+                    edit: '/loan-offers/edit/:id',
                     show: '/loan-offers/show/:id',
+                    meta: {
+                      canDelete: true,
+                    },
+                  },
+                  {
+                    name: 'loan-terms',
+                    list: '/loan-terms',
+                    show: '/loan-terms/show/:id',
                   },
                   {
                     name: 'blog_posts',
@@ -201,11 +215,15 @@ function App() {
                   >
                     <Route
                       index
-                      element={<NavigateToResource resource="blog_posts" />}
+                      element={<NavigateToResource resource="loan-offers" />}
                     />
                     <Route path="/loan-offers">
                       <Route index element={<LoanOffersList />} />
                       <Route path="show/:id" element={<LoanOfferShow />} />
+                    </Route>
+                    <Route path="/loan-terms">
+                      <Route index element={<LoanTermsList />} />
+                      <Route path="show/:id" element={<LoanTermsShow />} />
                     </Route>
                     <Route path="/blog-posts">
                       <Route index element={<BlogPostList />} />
