@@ -3,10 +3,23 @@ import { Crud, CrudController } from '@dataui/crud';
 import { Auth0Guard } from '../auth/auth.guard';
 import { LoanTerm } from './loanTerms.entity';
 import { LoanTermsService } from './loanTerms.service';
+import { CreateLoanTermsDto } from './loanTerms.dto';
 
 @Crud({
   model: {
     type: LoanTerm,
+  },
+  dto: {
+    create: CreateLoanTermsDto,
+  },
+  routes: {
+    only: [
+      'getOneBase',
+      'getManyBase',
+      'deleteOneBase',
+      'updateOneBase',
+      'createOneBase',
+    ],
   },
   query: {
     alwaysPaginate: true,
@@ -16,17 +29,4 @@ import { LoanTermsService } from './loanTerms.service';
 @Controller('loan-terms')
 export class LoanTermsController implements CrudController<LoanTerm> {
   constructor(public service: LoanTermsService) {}
-
-  // get base(): CrudController<UpdateRequest> {
-  //   return this;
-  // }
-
-  // @Override('createOneBase')
-  // async createUpdateRequest(
-  //   @ParsedRequest() req: CrudRequest,
-  //   @ParsedBody() dto: CreateUpdateRequestDto,
-  //   @Body(ValidateInput) validatedBody: CreateUpdateRequestDto,
-  // ) {
-  //   return this.service.createUpdateRequest(dto);
-  // }
 }
