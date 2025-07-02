@@ -1,13 +1,16 @@
 import React from 'react';
+import { useAccount } from 'wagmi';
 
 import { Button } from '@mui/material';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { List, ShowButton, useDataGrid, DateField } from '@refinedev/mui';
 
+import { ConnectButton } from '../../components';
 import { useProvideLoan, useGetDataProviderName } from '../../hooks';
 import { LOAN_OFFERS_LIST_QUERY } from './queries';
 
 export const LoanOffersList = () => {
+  const { isConnected } = useAccount();
   const dataProviderName = useGetDataProviderName();
   const { isLoading, provideLoanFn } = useProvideLoan();
 
@@ -107,22 +110,25 @@ export const LoanOffersList = () => {
           return (
             <>
               <ShowButton hideText recordItemId={row.id} />
-              {row.status === 'pending' && (
-                <Button
-                  size="large"
-                  variant="contained"
-                  loading={isLoading === row.loanContract}
-                  onClick={() => provideLoanFn(row.loanContract)}
-                >
-                  Provide Loan
-                </Button>
-              )}
+              {row.status === 'pending' &&
+                (isConnected ? (
+                  <Button
+                    size="large"
+                    variant="contained"
+                    loading={isLoading === row.loanContract}
+                    onClick={() => provideLoanFn(row.loanContract)}
+                  >
+                    Provide Loan
+                  </Button>
+                ) : (
+                  <ConnectButton />
+                ))}
             </>
           );
         },
       },
     ],
-    [isLoading, provideLoanFn],
+    [isConnected, isLoading, provideLoanFn],
   );
 
   return (
