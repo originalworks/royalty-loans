@@ -1,57 +1,54 @@
 import {
   Show,
   DateField,
-  MarkdownField,
   TextFieldComponent as TextField,
 } from '@refinedev/mui';
-import { useOne, useShow } from '@refinedev/core';
+import { useShow } from '@refinedev/core';
 import { Stack, Typography } from '@mui/material';
 
-export const BlogPostShow = () => {
+export const LoanTermsShow = () => {
   const { query } = useShow({});
-
   const { data, isLoading } = query;
 
   const record = data?.data;
-
-  const { data: categoryData, isLoading: categoryIsLoading } = useOne({
-    resource: 'categories',
-    id: record?.category?.id || '',
-    queryOptions: {
-      enabled: !!record,
-    },
-  });
 
   return (
     <Show isLoading={isLoading}>
       <Stack gap={1}>
         <Typography variant="body1" fontWeight="bold">
-          {'ID'}
+          ID
         </Typography>
         <TextField value={record?.id} />
 
         <Typography variant="body1" fontWeight="bold">
-          {'Title'}
+          Collateral Token
         </Typography>
-        <TextField value={record?.title} />
+        <TextField value={record?.collateralTokenAddress} />
 
         <Typography variant="body1" fontWeight="bold">
-          {'Content'}
+          Fee Ppm
         </Typography>
-        <MarkdownField value={record?.content} />
+        <TextField value={record?.feePercentagePpm} />
 
         <Typography variant="body1" fontWeight="bold">
-          {'Category'}
+          Max Loan Amount
         </Typography>
-        {categoryIsLoading ? 'Loading...' : categoryData?.data?.title}
+        <TextField value={record?.maxLoanAmount} />
+
         <Typography variant="body1" fontWeight="bold">
-          {'Status'}
+          Ratio
         </Typography>
-        <TextField value={record?.status} />
+        <TextField value={record?.ratio} />
+
         <Typography variant="body1" fontWeight="bold">
-          {'CreatedAt'}
+          Created At
         </Typography>
         <DateField value={record?.createdAt} />
+
+        <Typography variant="body1" fontWeight="bold">
+          Updated At
+        </Typography>
+        <DateField value={record?.updatedAt} />
       </Stack>
     </Show>
   );
