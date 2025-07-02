@@ -11,17 +11,7 @@ import {
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 
 export const LoanTermsList = () => {
-  const { dataGridProps } = useDataGrid({
-    pagination: {
-      mode: 'off',
-    },
-    filters: {
-      mode: 'off',
-    },
-    sorters: {
-      mode: 'off',
-    },
-  });
+  const { dataGridProps } = useDataGrid({});
 
   const columns = React.useMemo<GridColDef[]>(
     () => [
