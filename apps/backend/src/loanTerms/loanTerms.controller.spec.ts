@@ -5,10 +5,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Factory, getFactory } from '../../tests/factory';
 import { DataSource, Repository } from 'typeorm';
 import { LoanTerm } from './loanTerms.entity';
-import { testDbConfig } from '../config/dbConfig';
+import { dbConfigs } from '../config/dbConfig';
 import { LoanTermsModule } from './loanTerms.module';
 import { Auth0Guard } from '../auth/auth.guard';
+import { AuthModule } from '../auth/auth.module';
 import { clearDatabase } from '../../tests/typeorm.utils';
+import { ConfigModule } from '@nestjs/config';
 
 describe('AppController', () => {
   let factory: Factory;
@@ -19,7 +21,12 @@ describe('AppController', () => {
   beforeAll(async () => {
     const guardMock: CanActivate = { canActivate: jest.fn(() => true) };
     const module: TestingModule = await Test.createTestingModule({
-      imports: [TypeOrmModule.forRoot(testDbConfig()), LoanTermsModule],
+      imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
+        TypeOrmModule.forRoot(dbConfigs.test),
+        LoanTermsModule,
+        AuthModule,
+      ],
     })
       .overrideGuard(Auth0Guard)
       .useValue(guardMock)
@@ -52,8 +59,47 @@ describe('AppController', () => {
   });
 
   describe('Loan Terms Controller', () => {
-    it('Works', async () => {
+    it('GetOne', async () => {
+      await request(app.getHttpServer()).get('/loan-terms/1').expect(200);
+    });
+    it('GetMany', async () => {
       await request(app.getHttpServer()).get('/loan-terms').expect(200);
+    });
+    it('CreateOne', async () => {
+      await request(app.getHttpServer())
+        .post('/loan-terms/')
+        .set('Content-Type', 'application/json')
+        .send({
+          collateralTokenAddress: '0x388c818ca8b9251b393131c08a736a67ccb19297',
+          feePercentagePpm: '1000',
+          maxLoanAmount: '1000',
+          ratio: 1,
+        })
+        .expect(201);
+    });
+    it('UpdateOne', async () => {
+      await request(app.getHttpServer())
+        .patch('/loan-terms/1')
+        .set('Content-Type', 'application/json')
+        .send({
+          collateralTokenAddress: '0x388c818ca8b9251b393131c08a736a67ccb19297',
+          feePercentagePpm: '1000',
+          maxLoanAmount: '1000',
+          ratio: 1,
+        })
+        .expect(200);
+    });
+    it('DeleteOne', async () => {
+      await request(app.getHttpServer()).delete('/loan-terms/1').expect(200);
+    });
+
+    it('GetOneByCollateralTokenAddress', async () => {
+      const entry = await loanTermsRepo.findOneBy({ id: 5 });
+      const res = await request(app.getHttpServer())
+        .get(`/loan-terms/collateral/${entry?.collateralTokenAddress}`)
+        .expect(200);
+
+      expect(res.body.id).toEqual(5);
     });
   });
 });

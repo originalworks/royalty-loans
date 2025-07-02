@@ -1,0 +1,129 @@
+Transform: AWS::Serverless-2016-10-31
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  Environment:
+    Type: String
+  AutoPublishAlias:
+    Type: String
+  DBName:
+    Type: String
+  DbHost:
+    Type: AWS::SSM::Parameter::Value<String>
+  DbSecret:
+    Type: AWS::SSM::Parameter::Value<String>
+  RootDbName:
+    Type: AWS::SSM::Parameter::Value<String>
+  Auth0Issuer:
+    Type: AWS::SSM::Parameter::Value<String>
+  Auth0Audience:
+    Type: AWS::SSM::Parameter::Value<String>
+
+Globals:
+  Function:
+    Runtime: "nodejs22.x"
+    Timeout: 240
+    MemorySize: 512
+    Environment:
+      Variables:
+        ENVIRONMENT: !Ref Environment
+        NO_COLOR: true
+        DB_HOST: !Ref DbHost
+        DB_PORT: "5432"
+        DB_USER: !Join
+          - ""
+          - - "{{resolve:secretsmanager:"
+            - !Ref DbSecret
+            - ":SecretString:username}}"
+        DB_PASSWORD: !Join
+          - ""
+          - - "{{resolve:secretsmanager:"
+            - !Ref DbSecret
+            - ":SecretString:password}}"
+        DB_SYNCRONIZE: "false"
+        DB_DATABASE: !Ref DBName
+        AUTH0_ISSUER: !Ref Auth0Issuer
+        AUTH0_AUDIENCE: !Ref Auth0Audience
+
+Resources:
+  RoyaltyLoansRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+                - !Sub states.${AWS::Region}.amazonaws.com
+            Action: 
+              - "sts:AssumeRole"
+      Path: "/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Policies:
+        - PolicyName: StatesExecutionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                  - secretsmanager:GetSecretValue
+                Effect: Allow
+                Resource:
+                  - "*"
+              - Action:
+                  - codedeploy:*
+                Effect: Allow
+                Resource:
+                  - "*"
+
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: RoyaltyLoans
+      StageName: !Ref Environment
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+
+  NestJsApp:
+    Type: AWS::Serverless::Function
+    Properties:
+      Tracing: Active
+      CodeUri: ./royalty-loans.zip
+      Handler: out/royalty-loans/lambdaEntrypoint.app
+      MemorySize: 512
+      AutoPublishAlias: !Ref AutoPublishAlias
+      # ReservedConcurrentExecutions: 1
+      DeploymentPreference:
+        Type: AllAtOnce
+        Hooks:
+          PreTraffic: !Ref RunMigrations
+      Events:
+        NestJs:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /{whatever+}
+            Method: ANY
+      Role: !GetAtt RoyaltyLoansRole.Arn
+
+  RunMigrations:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "CodeDeployHook_RoyaltyLoans-${Environment}-RunMigrations"
+      CodeUri: ./royalty-loans.zip
+      Handler: out/royalty-loans/lambdaEntrypoint.runMigrations
+      Environment:
+        Variables:
+          ROOT_DB_NAME: !Ref RootDbName
+          SETTINGS_DEF_MODE: !Ref Environment
+      DeploymentPreference:
+        Enabled: false
+      Role: !GetAtt RoyaltyLoansRole.Arn
+
+Outputs:
+  ApiUrl:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/"

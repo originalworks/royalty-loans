@@ -4,9 +4,10 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import * as jwksRsa from 'jwks-rsa';
 import { ConfigService } from '@nestjs/config';
 import { IConfig } from '../config/config';
+import { AUTH0_OW_JWT } from './auth.const';
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
+export class JwtStrategy extends PassportStrategy(Strategy, AUTH0_OW_JWT) {
   constructor(private readonly configService: ConfigService<IConfig>) {
     const auth0IssuerUrl = configService.get('AUTH0_ISSUER');
     const auth0Audience = configService.get('AUTH0_AUDIENCE');
@@ -27,7 +28,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: any) {
     console.log(payload);
-    // You can add logic here to validate users against your database if needed
+
     return payload;
   }
 }
