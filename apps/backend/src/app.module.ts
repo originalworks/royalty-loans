@@ -5,6 +5,7 @@ import { PinoLoggerModule } from './pinoLogger/pinoLogger.module';
 import { DataSourceOptions } from 'typeorm';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoanTermsModule } from './loanTerms/loanTerms.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({})
 export class AppModule {
@@ -17,6 +18,7 @@ export class AppModule {
       TypeOrmModule.forRoot({ ...dbConfig }),
       PinoLoggerModule,
       LoanTermsModule,
+      AuthModule,
     ];
 
     return {
