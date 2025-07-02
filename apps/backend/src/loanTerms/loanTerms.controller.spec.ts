@@ -77,5 +77,29 @@ describe('AppController', () => {
         })
         .expect(201);
     });
+    it('UpdateOne', async () => {
+      await request(app.getHttpServer())
+        .patch('/loan-terms/1')
+        .set('Content-Type', 'application/json')
+        .send({
+          collateralTokenAddress: '0x388c818ca8b9251b393131c08a736a67ccb19297',
+          feePercentagePpm: '1000',
+          maxLoanAmount: '1000',
+          ratio: 1,
+        })
+        .expect(200);
+    });
+    it('DeleteOne', async () => {
+      await request(app.getHttpServer()).delete('/loan-terms/1').expect(200);
+    });
+
+    it('GetOneByCollateralTokenAddress', async () => {
+      const entry = await loanTermsRepo.findOneBy({ id: 5 });
+      const res = await request(app.getHttpServer())
+        .get(`/loan-terms/collateral/${entry?.collateralTokenAddress}`)
+        .expect(200);
+
+      expect(res.body.id).toEqual(5);
+    });
   });
 });

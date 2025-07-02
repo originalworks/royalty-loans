@@ -16,7 +16,7 @@ export class LoanTerm {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ nullable: false })
+  @Column({ nullable: false, unique: true })
   collateralTokenAddress: string;
 
   @Column({ type: 'bigint', nullable: false, transformer: bigintTransformer })

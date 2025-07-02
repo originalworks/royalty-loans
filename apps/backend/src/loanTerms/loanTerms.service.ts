@@ -14,4 +14,10 @@ export class LoanTermsService extends TypeOrmCrudService<LoanTerm> {
   ) {
     super(loanTermsRepo);
   }
+
+  async findByCollateralTokenAddress(
+    collateralTokenAddress: string,
+  ): Promise<LoanTerm> {
+    return await this.loanTermsRepo.findOneByOrFail({ collateralTokenAddress });
+  }
 }
