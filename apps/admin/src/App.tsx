@@ -7,6 +7,12 @@ import {
   RefineSnackbarProvider,
   useNotificationProvider,
 } from '@refinedev/mui';
+import {
+  Refine,
+  AuthProvider,
+  Authenticated,
+  GetListParams,
+} from '@refinedev/core';
 import routerBindings, {
   CatchAllNavigate,
   NavigateToResource,
@@ -15,11 +21,12 @@ import routerBindings, {
 } from '@refinedev/react-router';
 import { useAuth0 } from '@auth0/auth0-react';
 import CssBaseline from '@mui/material/CssBaseline';
+import createDataProvider from '@refinedev/graphql';
 import GlobalStyles from '@mui/material/GlobalStyles';
 import nestjsxCrudDataProvider from '@refinedev/nestjsx-crud';
 import { RefineKbar, RefineKbarProvider } from '@refinedev/kbar';
+import { Client, fetchExchange, OperationResult } from '@urql/core';
 import { DevtoolsPanel, DevtoolsProvider } from '@refinedev/devtools';
-import { Refine, AuthProvider, Authenticated } from '@refinedev/core';
 
 import {
   BlogPostEdit,
@@ -37,6 +44,27 @@ import { Login } from './pages/login';
 import { Header } from './components';
 import { AppIcon } from './components/app-icon';
 import { ColorModeContextProvider } from './contexts/color-mode';
+import { LoanOfferShow, LoanOffersList } from './pages/loan-offers';
+import { BASE_SUBGRAPH_URL, BASE_SEPOLIA_SUBGRAPH_URL } from './config/config';
+
+const gqlBaseClient = new Client({
+  url: BASE_SUBGRAPH_URL,
+  exchanges: [fetchExchange],
+});
+
+const gqlBaseSepoliaClient = new Client({
+  url: BASE_SEPOLIA_SUBGRAPH_URL,
+  exchanges: [fetchExchange],
+});
+
+const gqlDataProvider = (client: Client) =>
+  createDataProvider(client, {
+    getList: {
+      dataMapper: (response: OperationResult<any>, params: GetListParams) => {
+        return response.data?.[params.resource];
+      },
+    },
+  });
 
 function App() {
   const { isLoading, user, logout, getIdTokenClaims } = useAuth0();
@@ -115,11 +143,20 @@ function App() {
           <RefineSnackbarProvider>
             <DevtoolsProvider>
               <Refine
-                dataProvider={dataProvider}
+                dataProvider={{
+                  default: dataProvider,
+                  graphQlBase: gqlDataProvider(gqlBaseClient),
+                  graphQlBaseSepolia: gqlDataProvider(gqlBaseSepoliaClient),
+                }}
                 notificationProvider={useNotificationProvider}
                 authProvider={authProvider}
                 routerProvider={routerBindings}
                 resources={[
+                  {
+                    name: 'loan_offers',
+                    list: '/loan-offers',
+                    show: '/loan-offers/show/:id',
+                  },
                   {
                     name: 'blog_posts',
                     list: '/blog-posts',
@@ -166,6 +203,10 @@ function App() {
                       index
                       element={<NavigateToResource resource="blog_posts" />}
                     />
+                    <Route path="/loan-offers">
+                      <Route index element={<LoanOffersList />} />
+                      <Route path="show/:id" element={<LoanOfferShow />} />
+                    </Route>
                     <Route path="/blog-posts">
                       <Route index element={<BlogPostList />} />
                       <Route path="create" element={<BlogPostCreate />} />
