@@ -34,6 +34,7 @@ import {
   BASE_SEPOLIA_SUBGRAPH_URL,
 } from './config/config';
 import {
+  LoanTermEdit,
   LoanTermsList,
   LoanTermsShow,
   LoanTermCreate,
@@ -150,7 +151,7 @@ function App() {
                     name: 'loan-terms',
                     list: '/loan-terms',
                     create: '/loan-terms/create',
-                    // edit: '/loan-terms/edit/:id',
+                    edit: '/loan-terms/edit/:id',
                     show: '/loan-terms/show/:id',
                     meta: {
                       canDelete: true,
@@ -190,7 +191,7 @@ function App() {
                     <Route path="/loan-terms">
                       <Route index element={<LoanTermsList />} />
                       <Route path="create" element={<LoanTermCreate />} />
-                      {/*<Route path="edit/:id" element={<LoanTermEdit />} />*/}
+                      <Route path="edit/:id" element={<LoanTermEdit />} />
                       <Route path="show/:id" element={<LoanTermsShow />} />
                     </Route>
                     <Route path="/loan-offers">
