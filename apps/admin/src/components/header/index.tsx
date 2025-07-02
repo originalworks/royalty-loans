@@ -1,5 +1,4 @@
 import React, { useContext } from 'react';
-import { ConnectKitButton } from 'connectkit';
 
 import Stack from '@mui/material/Stack';
 import AppBar from '@mui/material/AppBar';
@@ -13,6 +12,7 @@ import LightModeOutlined from '@mui/icons-material/LightModeOutlined';
 import { HamburgerMenu, RefineThemedLayoutV2HeaderProps } from '@refinedev/mui';
 
 import { ColorModeContext } from '../../contexts/color-mode';
+import { ConnectButton } from '../connect-button';
 
 type IUser = {
   id: number;
@@ -77,7 +77,7 @@ export const Header: React.FC<RefineThemedLayoutV2HeaderProps> = ({
               </Stack>
             )}
 
-            <ConnectKitButton theme="auto" mode={mode} />
+            <ConnectButton />
           </Stack>
         </Stack>
       </Toolbar>
