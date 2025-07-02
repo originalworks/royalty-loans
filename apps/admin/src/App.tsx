@@ -49,7 +49,7 @@ import { Login } from './pages/login';
 import { Header } from './components';
 import { AppIcon } from './components/app-icon';
 import { ColorModeContextProvider } from './contexts/color-mode';
-import { LoanTermsList, LoanTermsShow } from './pages/loan-terms';
+import { LoanTermCreate, LoanTermsList, LoanTermsShow } from './pages/loan-terms';
 import { LoanOfferShow, LoanOffersList } from './pages/loan-offers';
 
 const gqlBaseClient = new Client({
@@ -159,17 +159,17 @@ function App() {
                   {
                     name: 'loan-offers',
                     list: '/loan-offers',
-                    create: '/loan-offers/create',
-                    edit: '/loan-offers/edit/:id',
                     show: '/loan-offers/show/:id',
-                    meta: {
-                      canDelete: true,
-                    },
                   },
                   {
                     name: 'loan-terms',
                     list: '/loan-terms',
+                    create: '/loan-terms/create',
+                    edit: '/loan-terms/edit/:id',
                     show: '/loan-terms/show/:id',
+                    meta: {
+                      canDelete: true,
+                    },
                   },
                   {
                     name: 'blog_posts',
@@ -223,6 +223,7 @@ function App() {
                     </Route>
                     <Route path="/loan-terms">
                       <Route index element={<LoanTermsList />} />
+                      <Route path="create" element={<LoanTermCreate />} />
                       <Route path="show/:id" element={<LoanTermsShow />} />
                     </Route>
                     <Route path="/blog-posts">
