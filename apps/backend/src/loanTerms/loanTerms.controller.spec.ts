@@ -59,8 +59,23 @@ describe('AppController', () => {
   });
 
   describe('Loan Terms Controller', () => {
-    it('Works', async () => {
+    it('GetOne', async () => {
+      await request(app.getHttpServer()).get('/loan-terms/1').expect(200);
+    });
+    it('GetMany', async () => {
       await request(app.getHttpServer()).get('/loan-terms').expect(200);
+    });
+    it('CreateOne', async () => {
+      await request(app.getHttpServer())
+        .post('/loan-terms/')
+        .set('Content-Type', 'application/json')
+        .send({
+          collateralTokenAddress: '0x388c818ca8b9251b393131c08a736a67ccb19297',
+          feePercentagePpm: '1000',
+          maxLoanAmount: '1000',
+          ratio: 1,
+        })
+        .expect(201);
     });
   });
 });
