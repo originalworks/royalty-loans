@@ -5,10 +5,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Factory, getFactory } from '../../tests/factory';
 import { DataSource, Repository } from 'typeorm';
 import { LoanTerm } from './loanTerms.entity';
-import { testDbConfig } from '../config/dbConfig';
+import { dbConfigs } from '../config/dbConfig';
 import { LoanTermsModule } from './loanTerms.module';
 import { Auth0Guard } from '../auth/auth.guard';
+import { AuthModule } from '../auth/auth.module';
 import { clearDatabase } from '../../tests/typeorm.utils';
+import { ConfigModule } from '@nestjs/config';
 
 describe('AppController', () => {
   let factory: Factory;
@@ -19,7 +21,12 @@ describe('AppController', () => {
   beforeAll(async () => {
     const guardMock: CanActivate = { canActivate: jest.fn(() => true) };
     const module: TestingModule = await Test.createTestingModule({
-      imports: [TypeOrmModule.forRoot(testDbConfig()), LoanTermsModule],
+      imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
+        TypeOrmModule.forRoot(dbConfigs.test),
+        LoanTermsModule,
+        AuthModule,
+      ],
     })
       .overrideGuard(Auth0Guard)
       .useValue(guardMock)
