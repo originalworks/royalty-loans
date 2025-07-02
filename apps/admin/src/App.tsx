@@ -34,22 +34,14 @@ import {
   BASE_SEPOLIA_SUBGRAPH_URL,
 } from './config/config';
 import {
-  BlogPostEdit,
-  BlogPostList,
-  BlogPostShow,
-  BlogPostCreate,
-} from './pages/blog-posts';
-import {
-  CategoryEdit,
-  CategoryList,
-  CategoryShow,
-  CategoryCreate,
-} from './pages/categories';
+  LoanTermsList,
+  LoanTermsShow,
+  LoanTermCreate,
+} from './pages/loan-terms';
 import { Login } from './pages/login';
 import { Header } from './components';
 import { AppIcon } from './components/app-icon';
 import { ColorModeContextProvider } from './contexts/color-mode';
-import { LoanTermCreate, LoanTermsList, LoanTermsShow } from './pages/loan-terms';
 import { LoanOfferShow, LoanOffersList } from './pages/loan-offers';
 
 const gqlBaseClient = new Client({
@@ -74,8 +66,6 @@ const gqlDataProvider = (client: Client) =>
 function App() {
   const { isLoading, user, logout, getAccessTokenSilently } = useAuth0();
 
-  const API_URL = 'https://api.nestjsx-crud.refine.dev';
-  const dataProvider = nestjsxCrudDataProvider(API_URL);
   if (isLoading) {
     return <span>loading...</span>;
   }
@@ -157,39 +147,19 @@ function App() {
                 routerProvider={routerBindings}
                 resources={[
                   {
-                    name: 'loan-offers',
-                    list: '/loan-offers',
-                    show: '/loan-offers/show/:id',
-                  },
-                  {
                     name: 'loan-terms',
                     list: '/loan-terms',
                     create: '/loan-terms/create',
-                    edit: '/loan-terms/edit/:id',
+                    // edit: '/loan-terms/edit/:id',
                     show: '/loan-terms/show/:id',
                     meta: {
                       canDelete: true,
                     },
                   },
                   {
-                    name: 'blog_posts',
-                    list: '/blog-posts',
-                    create: '/blog-posts/create',
-                    edit: '/blog-posts/edit/:id',
-                    show: '/blog-posts/show/:id',
-                    meta: {
-                      canDelete: true,
-                    },
-                  },
-                  {
-                    name: 'categories',
-                    list: '/categories',
-                    create: '/categories/create',
-                    edit: '/categories/edit/:id',
-                    show: '/categories/show/:id',
-                    meta: {
-                      canDelete: true,
-                    },
+                    name: 'loan-offers',
+                    list: '/loan-offers',
+                    show: '/loan-offers/show/:id',
                   },
                 ]}
                 options={{
@@ -215,28 +185,17 @@ function App() {
                   >
                     <Route
                       index
-                      element={<NavigateToResource resource="loan-offers" />}
+                      element={<NavigateToResource resource="loan-terms" />}
                     />
-                    <Route path="/loan-offers">
-                      <Route index element={<LoanOffersList />} />
-                      <Route path="show/:id" element={<LoanOfferShow />} />
-                    </Route>
                     <Route path="/loan-terms">
                       <Route index element={<LoanTermsList />} />
                       <Route path="create" element={<LoanTermCreate />} />
+                      {/*<Route path="edit/:id" element={<LoanTermEdit />} />*/}
                       <Route path="show/:id" element={<LoanTermsShow />} />
                     </Route>
-                    <Route path="/blog-posts">
-                      <Route index element={<BlogPostList />} />
-                      <Route path="create" element={<BlogPostCreate />} />
-                      <Route path="edit/:id" element={<BlogPostEdit />} />
-                      <Route path="show/:id" element={<BlogPostShow />} />
-                    </Route>
-                    <Route path="/categories">
-                      <Route index element={<CategoryList />} />
-                      <Route path="create" element={<CategoryCreate />} />
-                      <Route path="edit/:id" element={<CategoryEdit />} />
-                      <Route path="show/:id" element={<CategoryShow />} />
+                    <Route path="/loan-offers">
+                      <Route index element={<LoanOffersList />} />
+                      <Route path="show/:id" element={<LoanOfferShow />} />
                     </Route>
                     <Route path="*" element={<ErrorComponent />} />
                   </Route>
