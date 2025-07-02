@@ -17,6 +17,26 @@ export const LoanTermEdit = () => {
         autoComplete="off"
       >
         <TextField
+          {...register('collateralTokenAddress', {
+            required: 'This field is required',
+            pattern: {
+              value: /^0x[a-fA-F0-9]{40}$/,
+              message: 'Invalid Token Address',
+            },
+          })}
+          error={!!(errors as any)?.collateralTokenAddress}
+          helperText={(errors as any)?.collateralTokenAddress?.message}
+          margin="normal"
+          fullWidth
+          slotProps={{
+            inputLabel: { shrink: true },
+          }}
+          type="text"
+          label={'Collateral Token Address'}
+          name="collateralTokenAddress"
+        />
+
+        <TextField
           {...register('feePercentagePpm', {
             required: 'This field is required',
             min: {
