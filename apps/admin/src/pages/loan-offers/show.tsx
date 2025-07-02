@@ -65,7 +65,7 @@ export const LoanOfferShow = () => {
         <TextField value={record?.status} />
 
         <Typography variant="body1" fontWeight="bold">
-          CreatedAt
+          Created At
         </Typography>
         <DateField value={record?.timestamp * 1000} />
       </Stack>
