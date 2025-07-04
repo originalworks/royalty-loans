@@ -1,9 +1,14 @@
+import {
+  readContract,
+  writeContract,
+  waitForTransactionReceipt,
+} from 'wagmi/actions';
 import { useState } from 'react';
+import { MaxUint256 } from 'ethers';
 import { useNavigate } from 'react-router';
 import { useConfig, useAccount } from 'wagmi';
-import { waitForTransactionReceipt, writeContract } from 'wagmi/actions';
 
-import { royaltyLoanAbi } from '../generated/smart-contracts';
+import { erc20Abi, royaltyLoanAbi } from '../generated/smart-contracts';
 
 export const useProvideLoan = () => {
   const [isLoading, setIsLoading] = useState<string>();
@@ -18,6 +23,33 @@ export const useProvideLoan = () => {
 
       try {
         setIsLoading(loanContract);
+
+        const paymentToken = await readContract(config, {
+          chainId,
+          abi: royaltyLoanAbi,
+          address: loanContract,
+          functionName: 'paymentToken',
+          args: [],
+        });
+
+        if (!paymentToken) return;
+
+        const approveHash = await writeContract(config, {
+          chainId,
+          abi: erc20Abi,
+          address: paymentToken,
+          functionName: 'approve',
+          args: [loanContract, MaxUint256],
+        });
+
+        const { status: approveStatus } = await waitForTransactionReceipt(
+          config,
+          {
+            hash: approveHash,
+          },
+        );
+
+        if (approveStatus !== 'success') return;
 
         const hash = await writeContract(config, {
           chainId,
