@@ -7,7 +7,7 @@
       "build": {
         "executor": "@nx/vite:build",
         "options": {
-          "outputPath": "dist/apps/admin",
+          "outputPath": "apps/admin/dist",
           "configFile": "apps/admin/vite.config.ts"
         }
       },

@@ -1,0 +1,58 @@
+name: "Deploy Admin Panel to stage"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-admin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      
+      - name: Install AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y awscli
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.IAM_WORKFLOW_ROLE }}
+          role-duration-seconds: 1200
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend with env
+        run: |
+          echo "VITE_ENVIRONMENT=STAGE" >> .env
+          echo "VITE_AUTH0_ISSUER=${{ secrets.VITE_AUTH0_ISSUER }}" >> .env
+          echo "VITE_AUTH0_AUDIENCE=${{ secrets.VITE_AUTH0_AUDIENCE }}" >> .env
+          echo "VITE_AUTH0_CLIENT_ID=${{ secrets.VITE_AUTH0_CLIENT_ID }}" >> .env
+          echo "VITE_RPC_URL=${{ secrets.VITE_BASE_SEPOLIA_RPC_URL }}" >> .env
+          echo "VITE_BACKEND_URL=${{ secrets.VITE_BACKEND_URL_STAGE }}" >> .env
+          echo "VITE_SUBGRAPH_URL=${{ secrets.VITE_BASE_SEPOLIA_SUBGRAPH_URL }}" >> .env
+          npx nx run admin:build
+
+      - name: Deploy to S3
+        run: |
+          aws s3 sync apps/admin/dist s3://${{ secrets.STAGE_ADMIN_S3_BUCKET }} --delete
+      
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.STAGE_DISTRIBUTION_ID }} \
+            --paths "/*"
