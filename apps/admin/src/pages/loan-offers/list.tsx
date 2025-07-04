@@ -79,6 +79,7 @@ export const LoanOffersList = () => {
         display: 'flex',
         align: 'left',
         headerAlign: 'left',
+        description: '1% = 10000',
       },
       {
         field: 'status',

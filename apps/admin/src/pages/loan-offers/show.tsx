@@ -55,7 +55,7 @@ export const LoanOfferShow = () => {
         <TextField value={record?.loanAmount} />
 
         <Typography variant="body1" fontWeight="bold">
-          Fee Ppm
+          Fee Ppm (1% = 10000)
         </Typography>
         <TextField value={record?.feePpm} />
 
