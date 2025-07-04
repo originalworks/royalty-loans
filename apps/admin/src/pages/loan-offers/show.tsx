@@ -6,11 +6,9 @@ import {
 import { Stack, Typography } from '@mui/material';
 import { useShow, useParsed } from '@refinedev/core';
 
-import { useGetDataProviderName } from '../../hooks';
 import { LOAN_OFFER_SHOW_QUERY } from './queries';
 
 export const LoanOfferShow = () => {
-  const dataProviderName = useGetDataProviderName();
   const { id } = useParsed();
 
   const { query } = useShow({
@@ -19,7 +17,7 @@ export const LoanOfferShow = () => {
     meta: {
       gqlQuery: LOAN_OFFER_SHOW_QUERY,
     },
-    dataProviderName,
+    dataProviderName: 'graphQl',
   });
 
   const { data, isLoading } = query;
