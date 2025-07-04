@@ -5,13 +5,12 @@ import { Button } from '@mui/material';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { List, ShowButton, useDataGrid, DateField } from '@refinedev/mui';
 
+import { useProvideLoan } from '../../hooks';
 import { ConnectButton } from '../../components';
-import { useProvideLoan, useGetDataProviderName } from '../../hooks';
 import { LOAN_OFFERS_LIST_QUERY } from './queries';
 
 export const LoanOffersList = () => {
   const { isConnected } = useAccount();
-  const dataProviderName = useGetDataProviderName();
   const { isLoading, provideLoanFn } = useProvideLoan();
 
   const { dataGridProps } = useDataGrid({
@@ -19,7 +18,7 @@ export const LoanOffersList = () => {
     meta: {
       gqlQuery: LOAN_OFFERS_LIST_QUERY,
     },
-    dataProviderName,
+    dataProviderName: 'graphQl',
   });
 
   const columns = React.useMemo<GridColDef[]>(
@@ -79,6 +78,7 @@ export const LoanOffersList = () => {
         display: 'flex',
         align: 'left',
         headerAlign: 'left',
+        description: '1% = 10000',
       },
       {
         field: 'status',

@@ -26,7 +26,7 @@ export const LoanTermsShow = () => {
         <TextField value={record?.collateralTokenAddress} />
 
         <Typography variant="body1" fontWeight="bold">
-          Fee Ppm
+          Fee Ppm (1% = 10000)
         </Typography>
         <TextField value={record?.feePercentagePpm} />
 
