@@ -52,7 +52,7 @@ export const LoanTermEdit = () => {
             inputLabel: { shrink: true },
           }}
           type="number"
-          label={'Fee Percentage Ppm'}
+          label={'Fee Percentage Ppm (1% = 10000)'}
           name="feePercentagePpm"
         />
 
