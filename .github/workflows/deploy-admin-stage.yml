@@ -39,14 +39,12 @@ jobs:
       - name: Build frontend with env
         run: |
           echo "VITE_ENVIRONMENT=STAGE" >> .env
-          echo "VITE_BACKEND_URL=${{ secrets.VITE_BACKEND_URL_STAGE }}" >> .env
           echo "VITE_AUTH0_ISSUER=${{ secrets.VITE_AUTH0_ISSUER }}" >> .env
           echo "VITE_AUTH0_AUDIENCE=${{ secrets.VITE_AUTH0_AUDIENCE }}" >> .env
           echo "VITE_AUTH0_CLIENT_ID=${{ secrets.VITE_AUTH0_CLIENT_ID }}" >> .env
-          echo "VITE_BASE_RPC_URL=${{ secrets.VITE_BASE_RPC_URL }}" >> .env
-          echo "VITE_BASE_SEPOLIA_RPC_URL=${{ secrets.VITE_BASE_SEPOLIA_RPC_URL }}" >> .env
-          echo "VITE_BASE_SUBGRAPH_URL=${{ secrets.VITE_BASE_SUBGRAPH_URL }}" >> .env
-          echo "VITE_BASE_SEPOLIA_SUBGRAPH_URL=${{ secrets.VITE_BASE_SEPOLIA_SUBGRAPH_URL }}" >> .env
+          echo "VITE_RPC_URL=${{ secrets.VITE_BASE_SEPOLIA_RPC_URL }}" >> .env
+          echo "VITE_BACKEND_URL=${{ secrets.VITE_BACKEND_URL_STAGE }}" >> .env
+          echo "VITE_SUBGRAPH_URL=${{ secrets.VITE_BASE_SEPOLIA_SUBGRAPH_URL }}" >> .env
           npx nx run admin:build
 
       - name: Deploy to S3
