@@ -5,26 +5,40 @@ import { ConnectKitProvider, getDefaultConfig } from 'connectkit';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import { BASE_RPC_URL, BASE_SEPOLIA_RPC_URL } from './config/config';
+import { RPC_URL, ENVIRONMENT } from './config/config';
 
-const config = createConfig(
-  getDefaultConfig({
-    // Required App Info
-    appName: 'OW Admin',
-    walletConnectProjectId: 'ddf84945a65baaea510744142de8d6a6',
-    // Your dApps chains
-    chains: [baseSepolia, base],
-    transports: {
-      [base.id]: http(BASE_RPC_URL, {
-        batch: true,
-      }),
-      [baseSepolia.id]: http(BASE_SEPOLIA_RPC_URL, {
-        batch: true,
-      }),
-    },
-    enableFamily: false,
-  }),
-);
+const config =
+  ENVIRONMENT === 'PROD'
+    ? createConfig(
+        getDefaultConfig({
+          // Required App Info
+          appName: 'OW Admin',
+          walletConnectProjectId: 'ddf84945a65baaea510744142de8d6a6',
+          // Your dApps chains
+          chains: [base],
+          transports: {
+            [base.id]: http(RPC_URL, {
+              batch: true,
+            }),
+          },
+          enableFamily: false,
+        }),
+      )
+    : createConfig(
+        getDefaultConfig({
+          // Required App Info
+          appName: 'OW Admin',
+          walletConnectProjectId: 'ddf84945a65baaea510744142de8d6a6',
+          // Your dApps chains
+          chains: [baseSepolia],
+          transports: {
+            [baseSepolia.id]: http(RPC_URL, {
+              batch: true,
+            }),
+          },
+          enableFamily: false,
+        }),
+      );
 
 const queryClient = new QueryClient();
 
