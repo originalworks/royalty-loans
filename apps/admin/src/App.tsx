@@ -29,11 +29,6 @@ import { Client, fetchExchange, OperationResult } from '@urql/core';
 import { DevtoolsPanel, DevtoolsProvider } from '@refinedev/devtools';
 
 import {
-  BACKEND_URL,
-  BASE_SUBGRAPH_URL,
-  BASE_SEPOLIA_SUBGRAPH_URL,
-} from './config/config';
-import {
   LoanTermEdit,
   LoanTermsList,
   LoanTermsShow,
@@ -42,16 +37,12 @@ import {
 import { Login } from './pages/login';
 import { Header } from './components';
 import { AppIcon } from './components/app-icon';
+import { BACKEND_URL, SUBGRAPH_URL } from './config/config';
 import { ColorModeContextProvider } from './contexts/color-mode';
 import { LoanOfferShow, LoanOffersList } from './pages/loan-offers';
 
-const gqlBaseClient = new Client({
-  url: BASE_SUBGRAPH_URL,
-  exchanges: [fetchExchange],
-});
-
-const gqlBaseSepoliaClient = new Client({
-  url: BASE_SEPOLIA_SUBGRAPH_URL,
+const gqlClient = new Client({
+  url: SUBGRAPH_URL,
   exchanges: [fetchExchange],
 });
 
@@ -140,8 +131,7 @@ function App() {
               <Refine
                 dataProvider={{
                   default: nestjsxCrudDataProvider(BACKEND_URL, axios),
-                  graphQlBase: gqlDataProvider(gqlBaseClient),
-                  graphQlBaseSepolia: gqlDataProvider(gqlBaseSepoliaClient),
+                  graphQl: gqlDataProvider(gqlClient),
                 }}
                 notificationProvider={useNotificationProvider}
                 authProvider={authProvider}
