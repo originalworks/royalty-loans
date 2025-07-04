@@ -168,7 +168,7 @@ function App() {
                   warnWhenUnsavedChanges: true,
                   useNewQueryKeys: true,
                   projectId: '8GuJaC-Rnp2Zt-um5Kow',
-                  title: { text: 'Refine Project', icon: <AppIcon /> },
+                  title: { text: 'OW Admin', icon: <AppIcon /> },
                 }}
               >
                 <Routes>
