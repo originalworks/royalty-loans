@@ -51,6 +51,7 @@ export const LoanTermsList = () => {
         display: 'flex',
         align: 'left',
         headerAlign: 'left',
+        description: '1% = 10000',
       },
       {
         field: 'maxLoanAmount',
