@@ -10,13 +10,18 @@ permissions:
 jobs:
   deploy-admin:
     runs-on: ubuntu-latest
-    container:
-      image: public.ecr.aws/amazonlinux/amazonlinux:2023
     timeout-minutes: 30
 
     steps:
       - name: "Checkout"
         uses: actions/checkout@v4
+
+      - name: Install AWS CLI v2
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+          aws --version
       
       - name: Set up Node.js
         uses: actions/setup-node@v4
