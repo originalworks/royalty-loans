@@ -11,7 +11,7 @@ jobs:
   deploy-admin:
     runs-on: ubuntu-latest
     container:
-      image: amazonlinux:2
+      image: public.ecr.aws/amazonlinux/amazonlinux:2023
     timeout-minutes: 30
 
     steps:
@@ -21,7 +21,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
       
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
