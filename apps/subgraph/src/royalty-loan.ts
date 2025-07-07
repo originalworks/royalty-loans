@@ -48,6 +48,12 @@ export function handleLoanPartialyRepaid(event: LoanPartialyRepaidEvent): void {
   entity.timestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
   entity.save();
+
+  const loan = LoanContract.load(event.address);
+  if (loan !== null) {
+    loan.repaidAmount = loan.repaidAmount.plus(event.params.repaymentAmount);
+    loan.save();
+  }
 }
 
 export function handleLoanRepaid(event: LoanRepaidEvent): void {
@@ -62,6 +68,7 @@ export function handleLoanRepaid(event: LoanRepaidEvent): void {
 
   const loan = LoanContract.load(event.address);
   if (loan !== null) {
+    loan.repaidAmount = loan.repaidAmount.plus(event.params.repaymentAmount);
     loan.status = 'repaid';
     loan.save();
   }

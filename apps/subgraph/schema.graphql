@@ -14,6 +14,8 @@ type LoanContract @entity(immutable: false) {
   collateralTokenId: BigInt!
   collateralAmount: BigInt!
   loanAmount: BigInt!
+  recoupmentAmount: BigInt!
+  repaidAmount: BigInt!
   feePpm: BigInt!
   status: String! # pending / active / revoked / repaid
   timestamp: BigInt!
