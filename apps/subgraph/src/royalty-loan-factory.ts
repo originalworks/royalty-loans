@@ -1,3 +1,5 @@
+import { BigInt } from '@graphprotocol/graph-ts';
+
 import { RoyaltyLoan } from '../generated/templates';
 import {
   Initialized as InitializedEvent,
@@ -26,6 +28,11 @@ export function handleLoanContractCreated(
   entity.collateralTokenId = event.params.collateralTokenId;
   entity.collateralAmount = event.params.collateralAmount;
   entity.loanAmount = event.params.loanAmount;
+  const feePercentage = event.params.feePpm.div(BigInt.fromI32(1000000));
+  entity.recoupmentAmount = event.params.loanAmount.plus(
+    event.params.loanAmount.times(feePercentage),
+  );
+  entity.repaidAmount = BigInt.zero();
   entity.feePpm = event.params.feePpm;
   entity.status = 'pending';
   entity.timestamp = event.block.timestamp;
