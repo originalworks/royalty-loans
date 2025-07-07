@@ -6,7 +6,7 @@ type InitializedFactory @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
-type LoanContract @entity(immutable: true) {
+type LoanContract @entity(immutable: false) {
   id: Bytes!
   loanContract: Bytes! # address
   borrower: Bytes! # address
