@@ -2,7 +2,7 @@
   "Parameters": {
     "Environment": "stage",
     "AutoPublishAlias": "StageRoyaltyLoansBackend",
-    "DBName": "royalty-loans",
+    "DBName": "stage-royalty-loans",
     "DbHost": "/ow/stage/db/host",
     "DbSecret": "/ow/stage/db/secret-arn",
     "RootDbName": "/ow/stage/db/name",
