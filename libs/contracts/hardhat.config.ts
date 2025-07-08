@@ -25,6 +25,7 @@ const config: HardhatUserConfig = {
     base: {
       url: `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,
       kmsKeyId: `${process.env.KMS_KEY_ID}`,
+      timeout: 100000,
     },
   },
   etherscan: {
@@ -33,6 +34,7 @@ const config: HardhatUserConfig = {
       sepolia: process.env.ETHERSCAN_API_KEY || '',
       chiado: process.env.BLOCKSCOUT_API_KEY || '',
       base_sepolia: process.env.BASESCAN_API_KEY ?? '',
+      base: process.env.BASESCAN_API_KEY ?? '',
     },
     customChains: [
       {

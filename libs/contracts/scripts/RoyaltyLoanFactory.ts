@@ -5,6 +5,7 @@ import { getImplementationAddressFromProxy } from '@openzeppelin/upgrades-core';
 export const deployRoyaltyLoanFactory = async (
   deployer: Signer,
   whitelistAddress: string,
+  paymentTokenAddress: string,
 ) => {
   const RoyaltyLoan = await ethers.getContractFactory('RoyaltyLoan', deployer);
   const royaltyLoan = await (await RoyaltyLoan.deploy()).waitForDeployment();
@@ -17,12 +18,7 @@ export const deployRoyaltyLoanFactory = async (
 
   const royaltyLoanFactory = await upgrades.deployProxy(
     RoyaltyLoanFactory,
-    [
-      royaltyLoanTemplate,
-      whitelistAddress,
-      '0x46Bc2338a282383fe2585Ef5F0171E62FdCEf3B0',
-      '432000',
-    ],
+    [royaltyLoanTemplate, whitelistAddress, paymentTokenAddress, '432000'],
     {
       kind: 'uups',
     },
