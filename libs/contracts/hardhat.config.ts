@@ -34,6 +34,7 @@ const config: HardhatUserConfig = {
       sepolia: process.env.ETHERSCAN_API_KEY || '',
       chiado: process.env.BLOCKSCOUT_API_KEY || '',
       base_sepolia: process.env.BASESCAN_API_KEY ?? '',
+      base: process.env.BASESCAN_API_KEY ?? '',
     },
     customChains: [
       {
