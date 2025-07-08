@@ -1,5 +1,6 @@
-import React from 'react';
-import { useAccount } from 'wagmi';
+import { readContract } from 'wagmi/actions';
+import { useAccount, useConfig } from 'wagmi';
+import { useEffect, useState, useMemo } from 'react';
 
 import { Button } from '@mui/material';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
@@ -7,10 +8,15 @@ import { List, ShowButton, useDataGrid, DateField } from '@refinedev/mui';
 
 import { useProvideLoan } from '../../hooks';
 import { ConnectButton } from '../../components';
+import { royaltyLoanAbi } from '../../generated/smart-contracts';
 import { LOAN_OFFERS_LIST_QUERY } from './queries';
 
 export const LoanOffersList = () => {
+  const config = useConfig();
   const { isConnected } = useAccount();
+  const [results, setResults] = useState<
+    Array<{ contract: string; active: boolean }>
+  >([]);
   const { isLoading, provideLoanFn } = useProvideLoan();
 
   const { dataGridProps } = useDataGrid({
@@ -21,7 +27,31 @@ export const LoanOffersList = () => {
     dataProviderName: 'graphQl',
   });
 
-  const columns = React.useMemo<GridColDef[]>(
+  useEffect(() => {
+    async function fetchData() {
+      if (!dataGridProps.rows || dataGridProps.rows.length === 0) return;
+      const contracts: Array<`0x${string}`> = dataGridProps.rows.map(
+        (row) => row.loanContract,
+      );
+
+      try {
+        contracts.map(async (contract) => {
+          const data = await readContract(config, {
+            address: contract,
+            abi: royaltyLoanAbi,
+            functionName: 'loanActive',
+          });
+          setResults((prevState) => [...prevState, { contract, active: data }]);
+        });
+      } catch (error) {
+        console.error('Error reading contracts:', error);
+      }
+    }
+
+    fetchData();
+  }, [config, dataGridProps.rows]);
+
+  const columns = useMemo<GridColDef[]>(
     () => [
       {
         field: 'id',
@@ -110,7 +140,10 @@ export const LoanOffersList = () => {
           return (
             <>
               <ShowButton hideText recordItemId={row.id} />
-              {row.status === 'pending' &&
+              {(row.status === 'pending' ||
+                (row.status === 'pending' &&
+                  !results.find(({ contract }) => contract === row.loanContract)
+                    ?.active)) &&
                 (isConnected ? (
                   <Button
                     size="large"
@@ -128,7 +161,7 @@ export const LoanOffersList = () => {
         },
       },
     ],
-    [isConnected, isLoading, provideLoanFn],
+    [isConnected, isLoading, provideLoanFn, results],
   );
 
   return (
