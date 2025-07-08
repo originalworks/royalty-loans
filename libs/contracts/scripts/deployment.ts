@@ -21,22 +21,28 @@ function buildDeploymentFileName() {
 const main = async () => {
   const [deployer] = await hre.ethers.getSigners();
 
+  console.log('Deploying whitelists...');
   const whitelistDeployment = await deployWhitelist(deployer, [
     deployer.address,
     '0x90DA1d45b73d975CCFfFC7619cEd34443681e506',
   ]);
+  console.log('Done');
+  const paymentTokenAddress = '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913';
 
+  console.log('Deploying loanFactory...');
   const factoryDeployment = await deployRoyaltyLoanFactory(
     deployer,
     await whitelistDeployment.contract.getAddress(),
+    paymentTokenAddress,
   );
+  console.log('Done!');
 
   const deploymentFile = {
     deployer: deployer.address,
     royaltyLoanTemplate: factoryDeployment.royaltyLoanTemplate,
     royaltyLoanFactory: factoryDeployment.royaltyLoanFactory,
     whitelist: await whitelistDeployment.contract.getAddress(),
-    paymentToken: '0x46Bc2338a282383fe2585Ef5F0171E62FdCEf3B0',
+    paymentToken: paymentTokenAddress,
   };
 
   // DEPLOYMENT
