@@ -41,6 +41,8 @@ jobs:
           VITE_RPC_URL: ${{ secrets.VITE_BASE_SEPOLIA_RPC_URL }}
           VITE_SUBGRAPH_URL: ${{ secrets.VITE_BASE_SEPOLIA_SUBGRAPH_URL }}
           VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL_STAGE }}
+          VITE_PROD_DOMAIN: ${{ secrets.PROD_DOMAIN }}
+          VITE_STAGE_DOMAIN: ${{ secrets.STAGE_DOMAIN }}
         run: npx nx run admin:build --no-cloud
 
       - name: Deploy to S3
