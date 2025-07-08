@@ -13,6 +13,7 @@ import { HamburgerMenu, RefineThemedLayoutV2HeaderProps } from '@refinedev/mui';
 
 import { ColorModeContext } from '../../contexts/color-mode';
 import { ConnectButton } from '../connect-button';
+import { EnvironmentToggle } from '../env-toggle';
 
 type IUser = {
   id: number;
@@ -44,6 +45,7 @@ export const Header: React.FC<RefineThemedLayoutV2HeaderProps> = ({
             alignItems="center"
             gap={2}
           >
+            <EnvironmentToggle />
             <IconButton
               color="inherit"
               onClick={() => {
