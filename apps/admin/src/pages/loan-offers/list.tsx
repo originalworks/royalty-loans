@@ -30,7 +30,9 @@ export const LoanOffersList = () => {
   useEffect(() => {
     async function fetchData() {
       if (!dataGridProps.rows || dataGridProps.rows.length === 0) return;
-      const contracts: Array<`0x${string}`> = dataGridProps.rows.map((row) => row.loanContract);
+      const contracts: Array<`0x${string}`> = dataGridProps.rows.map(
+        (row) => row.loanContract,
+      );
 
       try {
         contracts.map(async (contract) => {
@@ -159,7 +161,7 @@ export const LoanOffersList = () => {
         },
       },
     ],
-    [isConnected, isLoading, provideLoanFn],
+    [isConnected, isLoading, provideLoanFn, results],
   );
 
   return (
