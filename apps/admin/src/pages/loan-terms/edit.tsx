@@ -4,6 +4,7 @@ import { useForm } from '@refinedev/react-hook-form';
 
 export const LoanTermEdit = () => {
   const {
+    setValue,
     saveButtonProps,
     register,
     formState: { errors },
@@ -34,6 +35,9 @@ export const LoanTermEdit = () => {
           type="text"
           label={'Collateral Token Address'}
           name="collateralTokenAddress"
+          onChange={(event) =>
+            setValue('collateralTokenAddress', event.target.value.toLowerCase())
+          }
         />
 
         <TextField
