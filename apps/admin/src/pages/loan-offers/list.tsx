@@ -6,18 +6,18 @@ import { Button } from '@mui/material';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { List, ShowButton, useDataGrid, DateField } from '@refinedev/mui';
 
-import { useProvideLoan } from '../../hooks';
+import { useLoanOffers } from '../../hooks';
 import { ConnectButton } from '../../components';
-import { royaltyLoanAbi } from '../../generated/smart-contracts';
+import { erc20Abi, royaltyLoanAbi } from '../../generated/smart-contracts';
 import { LOAN_OFFERS_LIST_QUERY } from './queries';
 
 export const LoanOffersList = () => {
   const config = useConfig();
   const { isConnected } = useAccount();
   const [results, setResults] = useState<
-    Array<{ contract: string; active: boolean }>
+    Array<{ contract: string; active: boolean; canRepay: boolean }>
   >([]);
-  const { isLoading, provideLoanFn } = useProvideLoan();
+  const { isLoading, provideLoanFn, processRepaymentFn } = useLoanOffers();
 
   const { dataGridProps } = useDataGrid({
     resource: 'loanContracts',
@@ -41,7 +41,35 @@ export const LoanOffersList = () => {
             abi: royaltyLoanAbi,
             functionName: 'loanActive',
           });
-          setResults((prevState) => [...prevState, { contract, active: data }]);
+          const paymentToken = await readContract(config, {
+            abi: royaltyLoanAbi,
+            address: contract,
+            functionName: 'paymentToken',
+            args: [],
+          });
+          if (!paymentToken)
+            setResults((prevState) => [
+              ...prevState,
+              { contract, active: data, canRepay: false },
+            ]);
+          else {
+            const amount = await readContract(config, {
+              abi: erc20Abi,
+              address: paymentToken,
+              functionName: 'balanceOf',
+              args: [contract],
+            });
+            if (amount > 0)
+              setResults((prevState) => [
+                ...prevState,
+                { contract, active: data, canRepay: true },
+              ]);
+            else
+              setResults((prevState) => [
+                ...prevState,
+                { contract, active: data, canRepay: false },
+              ]);
+          }
         });
       } catch (error) {
         console.error('Error reading contracts:', error);
@@ -140,6 +168,22 @@ export const LoanOffersList = () => {
           return (
             <>
               <ShowButton hideText recordItemId={row.id} />
+              {row.status === 'active' &&
+                results.find(({ contract }) => contract === row.loanContract)
+                  ?.canRepay &&
+                (isConnected ? (
+                  <Button
+                    size="large"
+                    variant="contained"
+                    loading={isLoading === row.loanContract}
+                    onClick={() => processRepaymentFn(row.loanContract)}
+                  >
+                    Process Repayment
+                  </Button>
+                ) : (
+                  <ConnectButton />
+                ))}
+
               {(row.status === 'pending' ||
                 (row.status === 'pending' &&
                   !results.find(({ contract }) => contract === row.loanContract)
@@ -161,7 +205,7 @@ export const LoanOffersList = () => {
         },
       },
     ],
-    [isConnected, isLoading, provideLoanFn, results],
+    [isConnected, isLoading, results],
   );
 
   return (
