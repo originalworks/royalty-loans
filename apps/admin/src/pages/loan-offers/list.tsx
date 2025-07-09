@@ -6,7 +6,7 @@ import { Button } from '@mui/material';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { List, ShowButton, useDataGrid, DateField } from '@refinedev/mui';
 
-import { useProvideLoan } from '../../hooks';
+import { useLoanOffers } from '../../hooks';
 import { ConnectButton } from '../../components';
 import { erc20Abi, royaltyLoanAbi } from '../../generated/smart-contracts';
 import { LOAN_OFFERS_LIST_QUERY } from './queries';
@@ -17,7 +17,7 @@ export const LoanOffersList = () => {
   const [results, setResults] = useState<
     Array<{ contract: string; active: boolean; canRepay: boolean }>
   >([]);
-  const { isLoading, provideLoanFn, processRepaymentFn } = useProvideLoan();
+  const { isLoading, provideLoanFn, processRepaymentFn } = useLoanOffers();
 
   const { dataGridProps } = useDataGrid({
     resource: 'loanContracts',
@@ -205,7 +205,7 @@ export const LoanOffersList = () => {
         },
       },
     ],
-    [isConnected, isLoading, processRepaymentFn, provideLoanFn, results],
+    [isConnected, isLoading, results],
   );
 
   return (

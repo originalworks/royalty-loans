@@ -10,7 +10,7 @@ import { useConfig, useAccount } from 'wagmi';
 
 import { erc20Abi, royaltyLoanAbi } from '../generated/smart-contracts';
 
-export const useProvideLoan = () => {
+export const useLoanOffers = () => {
   const [isLoading, setIsLoading] = useState<string>();
   const navigate = useNavigate();
   const config = useConfig();
