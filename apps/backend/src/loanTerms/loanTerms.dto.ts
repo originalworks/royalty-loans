@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsEthereumAddress,
   IsNotEmpty,
@@ -12,6 +13,7 @@ export class CreateLoanTermsDto {
   @IsNotEmpty()
   @IsString()
   @IsEthereumAddress()
+  @Transform(({ value }) => value.toLowerCase())
   collateralTokenAddress: string;
 
   @IsNotEmpty()
@@ -40,6 +42,7 @@ export class CreateLoanTermsDto {
 export class UpdateLoanTermsDto {
   @IsOptional()
   @IsEthereumAddress()
+  @Transform(({ value }) => value.toLowerCase())
   collateralTokenAddress?: string;
 
   @IsOptional()
@@ -67,5 +70,6 @@ export class UpdateLoanTermsDto {
 
 export class GetLoanTermByCollateralTokenAddressParamDto {
   @IsEthereumAddress()
+  @Transform(({ value }) => value.toLowerCase())
   collateralTokenAddress: string;
 }

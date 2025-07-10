@@ -8,7 +8,8 @@ export type Factory = typeof factory;
 //@ts-expect-error TsPlzLemmeGo
 export let factoryCached: Factory = null;
 
-export const randomEthAddress = () => ethers.Wallet.createRandom().address;
+export const randomEthAddress = () =>
+  ethers.Wallet.createRandom().address.toLowerCase();
 
 export const getFactory = (dataSource: DataSource) => {
   if (factoryCached === null) {
