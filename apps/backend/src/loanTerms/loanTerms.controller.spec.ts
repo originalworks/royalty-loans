@@ -41,7 +41,6 @@ describe('AppController', () => {
       new ValidationPipe({
         whitelist: true,
         forbidNonWhitelisted: true,
-        transform: true,
       }),
     );
 
@@ -66,28 +65,34 @@ describe('AppController', () => {
       await request(app.getHttpServer()).get('/loan-terms').expect(200);
     });
     it('CreateOne', async () => {
-      await request(app.getHttpServer())
+      const address = '0x388C818cA8b9251b393131C08a736a67ccb19297'; // Mixed Case
+      const res = await request(app.getHttpServer())
         .post('/loan-terms/')
         .set('Content-Type', 'application/json')
         .send({
-          collateralTokenAddress: '0x388c818ca8b9251b393131c08a736a67ccb19297',
+          collateralTokenAddress: address,
           feePercentagePpm: '1000',
           maxLoanAmount: '1000',
           ratio: 1,
         })
         .expect(201);
+
+      expect(res.body.collateralTokenAddress).toEqual(address.toLowerCase());
     });
     it('UpdateOne', async () => {
-      await request(app.getHttpServer())
+      const address = '0x388C818cA8b9251b393131C08a736a67ccb19297';
+      const res = await request(app.getHttpServer())
         .patch('/loan-terms/1')
         .set('Content-Type', 'application/json')
         .send({
-          collateralTokenAddress: '0x388c818ca8b9251b393131c08a736a67ccb19297',
+          collateralTokenAddress: address,
           feePercentagePpm: '1000',
           maxLoanAmount: '1000',
           ratio: 1,
         })
         .expect(200);
+
+      expect(res.body.collateralTokenAddress).toEqual(address.toLowerCase());
     });
     it('DeleteOne', async () => {
       await request(app.getHttpServer()).delete('/loan-terms/1').expect(200);
@@ -96,7 +101,9 @@ describe('AppController', () => {
     it('GetOneByCollateralTokenAddress', async () => {
       const entry = await loanTermsRepo.findOneBy({ id: 5 });
       const res = await request(app.getHttpServer())
-        .get(`/loan-terms/collateral/${entry?.collateralTokenAddress}`)
+        .get(
+          `/loan-terms/collateral/${entry?.collateralTokenAddress.toUpperCase()}`,
+        )
         .expect(200);
 
       expect(res.body.id).toEqual(5);
