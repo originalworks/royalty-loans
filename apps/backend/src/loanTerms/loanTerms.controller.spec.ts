@@ -73,7 +73,7 @@ describe('AppController', () => {
           collateralTokenAddress: address,
           feePercentagePpm: '1000',
           maxLoanAmount: '1000',
-          ratio: 1,
+          ratio: '1',
         })
         .expect(201);
 
@@ -88,7 +88,7 @@ describe('AppController', () => {
           collateralTokenAddress: address,
           feePercentagePpm: '1000',
           maxLoanAmount: '1000',
-          ratio: 1,
+          ratio: '1',
         })
         .expect(200);
 
