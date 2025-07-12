@@ -2,9 +2,7 @@ import { Transform } from 'class-transformer';
 import {
   IsEthereumAddress,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
-  IsPositive,
   IsString,
   Matches,
 } from 'class-validator';
@@ -31,12 +29,12 @@ export class CreateLoanTermsDto {
   maxLoanAmount: string;
 
   @IsNotEmpty()
-  @IsNumber(
-    { maxDecimalPlaces: 2 },
-    { message: 'ratio must have at most 2 decimal places' },
-  )
-  @IsPositive()
-  ratio: number;
+  @IsString()
+  @Matches(/^\d+(\.\d{1,4})?$/, {
+    message:
+      'ratio must be a string representing a positive number with up to 4 decimal places',
+  })
+  ratio: string;
 }
 
 export class UpdateLoanTermsDto {
@@ -60,12 +58,12 @@ export class UpdateLoanTermsDto {
   maxLoanAmount?: string;
 
   @IsOptional()
-  @IsNumber(
-    { maxDecimalPlaces: 2 },
-    { message: 'ratio must have at most 2 decimal places' },
-  )
-  @IsPositive()
-  ratio?: number;
+  @IsString()
+  @Matches(/^\d+(\.\d{1,4})?$/, {
+    message:
+      'ratio must be a string representing a positive number with up to 4 decimal places',
+  })
+  ratio?: string;
 }
 
 export class GetLoanTermByCollateralTokenAddressParamDto {
