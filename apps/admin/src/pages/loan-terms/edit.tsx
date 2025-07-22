@@ -83,11 +83,11 @@ export const LoanTermEdit = () => {
         <TextField
           {...register('ratio', {
             required: 'This field is required',
-            valueAsNumber: true,
             min: {
-              value: 0.01,
+              value: 0.0001,
               message: 'Invalid field',
             },
+            setValueAs: (value) => value.toString(),
           })}
           error={!!(errors as any)?.ratio}
           helperText={(errors as any)?.ratio?.message}
