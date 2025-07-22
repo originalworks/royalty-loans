@@ -6,6 +6,7 @@ import {
   LoanContractCreated as LoanContractCreatedEvent,
 } from '../generated/RoyaltyLoanFactory/RoyaltyLoanFactory';
 import { InitializedFactory, LoanContract } from '../generated/schema';
+import { createExpense } from './expense';
 
 export function handleInitialized(event: InitializedEvent): void {
   const entity = new InitializedFactory(
@@ -41,4 +42,6 @@ export function handleLoanContractCreated(
   entity.save();
 
   RoyaltyLoan.create(event.params.loanContract);
+
+  createExpense(event.transaction.hash, entity.id, 'LoanCreated');
 }
