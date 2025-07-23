@@ -13,6 +13,7 @@ import {
   LoanProvided as LoanProvidedEvent,
   LoanPartialyRepaid as LoanPartialyRepaidEvent,
 } from '../generated/templates/RoyaltyLoan/RoyaltyLoan';
+import { createExpense } from './expense';
 
 export function handleInitialized(event: InitializedEvent): void {
   const entity = new InitializedLoan(
@@ -34,9 +35,11 @@ export function handleLoanProvided(event: LoanProvidedEvent): void {
 
   const loan = LoanContract.load(event.address);
   if (loan !== null) {
-    loan.status = 'active';
+    loan.status = 'Active';
     loan.save();
   }
+
+  createExpense(event.transaction.hash, event.address, 'LoanProvided', event);
 }
 
 export function handleLoanPartialyRepaid(event: LoanPartialyRepaidEvent): void {
@@ -54,6 +57,8 @@ export function handleLoanPartialyRepaid(event: LoanPartialyRepaidEvent): void {
     loan.repaidAmount = loan.repaidAmount.plus(event.params.repaymentAmount);
     loan.save();
   }
+
+  createExpense(event.transaction.hash, event.address, 'LoanRepaid', event);
 }
 
 export function handleLoanRepaid(event: LoanRepaidEvent): void {
@@ -69,9 +74,11 @@ export function handleLoanRepaid(event: LoanRepaidEvent): void {
   const loan = LoanContract.load(event.address);
   if (loan !== null) {
     loan.repaidAmount = loan.repaidAmount.plus(event.params.repaymentAmount);
-    loan.status = 'repaid';
+    loan.status = 'Recouped';
     loan.save();
   }
+
+  createExpense(event.transaction.hash, event.address, 'LoanRepaid', event);
 }
 
 export function handleLoanRevoked(event: LoanRevokedEvent): void {
@@ -83,7 +90,9 @@ export function handleLoanRevoked(event: LoanRevokedEvent): void {
 
   const loan = LoanContract.load(event.address);
   if (loan !== null) {
-    loan.status = 'revoked';
+    loan.status = 'Revoked';
     loan.save();
   }
+
+  createExpense(event.transaction.hash, event.address, 'LoanRevoked', event);
 }
