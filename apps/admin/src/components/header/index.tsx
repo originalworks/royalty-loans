@@ -45,7 +45,7 @@ export const Header: React.FC<RefineThemedLayoutV2HeaderProps> = ({
             alignItems="center"
             gap={2}
           >
-            <EnvironmentToggle />
+            <EnvironmentToggle mode={mode} />
             <IconButton
               color="inherit"
               onClick={() => {
