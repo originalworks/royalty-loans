@@ -35,7 +35,7 @@ export function handleLoanProvided(event: LoanProvidedEvent): void {
 
   const loan = LoanContract.load(event.address);
   if (loan !== null) {
-    loan.status = 'active';
+    loan.status = 'Active';
     loan.save();
   }
 
@@ -74,7 +74,7 @@ export function handleLoanRepaid(event: LoanRepaidEvent): void {
   const loan = LoanContract.load(event.address);
   if (loan !== null) {
     loan.repaidAmount = loan.repaidAmount.plus(event.params.repaymentAmount);
-    loan.status = 'repaid';
+    loan.status = 'Recouped';
     loan.save();
   }
 
@@ -90,7 +90,7 @@ export function handleLoanRevoked(event: LoanRevokedEvent): void {
 
   const loan = LoanContract.load(event.address);
   if (loan !== null) {
-    loan.status = 'revoked';
+    loan.status = 'Revoked';
     loan.save();
   }
 
