@@ -17,7 +17,10 @@ export const LoanOffersList = () => {
   const [results, setResults] = useState<
     Array<{ contract: string; active: boolean; canRepay: boolean }>
   >([]);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [page, setPage] = useState<number>(0);
   const { isLoading, provideLoanFn, processRepaymentFn } = useLoanOffers();
+  const [hasNextPage, setHasNextPage] = useState<boolean>(false);
 
   const { dataGridProps } = useDataGrid({
     sorters: {
@@ -26,9 +29,30 @@ export const LoanOffersList = () => {
     resource: 'loanContracts',
     meta: {
       gqlQuery: LOAN_OFFERS_LIST_QUERY,
+      gqlVariables: {
+        first: pageSize,
+        skip: page * pageSize,
+      },
+      // gqlVariables: (params) => ({
+      //   first: params.pagination?.pageSize ?? 10,
+      // skip: ((params.pagination?.current || 1) - 1) * (params.pagination?.pageSize ?? 10),
+      // orderBy: params.sorters?.[0]?.field || "id",
+      // orderDirection: params.sorters?.[0]?.order?.toUpperCase() ?? "ASC",
+      // where: params.filters?.reduce((acc, filter) => {
+      //   acc[filter.field] = filter.value;
+      //   return acc;
+      // }, {}),
     },
     dataProviderName: 'graphQl',
   });
+
+  useEffect(() => {
+    if (dataGridProps.rows.length === pageSize * (page + 1)) {
+      setHasNextPage(true);
+    } else {
+      setHasNextPage(false);
+    }
+  }, [dataGridProps.rows.length, page, pageSize]);
 
   useEffect(() => {
     async function fetchData() {
@@ -215,8 +239,17 @@ export const LoanOffersList = () => {
     <List>
       <DataGrid
         {...dataGridProps}
+        pageSizeOptions={[10, 25, 50, 100]}
+        onPaginationModelChange={({ pageSize, page }) => {
+          setPageSize(pageSize);
+          setPage(page);
+        }}
+        paginationMeta={{
+          hasNextPage,
+        }}
         columns={columns}
-        hideFooter
+        // hideFooter
+
         disableColumnFilter
       />
     </List>

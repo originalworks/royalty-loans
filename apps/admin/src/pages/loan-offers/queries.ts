@@ -1,8 +1,8 @@
 import gql from 'graphql-tag';
 
 export const LOAN_OFFERS_LIST_QUERY = gql`
-  query LoanOffersList {
-    loanContracts(first: 1000, orderBy: timestamp, orderDirection: desc) {
+  query LoanOffersList($first: Int, $skip: Int) {
+    loanContracts(first: $first, skip: $skip, orderBy: timestamp, orderDirection: desc) {
       id
       loanContract
       borrower
