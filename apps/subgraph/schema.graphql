@@ -1,3 +1,19 @@
+enum LoanStatus {
+  Pending
+  Active
+  Revoked
+  Recouped
+}
+
+enum ExpenseKind {
+  LoanRepaid
+  LoanCreated
+  LoanProvided
+  LoanRevoked
+  ERC20Transfer
+  ERC20Approve
+}
+
 type InitializedFactory @entity(immutable: true) {
   id: Bytes!
   version: BigInt! # uint64
@@ -17,9 +33,23 @@ type LoanContract @entity(immutable: false) {
   recoupmentAmount: BigInt!
   repaidAmount: BigInt!
   feePpm: BigInt!
-  status: String! # pending / active / revoked / repaid
+  status: LoanStatus!
   timestamp: BigInt!
   transactionHash: Bytes!
+  expenses: [Expense!]! @derivedFrom(field: "loanContract")
+}
+
+type Expense @entity(immutable: true) {
+  id: Bytes!
+  loanContract: LoanContract!
+  transactionHash: Bytes!
+  kind: ExpenseKind!
+  baseFeePerGas: BigInt
+  gasLimit: BigInt!
+  gasPrice: BigInt! # format to gwei
+  gasUsed: BigInt
+  cumulativeGasUsed: BigInt
+  totalCost: BigInt! # format to ETH
 }
 
 type InitializedLoan @entity(immutable: true) {
