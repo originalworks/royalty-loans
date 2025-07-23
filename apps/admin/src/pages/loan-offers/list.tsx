@@ -20,6 +20,9 @@ export const LoanOffersList = () => {
   const { isLoading, provideLoanFn, processRepaymentFn } = useLoanOffers();
 
   const { dataGridProps } = useDataGrid({
+    sorters: {
+      mode: 'off',
+    },
     resource: 'loanContracts',
     meta: {
       gqlQuery: LOAN_OFFERS_LIST_QUERY,
@@ -210,7 +213,12 @@ export const LoanOffersList = () => {
 
   return (
     <List>
-      <DataGrid {...dataGridProps} columns={columns} />
+      <DataGrid
+        {...dataGridProps}
+        columns={columns}
+        hideFooter
+        disableColumnFilter
+      />
     </List>
   );
 };
