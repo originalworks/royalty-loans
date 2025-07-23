@@ -1,3 +1,10 @@
+enum LoanStatus {
+  Pending
+  Active
+  Revoked
+  Recouped
+}
+
 enum ExpenseKind {
   LoanRepaid
   LoanCreated
@@ -26,7 +33,7 @@ type LoanContract @entity(immutable: false) {
   recoupmentAmount: BigInt!
   repaidAmount: BigInt!
   feePpm: BigInt!
-  status: String! # pending / active / revoked / repaid
+  status: LoanStatus!
   timestamp: BigInt!
   transactionHash: Bytes!
   expenses: [Expense!]! @derivedFrom(field: "loanContract")
