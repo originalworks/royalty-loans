@@ -44,6 +44,12 @@ type Expense @entity(immutable: true) {
   loanContract: LoanContract!
   transactionHash: Bytes!
   kind: ExpenseKind!
+  baseFeePerGas: BigInt
+  gasLimit: BigInt!
+  gasPrice: BigInt! # format to gwei
+  gasUsed: BigInt
+  cumulativeGasUsed: BigInt
+  totalCost: BigInt! # format to ETH
 }
 
 type InitializedLoan @entity(immutable: true) {

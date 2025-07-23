@@ -9,7 +9,12 @@ export function handleERC20Transfer(event: TransferEvent): void {
   const loanContract = LoanContract.load(event.params.to);
 
   if (loanContract !== null) {
-    createExpense(event.transaction.hash, loanContract.id, 'ERC20Transfer');
+    createExpense(
+      event.transaction.hash,
+      loanContract.id,
+      'ERC20Transfer',
+      event,
+    );
   }
 }
 
@@ -17,6 +22,11 @@ export function handleERC20Approval(event: ApprovalEvent): void {
   const loanContract = LoanContract.load(event.params.spender);
 
   if (loanContract !== null) {
-    createExpense(event.transaction.hash, loanContract.id, 'ERC20Approve');
+    createExpense(
+      event.transaction.hash,
+      loanContract.id,
+      'ERC20Approve',
+      event,
+    );
   }
 }

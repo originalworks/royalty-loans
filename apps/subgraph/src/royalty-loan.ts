@@ -39,7 +39,7 @@ export function handleLoanProvided(event: LoanProvidedEvent): void {
     loan.save();
   }
 
-  createExpense(event.transaction.hash, event.address, 'LoanProvided');
+  createExpense(event.transaction.hash, event.address, 'LoanProvided', event);
 }
 
 export function handleLoanPartialyRepaid(event: LoanPartialyRepaidEvent): void {
@@ -58,7 +58,7 @@ export function handleLoanPartialyRepaid(event: LoanPartialyRepaidEvent): void {
     loan.save();
   }
 
-  createExpense(event.transaction.hash, event.address, 'LoanRepaid');
+  createExpense(event.transaction.hash, event.address, 'LoanRepaid', event);
 }
 
 export function handleLoanRepaid(event: LoanRepaidEvent): void {
@@ -78,7 +78,7 @@ export function handleLoanRepaid(event: LoanRepaidEvent): void {
     loan.save();
   }
 
-  createExpense(event.transaction.hash, event.address, 'LoanRepaid');
+  createExpense(event.transaction.hash, event.address, 'LoanRepaid', event);
 }
 
 export function handleLoanRevoked(event: LoanRevokedEvent): void {
@@ -94,5 +94,5 @@ export function handleLoanRevoked(event: LoanRevokedEvent): void {
     loan.save();
   }
 
-  createExpense(event.transaction.hash, event.address, 'LoanRevoked');
+  createExpense(event.transaction.hash, event.address, 'LoanRevoked', event);
 }
