@@ -56,6 +56,10 @@ export const LOAN_OFFER_SHOW_QUERY = gql`
       status
       timestamp
       transactionHash
+      expenses {
+        gasPrice
+        totalCost
+      }
     }
   }
 `;

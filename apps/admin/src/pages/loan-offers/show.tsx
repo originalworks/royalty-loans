@@ -1,3 +1,5 @@
+import { ethers } from 'ethers';
+
 import {
   Show,
   DateField,
@@ -23,6 +25,24 @@ export const LoanOfferShow = () => {
   const { data, isLoading } = query;
 
   const record = data?.data;
+
+  const expenses = record?.expenses as Array<{
+    gasPrice: string;
+    totalCost: string;
+  }>;
+
+  const initialCumulated = { gasPrice: 0, totalCost: 0 };
+
+  const cumulated =
+    !!expenses && expenses.length > 0
+      ? expenses.reduce(
+          (accumulator, currentValue) => ({
+            gasPrice: accumulator.gasPrice + Number(currentValue.gasPrice),
+            totalCost: accumulator.totalCost + Number(currentValue.totalCost),
+          }),
+          initialCumulated,
+        )
+      : initialCumulated;
 
   return (
     <Show isLoading={isLoading}>
@@ -61,6 +81,24 @@ export const LoanOfferShow = () => {
           Status
         </Typography>
         <TextField value={record?.status} />
+
+        {cumulated.gasPrice && (
+          <>
+            <Typography variant="body1" fontWeight="bold">
+              Cumulated Gas Price (GWEI)
+            </Typography>
+            <TextField value={ethers.formatUnits(cumulated.gasPrice, 'gwei')} />
+          </>
+        )}
+
+        {cumulated.totalCost && (
+          <>
+            <Typography variant="body1" fontWeight="bold">
+              Cumulated Total Cost (ETH)
+            </Typography>
+            <TextField value={ethers.formatEther(cumulated.totalCost)} />
+          </>
+        )}
 
         <Typography variant="body1" fontWeight="bold">
           Created At
