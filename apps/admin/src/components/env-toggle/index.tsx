@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
+
 import { Box, Switch, Typography } from '@mui/material';
+
+import { Mode } from '../../contexts/color-mode';
 import { PROD_DOMAIN, STAGE_DOMAIN } from '../../config/config';
 
 const ENV_DOMAINS = {
@@ -7,7 +10,7 @@ const ENV_DOMAINS = {
   stage: STAGE_DOMAIN,
 };
 
-export const EnvironmentToggle: React.FC = () => {
+export const EnvironmentToggle: React.FC<{ mode: Mode }> = ({ mode }) => {
   const [isProd, setIsProd] = useState<boolean>(false);
 
   useEffect(() => {
@@ -29,13 +32,23 @@ export const EnvironmentToggle: React.FC = () => {
 
   return (
     <Box display="flex" alignItems="center" gap={1}>
-      <Typography variant="body2" color={!isProd ? 'primary' : 'textSecondary'}>
+      <Typography
+        variant="body2"
+        color={!isProd ? 'textPrimary' : 'textSecondary'}
+      >
         Stage
       </Typography>
 
-      <Switch checked={isProd} onChange={handleToggle} color="primary" />
+      <Switch
+        checked={isProd}
+        onChange={handleToggle}
+        color={mode === 'light' ? 'default' : 'primary'}
+      />
 
-      <Typography variant="body2" color={isProd ? 'primary' : 'textSecondary'}>
+      <Typography
+        variant="body2"
+        color={isProd ? 'textPrimary' : 'textSecondary'}
+      >
         Prod
       </Typography>
     </Box>

@@ -40,6 +40,7 @@ import { AppIcon } from './components/app-icon';
 import { BACKEND_URL, SUBGRAPH_URL } from './config/config';
 import { ColorModeContextProvider } from './contexts/color-mode';
 import { LoanOfferShow, LoanOffersList } from './pages/loan-offers';
+import { TransactionShow, TransactionsList } from './pages/transactions';
 
 const gqlClient = new Client({
   url: SUBGRAPH_URL,
@@ -48,9 +49,24 @@ const gqlClient = new Client({
 
 const gqlDataProvider = (client: Client) =>
   createDataProvider(client, {
+    getOne: {
+      dataMapper: (response: OperationResult, params: GetListParams) => {
+        if (params.resource) return response.data?.[params.resource];
+        return response.data;
+      },
+    },
     getList: {
       dataMapper: (response: OperationResult, params: GetListParams) => {
-        return response.data?.[params.resource];
+        if (params.resource) return response.data?.[params.resource];
+        return response.data;
+      },
+      buildVariables: (params) => {
+        const sorter = params.sorters?.[0];
+        return {
+          ...params.meta?.gqlVariables,
+          orderBy: sorter?.field || 'timestamp',
+          orderDirection: sorter?.order?.toLowerCase() || 'desc',
+        };
       },
     },
   });
@@ -152,6 +168,11 @@ function App() {
                     list: '/loan-offers',
                     show: '/loan-offers/show/:id',
                   },
+                  {
+                    name: 'transactions',
+                    list: '/transactions',
+                    show: '/transactions/show/:id',
+                  },
                 ]}
                 options={{
                   syncWithLocation: true,
@@ -187,6 +208,10 @@ function App() {
                     <Route path="/loan-offers">
                       <Route index element={<LoanOffersList />} />
                       <Route path="show/:id" element={<LoanOfferShow />} />
+                    </Route>
+                    <Route path="/transactions">
+                      <Route index element={<TransactionsList />} />
+                      <Route path="show/:id" element={<TransactionShow />} />
                     </Route>
                     <Route path="*" element={<ErrorComponent />} />
                   </Route>

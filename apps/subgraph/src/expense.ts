@@ -1,6 +1,7 @@
 import { BigInt, Bytes, ethereum } from '@graphprotocol/graph-ts';
 
 import { Expense } from '../generated/schema';
+import { recordStats } from './helpers';
 
 export function createExpense(
   txHash: Bytes,
@@ -11,8 +12,8 @@ export function createExpense(
   const expenseId = txHash.concat(Bytes.fromUTF8(':expense'));
   const expense = new Expense(expenseId);
   expense.loanContract = loanContract;
-  expense.kind = kind;
   expense.transactionHash = txHash;
+  expense.kind = kind;
   expense.baseFeePerGas = event.block.baseFeePerGas;
 
   const transaction = event.transaction;
@@ -26,8 +27,11 @@ export function createExpense(
     expense.gasUsed = receipt.gasUsed;
     expense.totalCost = receipt.gasUsed.times(transaction.gasPrice);
   }
+  expense.timestamp = event.block.timestamp;
 
   expense.save();
+
+  recordStats(false);
 
   return expense;
 }
