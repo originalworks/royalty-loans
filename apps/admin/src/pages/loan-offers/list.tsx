@@ -3,13 +3,14 @@ import { useAccount, useConfig } from 'wagmi';
 import { useEffect, useState, useMemo } from 'react';
 
 import { Button } from '@mui/material';
+import { useOne } from '@refinedev/core';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { List, ShowButton, useDataGrid, DateField } from '@refinedev/mui';
 
 import { useLoanOffers } from '../../hooks';
 import { ConnectButton } from '../../components';
 import { erc20Abi, royaltyLoanAbi } from '../../generated/smart-contracts';
-import { LOAN_OFFERS_LIST_QUERY } from './queries';
+import { LOAN_OFFERS_LIST_QUERY, STATISTICS_QUERY } from './queries';
 
 export const LoanOffersList = () => {
   const config = useConfig();
@@ -20,7 +21,16 @@ export const LoanOffersList = () => {
   const [pageSize, setPageSize] = useState<number>(10);
   const [page, setPage] = useState<number>(0);
   const { isLoading, provideLoanFn, processRepaymentFn } = useLoanOffers();
-  const [hasNextPage, setHasNextPage] = useState<boolean>(false);
+
+  const { data } = useOne({
+    id: 'status', // or your dynamic ID
+    resource: 'stats',
+    meta: {
+      gqlQuery: STATISTICS_QUERY,
+    },
+    dataProviderName: 'graphQl',
+  });
+  console.log({ data });
 
   const { dataGridProps } = useDataGrid({
     sorters: {
@@ -45,14 +55,7 @@ export const LoanOffersList = () => {
     },
     dataProviderName: 'graphQl',
   });
-
-  useEffect(() => {
-    if (dataGridProps.rows.length === pageSize * (page + 1)) {
-      setHasNextPage(true);
-    } else {
-      setHasNextPage(false);
-    }
-  }, [dataGridProps.rows.length, page, pageSize]);
+  console.log({ dataGridProps });
 
   useEffect(() => {
     async function fetchData() {
@@ -239,17 +242,17 @@ export const LoanOffersList = () => {
     <List>
       <DataGrid
         {...dataGridProps}
+        rowCount={Number(data?.data.contractsCount) || 0}
         pageSizeOptions={[10, 25, 50, 100]}
         onPaginationModelChange={({ pageSize, page }) => {
           setPageSize(pageSize);
           setPage(page);
         }}
-        paginationMeta={{
-          hasNextPage,
+        paginationModel={{
+          page: page,
+          pageSize: pageSize,
         }}
         columns={columns}
-        // hideFooter
-
         disableColumnFilter
       />
     </List>

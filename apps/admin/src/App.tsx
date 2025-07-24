@@ -48,9 +48,16 @@ const gqlClient = new Client({
 
 const gqlDataProvider = (client: Client) =>
   createDataProvider(client, {
+    getOne: {
+      dataMapper: (response: OperationResult, params: GetListParams) => {
+        if (params.resource) return response.data?.[params.resource];
+        return response.data;
+      },
+    },
     getList: {
       dataMapper: (response: OperationResult, params: GetListParams) => {
-        return response.data?.[params.resource];
+        if (params.resource) return response.data?.[params.resource];
+        return response.data;
       },
     },
   });
