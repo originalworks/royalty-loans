@@ -6,6 +6,7 @@ import {
   LoanContractCreated as LoanContractCreatedEvent,
 } from '../generated/RoyaltyLoanFactory/RoyaltyLoanFactory';
 import { InitializedFactory, LoanContract } from '../generated/schema';
+import { recordStats } from './helpers';
 import { createExpense } from './expense';
 
 export function handleInitialized(event: InitializedEvent): void {
@@ -44,4 +45,6 @@ export function handleLoanContractCreated(
   RoyaltyLoan.create(event.params.loanContract);
 
   createExpense(event.transaction.hash, entity.id, 'LoanCreated', event);
+
+  recordStats(true);
 }
