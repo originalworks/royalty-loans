@@ -22,6 +22,12 @@ type InitializedFactory @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
+type Stats @entity(immutable: false) {
+  id: String!
+  contractsCount: BigInt!
+  expensesCount: BigInt!
+}
+
 type LoanContract @entity(immutable: false) {
   id: Bytes!
   loanContract: Bytes! # address
@@ -50,6 +56,7 @@ type Expense @entity(immutable: true) {
   gasUsed: BigInt
   cumulativeGasUsed: BigInt
   totalCost: BigInt! # format to ETH
+  timestamp: BigInt!
 }
 
 type InitializedLoan @entity(immutable: true) {

@@ -1,15 +1,23 @@
+import { ethers } from 'ethers';
 import { readContract } from 'wagmi/actions';
 import { useAccount, useConfig } from 'wagmi';
 import { useEffect, useState, useMemo } from 'react';
 
 import { Button } from '@mui/material';
+import { useOne } from '@refinedev/core';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
-import { List, ShowButton, useDataGrid, DateField } from '@refinedev/mui';
+import {
+  List,
+  ShowButton,
+  useDataGrid,
+  DateField,
+  TextFieldComponent as TextField,
+} from '@refinedev/mui';
 
 import { useLoanOffers } from '../../hooks';
 import { ConnectButton } from '../../components';
 import { erc20Abi, royaltyLoanAbi } from '../../generated/smart-contracts';
-import { LOAN_OFFERS_LIST_QUERY } from './queries';
+import { LOAN_OFFERS_LIST_QUERY, STATISTICS_QUERY } from './queries';
 
 export const LoanOffersList = () => {
   const config = useConfig();
@@ -17,14 +25,33 @@ export const LoanOffersList = () => {
   const [results, setResults] = useState<
     Array<{ contract: string; active: boolean; canRepay: boolean }>
   >([]);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [page, setPage] = useState<number>(0);
   const { isLoading, provideLoanFn, processRepaymentFn } = useLoanOffers();
 
+  const { data } = useOne({
+    id: 'status',
+    resource: 'stats',
+    meta: {
+      gqlQuery: STATISTICS_QUERY,
+    },
+    dataProviderName: 'graphQl',
+  });
+
   const { dataGridProps } = useDataGrid({
+    filters: {
+      mode: 'off',
+    },
     resource: 'loanContracts',
     meta: {
       gqlQuery: LOAN_OFFERS_LIST_QUERY,
+      gqlVariables: {
+        first: pageSize,
+        skip: page * pageSize,
+      },
     },
     dataProviderName: 'graphQl',
+    syncWithLocation: false,
   });
 
   useEffect(() => {
@@ -148,6 +175,56 @@ export const LoanOffersList = () => {
         headerAlign: 'left',
       },
       {
+        field: 'cumulatedGasPrice',
+        headerName: 'Cumulated Gas Price (GWEI)',
+        type: 'number',
+        minWidth: 150,
+        display: 'flex',
+        align: 'center',
+        headerAlign: 'center',
+        sortable: false,
+        renderCell: function render({ row }) {
+          const expenses = row.expenses as Array<{
+            gasPrice: string;
+            totalCost: string;
+          }>;
+          if (!expenses) return null;
+
+          const cumulatedGasPrice = expenses.reduce(
+            (accumulator, currentValue) =>
+              accumulator + Number(currentValue.gasPrice),
+            0,
+          );
+          return (
+            <TextField value={ethers.formatUnits(cumulatedGasPrice, 'gwei')} />
+          );
+        },
+      },
+      {
+        field: 'cumulatedTotalCost',
+        headerName: 'Cumulated Total Cost (ETH)',
+        type: 'number',
+        minWidth: 250,
+        display: 'flex',
+        align: 'center',
+        headerAlign: 'center',
+        sortable: false,
+        renderCell: function render({ row }) {
+          const expenses = row.expenses as Array<{
+            gasPrice: string;
+            totalCost: string;
+          }>;
+          if (!expenses) return null;
+
+          const cumulatedTotalCost = expenses.reduce(
+            (accumulator, currentValue) =>
+              accumulator + Number(currentValue.totalCost),
+            0,
+          );
+          return <TextField value={ethers.formatEther(cumulatedTotalCost)} />;
+        },
+      },
+      {
         field: 'timestamp',
         headerName: 'Created at',
         minWidth: 120,
@@ -157,7 +234,7 @@ export const LoanOffersList = () => {
         },
       },
       {
-        field: 'actions',
+        field: 'expenses',
         headerName: 'Actions',
         align: 'center',
         headerAlign: 'center',
@@ -210,7 +287,21 @@ export const LoanOffersList = () => {
 
   return (
     <List>
-      <DataGrid {...dataGridProps} columns={columns} />
+      <DataGrid
+        {...dataGridProps}
+        rowCount={Number(data?.data.contractsCount) || 0}
+        pageSizeOptions={[10, 25, 50, 100]}
+        onPaginationModelChange={({ pageSize, page }) => {
+          setPageSize(pageSize);
+          setPage(page);
+        }}
+        paginationModel={{
+          page: page,
+          pageSize: pageSize,
+        }}
+        columns={columns}
+        disableColumnFilter
+      />
     </List>
   );
 };

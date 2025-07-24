@@ -16,10 +16,11 @@ export const LoanTermsList = () => {
       initial: [
         {
           field: 'id',
-          order: 'asc',
+          order: 'desc',
         },
       ],
     },
+    syncWithLocation: false,
   });
 
   const columns = React.useMemo<GridColDef[]>(
