@@ -146,7 +146,7 @@ export const TransactionsList = () => {
     <List>
       <DataGrid
         {...dataGridProps}
-        rowCount={Number(data?.data.expensesCount) || 0}
+        rowCount={Number(data?.data?.expensesCount) || 0}
         pageSizeOptions={[10, 25, 50, 100]}
         onPaginationModelChange={({ pageSize, page }) => {
           setPageSize(pageSize);
