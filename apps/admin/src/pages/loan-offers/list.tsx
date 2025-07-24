@@ -23,7 +23,7 @@ export const LoanOffersList = () => {
   const { isLoading, provideLoanFn, processRepaymentFn } = useLoanOffers();
 
   const { data } = useOne({
-    id: 'status', // or your dynamic ID
+    id: 'status',
     resource: 'stats',
     meta: {
       gqlQuery: STATISTICS_QUERY,
@@ -44,6 +44,7 @@ export const LoanOffersList = () => {
       },
     },
     dataProviderName: 'graphQl',
+    syncWithLocation: false,
   });
 
   useEffect(() => {
