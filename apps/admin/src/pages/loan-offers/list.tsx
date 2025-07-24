@@ -1,3 +1,4 @@
+import { ethers } from 'ethers';
 import { readContract } from 'wagmi/actions';
 import { useAccount, useConfig } from 'wagmi';
 import { useEffect, useState, useMemo } from 'react';
@@ -5,7 +6,13 @@ import { useEffect, useState, useMemo } from 'react';
 import { Button } from '@mui/material';
 import { useOne } from '@refinedev/core';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
-import { List, ShowButton, useDataGrid, DateField } from '@refinedev/mui';
+import {
+  List,
+  ShowButton,
+  useDataGrid,
+  DateField,
+  TextFieldComponent as TextField,
+} from '@refinedev/mui';
 
 import { useLoanOffers } from '../../hooks';
 import { ConnectButton } from '../../components';
@@ -168,6 +175,56 @@ export const LoanOffersList = () => {
         headerAlign: 'left',
       },
       {
+        field: 'cumulatedGasPrice',
+        headerName: 'Cumulated Gas Price (GWEI)',
+        type: 'number',
+        minWidth: 150,
+        display: 'flex',
+        align: 'center',
+        headerAlign: 'center',
+        sortable: false,
+        renderCell: function render({ row }) {
+          const expenses = row.expenses as Array<{
+            gasPrice: string;
+            totalCost: string;
+          }>;
+          if (!expenses) return null;
+
+          const cumulatedGasPrice = expenses.reduce(
+            (accumulator, currentValue) =>
+              accumulator + Number(currentValue.gasPrice),
+            0,
+          );
+          return (
+            <TextField value={ethers.formatUnits(cumulatedGasPrice, 'gwei')} />
+          );
+        },
+      },
+      {
+        field: 'cumulatedTotalCost',
+        headerName: 'Cumulated Total Cost (ETH)',
+        type: 'number',
+        minWidth: 250,
+        display: 'flex',
+        align: 'center',
+        headerAlign: 'center',
+        sortable: false,
+        renderCell: function render({ row }) {
+          const expenses = row.expenses as Array<{
+            gasPrice: string;
+            totalCost: string;
+          }>;
+          if (!expenses) return null;
+
+          const cumulatedTotalCost = expenses.reduce(
+            (accumulator, currentValue) =>
+              accumulator + Number(currentValue.totalCost),
+            0,
+          );
+          return <TextField value={ethers.formatEther(cumulatedTotalCost)} />;
+        },
+      },
+      {
         field: 'timestamp',
         headerName: 'Created at',
         minWidth: 120,
@@ -177,7 +234,7 @@ export const LoanOffersList = () => {
         },
       },
       {
-        field: 'actions',
+        field: 'expenses',
         headerName: 'Actions',
         align: 'center',
         headerAlign: 'center',
