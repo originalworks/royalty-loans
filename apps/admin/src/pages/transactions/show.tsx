@@ -45,6 +45,11 @@ export const TransactionShow = () => {
         <TextField value={record?.loanContract.collateralToken} />
 
         <Typography variant="body1" fontWeight="bold">
+          Type
+        </Typography>
+        <TextField value={record?.kind} />
+
+        <Typography variant="body1" fontWeight="bold">
           Transaction Hash
         </Typography>
         <TextField value={record?.transactionHash} />

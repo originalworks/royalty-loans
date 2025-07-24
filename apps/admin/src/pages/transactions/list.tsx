@@ -80,6 +80,16 @@ export const TransactionsList = () => {
         },
       },
       {
+        field: 'kind',
+        headerName: 'Type',
+        type: 'string',
+        minWidth: 150,
+        display: 'flex',
+        flex: 1,
+        align: 'left',
+        headerAlign: 'left',
+      },
+      {
         field: 'transactionHash',
         headerName: 'Transaction Hash',
         type: 'string',
