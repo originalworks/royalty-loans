@@ -32,7 +32,7 @@ export const LoanOffersList = () => {
   });
 
   const { dataGridProps } = useDataGrid({
-    sorters: {
+    filters: {
       mode: 'off',
     },
     resource: 'loanContracts',
@@ -45,7 +45,6 @@ export const LoanOffersList = () => {
     },
     dataProviderName: 'graphQl',
   });
-  console.log({ dataGridProps });
 
   useEffect(() => {
     async function fetchData() {
