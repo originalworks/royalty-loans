@@ -11,12 +11,17 @@ export const STATISTICS_QUERY = gql`
 `;
 
 export const LOAN_OFFERS_LIST_QUERY = gql`
-  query LoanOffersList($first: Int, $skip: Int) {
+  query LoanOffersList(
+    $first: Int
+    $skip: Int
+    $orderBy: String
+    $orderDirection: String
+  ) {
     loanContracts(
       first: $first
       skip: $skip
-      orderBy: timestamp
-      orderDirection: desc
+      orderBy: $orderBy
+      orderDirection: $orderDirection
     ) {
       id
       loanContract
