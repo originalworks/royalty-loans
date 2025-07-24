@@ -18,6 +18,7 @@ dataSources:
       entities:
         - Initialized
         - LoanContract
+        - Stats
       abis:
         - name: RoyaltyLoanFactory
           file: ./abis/RoyaltyLoanFactory.json
@@ -41,6 +42,7 @@ dataSources:
       language: wasm/assemblyscript
       entities:
         - Expense
+        - Stats
       abis:
         - name: ERC20
           file: ./abis/ERC20.json
@@ -69,6 +71,7 @@ templates:
         - LoanPartialyRepaid
         - LoanRepaid
         - LoanRevoked
+        - Stats
       abis:
         - name: RoyaltyLoan
           file: ./abis/RoyaltyLoan.json

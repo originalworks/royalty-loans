@@ -1,6 +1,7 @@
 import { BigInt, Bytes, ethereum } from '@graphprotocol/graph-ts';
 
 import { Expense } from '../generated/schema';
+import { recordStats } from './helpers';
 
 export function createExpense(
   txHash: Bytes,
@@ -28,6 +29,8 @@ export function createExpense(
   }
 
   expense.save();
+
+  recordStats(false);
 
   return expense;
 }
