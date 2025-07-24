@@ -30,7 +30,6 @@ export const LoanOffersList = () => {
     },
     dataProviderName: 'graphQl',
   });
-  console.log({ data });
 
   const { dataGridProps } = useDataGrid({
     sorters: {
@@ -43,15 +42,6 @@ export const LoanOffersList = () => {
         first: pageSize,
         skip: page * pageSize,
       },
-      // gqlVariables: (params) => ({
-      //   first: params.pagination?.pageSize ?? 10,
-      // skip: ((params.pagination?.current || 1) - 1) * (params.pagination?.pageSize ?? 10),
-      // orderBy: params.sorters?.[0]?.field || "id",
-      // orderDirection: params.sorters?.[0]?.order?.toUpperCase() ?? "ASC",
-      // where: params.filters?.reduce((acc, filter) => {
-      //   acc[filter.field] = filter.value;
-      //   return acc;
-      // }, {}),
     },
     dataProviderName: 'graphQl',
   });
