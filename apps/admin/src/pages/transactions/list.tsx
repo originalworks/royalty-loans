@@ -12,13 +12,13 @@ import { useOne } from '@refinedev/core';
 import { TextField as InputField } from '@mui/material';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 
-import { TRANSACTIONS_LIST_QUERY, STATISTICS_QUERY } from './queries';
+import { TRANSACTIONS_LIST_QUERY, STATISTICS_QUERY } from '../queries';
 
 export const TransactionsList = () => {
   const [pageSize, setPageSize] = useState<number>(10);
   const [page, setPage] = useState<number>(0);
 
-  const [loanContractAddress, setLoanContractAddress] = React.useState('');
+  const [loanContractAddresses, setLoanContractAddresses] = React.useState('');
 
   const { data } = useOne({
     id: 'status',
@@ -39,29 +39,12 @@ export const TransactionsList = () => {
       gqlVariables: {
         first: pageSize,
         skip: page * pageSize,
-        loanContractAddress,
+        loanContractAddresses: loanContractAddresses.split(','),
       },
     },
     dataProviderName: 'graphQl',
     syncWithLocation: false,
   });
-
-  // const addressOperators: GridFilterOperator<any, number>[] = [
-  //   {
-  //     label: 'Above',
-  //     value: 'above',
-  //     // getApplyFilterFn: (filterItem) => {
-  //     //   if (!filterItem.field || !filterItem.value || !filterItem.operator) {
-  //     //     return null;
-  //     //   }
-  //     //   return (value) => {
-  //     //     return Number(value) >= Number(filterItem.value);
-  //     //   };
-  //     // },
-  //     // InputComponent: RatingInputValue,
-  //     // getValueAsString: (value: number) => `${value} Stars`,
-  //   },
-  // ];
 
   const columns = useMemo<GridColDef[]>(
     () => [
@@ -176,12 +159,13 @@ export const TransactionsList = () => {
   return (
     <List>
       <InputField
+        sx={{ marginTop: 0 }}
         margin="normal"
         type="text"
-        label="Loan Contract Address"
+        label="Loan Contract Addresses"
         name="loanContractAddress"
         onChange={(event) =>
-          setLoanContractAddress(event.target.value.toLowerCase())
+          setLoanContractAddresses(event.target.value.toLowerCase())
         }
       />
 

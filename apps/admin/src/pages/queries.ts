@@ -14,8 +14,8 @@ export const LOAN_OFFERS_LIST_QUERY = gql`
   query LoanOffersList(
     $first: Int
     $skip: Int
-    $orderBy: String
-    $orderDirection: String
+    $orderBy: LoanContract_orderBy
+    $orderDirection: OrderDirection
   ) {
     loanContracts(
       first: $first
@@ -60,6 +60,60 @@ export const LOAN_OFFER_SHOW_QUERY = gql`
         gasPrice
         totalCost
       }
+    }
+  }
+`;
+
+export const TRANSACTIONS_LIST_QUERY = gql`
+  query TransactionsList(
+    $first: Int
+    $skip: Int
+    $where: Expense_filter
+    $orderBy: Expense_orderBy
+    $orderDirection: OrderDirection
+  ) {
+    expenses(
+      first: $first
+      skip: $skip
+      where: $where
+      orderBy: $orderBy
+      orderDirection: $orderDirection
+    ) {
+      id
+      loanContract {
+        id
+        collateralToken
+      }
+      transactionHash
+      kind
+      baseFeePerGas
+      gasLimit
+      gasPrice
+      gasUsed
+      cumulativeGasUsed
+      totalCost
+      timestamp
+    }
+  }
+`;
+
+export const TRANSACTION_SHOW_QUERY = gql`
+  query Transaction($id: ID!) {
+    expense(id: $id) {
+      id
+      loanContract {
+        id
+        collateralToken
+      }
+      transactionHash
+      kind
+      baseFeePerGas
+      gasLimit
+      gasPrice
+      gasUsed
+      cumulativeGasUsed
+      totalCost
+      timestamp
     }
   }
 `;
