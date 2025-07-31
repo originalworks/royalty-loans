@@ -14,12 +14,14 @@ export const TRANSACTIONS_LIST_QUERY = gql`
   query TransactionsList(
     $first: Int
     $skip: Int
+    $loanContractAddress: String
     $orderBy: String
     $orderDirection: String
   ) {
     expenses(
       first: $first
       skip: $skip
+      where: { loanContract_: { loanContract_contains: $loanContractAddress } }
       orderBy: $orderBy
       orderDirection: $orderDirection
     ) {

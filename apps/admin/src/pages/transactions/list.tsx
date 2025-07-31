@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 
 import {
   List,
@@ -9,6 +9,7 @@ import {
   TextFieldComponent as TextField,
 } from '@refinedev/mui';
 import { useOne } from '@refinedev/core';
+import { TextField as InputField } from '@mui/material';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 
 import { TRANSACTIONS_LIST_QUERY, STATISTICS_QUERY } from './queries';
@@ -16,6 +17,8 @@ import { TRANSACTIONS_LIST_QUERY, STATISTICS_QUERY } from './queries';
 export const TransactionsList = () => {
   const [pageSize, setPageSize] = useState<number>(10);
   const [page, setPage] = useState<number>(0);
+
+  const [loanContractAddress, setLoanContractAddress] = React.useState('');
 
   const { data } = useOne({
     id: 'status',
@@ -36,11 +39,29 @@ export const TransactionsList = () => {
       gqlVariables: {
         first: pageSize,
         skip: page * pageSize,
+        loanContractAddress,
       },
     },
     dataProviderName: 'graphQl',
     syncWithLocation: false,
   });
+
+  // const addressOperators: GridFilterOperator<any, number>[] = [
+  //   {
+  //     label: 'Above',
+  //     value: 'above',
+  //     // getApplyFilterFn: (filterItem) => {
+  //     //   if (!filterItem.field || !filterItem.value || !filterItem.operator) {
+  //     //     return null;
+  //     //   }
+  //     //   return (value) => {
+  //     //     return Number(value) >= Number(filterItem.value);
+  //     //   };
+  //     // },
+  //     // InputComponent: RatingInputValue,
+  //     // getValueAsString: (value: number) => `${value} Stars`,
+  //   },
+  // ];
 
   const columns = useMemo<GridColDef[]>(
     () => [
@@ -154,6 +175,16 @@ export const TransactionsList = () => {
 
   return (
     <List>
+      <InputField
+        margin="normal"
+        type="text"
+        label="Loan Contract Address"
+        name="loanContractAddress"
+        onChange={(event) =>
+          setLoanContractAddress(event.target.value.toLowerCase())
+        }
+      />
+
       <DataGrid
         {...dataGridProps}
         rowCount={Number(data?.data?.expensesCount) || 0}
@@ -167,7 +198,6 @@ export const TransactionsList = () => {
           pageSize: pageSize,
         }}
         columns={columns}
-        disableColumnFilter
       />
     </List>
   );
