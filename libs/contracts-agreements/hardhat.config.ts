@@ -1,6 +1,6 @@
-import * as dotenv from 'dotenv'
+import * as dotenv from 'dotenv';
 
-import { HardhatUserConfig } from 'hardhat/config'
+import { HardhatUserConfig } from 'hardhat/config';
 import '@typechain/hardhat';
 import '@rumblefishdev/hardhat-kms-signer';
 import '@nomicfoundation/hardhat-ethers';
@@ -8,7 +8,7 @@ import '@nomicfoundation/hardhat-chai-matchers';
 import '@nomicfoundation/hardhat-verify';
 import '@openzeppelin/hardhat-upgrades';
 
-dotenv.config()
+dotenv.config();
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -19,6 +19,11 @@ const config: HardhatUserConfig = {
         runs: 2000,
       },
     },
+  },
+  paths: {
+    sources: './libs',
+    artifacts: './artifacts',
+    cache: './cache',
   },
   networks: {
     base_sepolia: {
@@ -129,6 +134,6 @@ const config: HardhatUserConfig = {
   typechain: {
     outDir: 'typechain',
   },
-}
+};
 
-export default config
+export default config;
