@@ -1,5 +1,5 @@
 {
-  "name": "@royalty-loans/contracts",
+  "name": "@royalty-loans/contracts-loans",
   "version": "0.0.1",
   "private": true,
   "main": "./src/index.ts",
@@ -19,14 +19,14 @@
         "executor": "nx:run-commands",
         "options": {
           "command": "npx hardhat test",
-          "cwd": "libs/contracts"
+          "cwd": "libs/contracts-loans"
         }
       },
       "compile": {
         "executor": "nx:run-commands",
         "options": {
           "command": "npx hardhat compile",
-          "cwd": "libs/contracts"
+          "cwd": "libs/contracts-loans"
         }
       }
     }
