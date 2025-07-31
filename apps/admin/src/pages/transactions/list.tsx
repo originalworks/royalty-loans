@@ -9,8 +9,8 @@ import {
   TextFieldComponent as TextField,
 } from '@refinedev/mui';
 import { useOne } from '@refinedev/core';
-import { TextField as InputField } from '@mui/material';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
+import { Stack, TextField as InputField } from '@mui/material';
 
 import { TRANSACTIONS_LIST_QUERY, STATISTICS_QUERY } from '../queries';
 
@@ -18,7 +18,8 @@ export const TransactionsList = () => {
   const [pageSize, setPageSize] = useState<number>(10);
   const [page, setPage] = useState<number>(0);
 
-  const [loanContractAddresses, setLoanContractAddresses] = React.useState('');
+  const [contractAddresses, setContractAddresses] = React.useState('');
+  const [tokenAddresses, setTokenAddresses] = React.useState('');
 
   const { data } = useOne({
     id: 'status',
@@ -39,7 +40,24 @@ export const TransactionsList = () => {
       gqlVariables: {
         first: pageSize,
         skip: page * pageSize,
-        loanContractAddresses: loanContractAddresses.split(','),
+        where: {
+          loanContract_: {
+            ...(contractAddresses.length > 0
+              ? {
+                  loanContract_in: contractAddresses
+                    .replace(/ /g, '')
+                    .split(','),
+                }
+              : {}),
+            ...(tokenAddresses.length > 0
+              ? {
+                  collateralToken_in: tokenAddresses
+                    .replace(/ /g, '')
+                    .split(','),
+                }
+              : {}),
+          },
+        },
       },
     },
     dataProviderName: 'graphQl',
@@ -158,16 +176,29 @@ export const TransactionsList = () => {
 
   return (
     <List>
-      <InputField
-        sx={{ marginTop: 0 }}
-        margin="normal"
-        type="text"
-        label="Loan Contract Addresses"
-        name="loanContractAddress"
-        onChange={(event) =>
-          setLoanContractAddresses(event.target.value.toLowerCase())
-        }
-      />
+      <Stack direction="row" gap={1}>
+        <InputField
+          sx={{ flex: 1, marginTop: 0 }}
+          margin="normal"
+          type="text"
+          label="Loan Contract Addresses"
+          name="loanContractAddress"
+          onChange={(event) =>
+            setContractAddresses(event.target.value.toLowerCase())
+          }
+        />
+
+        <InputField
+          sx={{ flex: 1, marginTop: 0 }}
+          margin="normal"
+          type="text"
+          label="Collateral Token Addresses"
+          name="collateralTokenAddresses"
+          onChange={(event) =>
+            setTokenAddresses(event.target.value.toLowerCase())
+          }
+        />
+      </Stack>
 
       <DataGrid
         {...dataGridProps}
@@ -182,6 +213,7 @@ export const TransactionsList = () => {
           pageSize: pageSize,
         }}
         columns={columns}
+        disableColumnFilter
       />
     </List>
   );
