@@ -9,27 +9,26 @@ const config: IGraphQLConfig = {
       },
       generates: {
         'src/generated/graphql/schema.types.ts': {
-          plugins: ['typescript'],
+          plugins: ['typescript', 'typescript-operations'],
           config: {
             skipTypename: true,
             enumsAsTypes: true,
           },
         },
-        // Uncomment this if you need these types.
-        // 'src/generated/graphql/types.ts': {
-        //   preset: 'import-types',
-        //   documents: ['src/**/*.{ts,tsx}'],
-        //   plugins: ['typescript-operations'],
-        //   config: {
-        //     skipTypename: true,
-        //     enumsAsTypes: true,
-        //     preResolveTypes: false,
-        //     useTypeImports: true,
-        //   },
-        //   presetConfig: {
-        //     typesPath: './schema.types',
-        //   },
-        // },
+        'src/generated/graphql/types.ts': {
+          preset: 'import-types',
+          documents: ['src/**/*.{ts,tsx}'],
+          plugins: ['typescript-operations'],
+          config: {
+            skipTypename: true,
+            enumsAsTypes: true,
+            preResolveTypes: false,
+            useTypeImports: true,
+          },
+          presetConfig: {
+            typesPath: './schema.types',
+          },
+        },
       },
     },
   },

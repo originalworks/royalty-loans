@@ -8,7 +8,7 @@ import {
 import { Stack, Typography } from '@mui/material';
 import { useShow, useParsed } from '@refinedev/core';
 
-import { LOAN_OFFER_SHOW_QUERY } from './queries';
+import { LOAN_OFFER_SHOW_QUERY } from '../queries';
 
 export const LoanOfferShow = () => {
   const { id } = useParsed();

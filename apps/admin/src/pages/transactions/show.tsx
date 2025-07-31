@@ -8,7 +8,7 @@ import {
 import { Stack, Typography } from '@mui/material';
 import { useShow, useParsed } from '@refinedev/core';
 
-import { TRANSACTION_SHOW_QUERY } from './queries';
+import { TRANSACTION_SHOW_QUERY } from '../queries';
 
 export const TransactionShow = () => {
   const { id } = useParsed();
