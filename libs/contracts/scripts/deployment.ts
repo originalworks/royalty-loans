@@ -25,9 +25,12 @@ const main = async () => {
   const whitelistDeployment = await deployWhitelist(deployer, [
     deployer.address,
     '0x90DA1d45b73d975CCFfFC7619cEd34443681e506',
+    '0x78F2588052e48Be9bB74114b355423161e026Eea',
+    '0x35afa24e1d9375934ac0749ebad4ca9b57cafb73',
+    '0xB964Af78353fA64acD76EAfBD63D8c4409522f79',
   ]);
   console.log('Done');
-  const paymentTokenAddress = '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913';
+  const paymentTokenAddress = '0x3c499c542cef5e3811e1192ce70d8cc03d5c3359';
 
   console.log('Deploying loanFactory...');
   const factoryDeployment = await deployRoyaltyLoanFactory(
