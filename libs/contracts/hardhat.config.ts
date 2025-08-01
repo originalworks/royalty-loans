@@ -27,6 +27,10 @@ const config: HardhatUserConfig = {
       kmsKeyId: `${process.env.KMS_KEY_ID}`,
       timeout: 100000,
     },
+    polygon: {
+      url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,
+      kmsKeyId: `${process.env.KMS_KEY_ID}`,
+    },
   },
   etherscan: {
     apiKey: {
@@ -35,6 +39,7 @@ const config: HardhatUserConfig = {
       chiado: process.env.BLOCKSCOUT_API_KEY || '',
       base_sepolia: process.env.BASESCAN_API_KEY ?? '',
       base: process.env.BASESCAN_API_KEY ?? '',
+      polygon: process.env.POLYGONSCAN_API_KEY ?? '',
     },
     customChains: [
       {
