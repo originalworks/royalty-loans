@@ -1,0 +1,7 @@
+{
+  "deployer": "0xE4D214ba71B36528670150CA23C4D14141ba7BCF",
+  "royaltyLoanTemplate": "0x5107a3C079B0868bB9F101501BfB56DBf1cc660a",
+  "royaltyLoanFactory": "0xb65F374D10fa525652e488C3e74958d1ba0CBF67",
+  "whitelist": "0xa460BcC532C48B218F3e3580d9eb7653EA2A9D21",
+  "paymentToken": "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359"
+}
