@@ -15,7 +15,7 @@
     "subgraph:codegen": "nx run subgraph:codegen",
     "subgraph:build-base": "nx run subgraph:build --network base",
     "subgraph:build-sepolia": "nx run subgraph:build --network base-sepolia",
-    "subgraph:deploy": "nx run subgraph:deploy",
+    "subgraph:build-polygon": "nx run subgraph:build --network polygon",
     "subgraph:test": "nx run subgraph:test"
   },
   "private": true,
