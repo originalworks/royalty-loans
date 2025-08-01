@@ -16,11 +16,6 @@ const config: HardhatUserConfig = {
     version: '0.8.24',
     settings: { evmVersion: 'cancun' },
   },
-  paths: {
-    sources: './libs',
-    artifacts: './artifacts',
-    cache: './cache',
-  },
   networks: {
     base_sepolia: {
       url: `https://base-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,

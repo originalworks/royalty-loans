@@ -7,7 +7,7 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts/interfaces/IERC1155.sol';
 import '@openzeppelin/contracts/proxy/Clones.sol';
 import './IRoyaltyLoan.sol';
-import '../Whitelist/WhitelistConsumer.sol';
+import '../shared/Whitelist/WhitelistConsumer.sol';
 
 contract RoyaltyLoanFactory is
   WhitelistConsumer,
