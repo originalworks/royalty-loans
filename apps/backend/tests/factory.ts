@@ -20,6 +20,7 @@ export const getFactory = (dataSource: DataSource) => {
       feePercentagePpm: '1000',
       maxLoanAmount: ethers.parseUnits('10', 6).toString(),
       ratio: '1',
+      chainId: '1',
       createdAt: new Date('2021-09-01T12:46:25.241Z'),
       updatedAt: new Date('2021-09-01T12:46:25.241Z'),
     });

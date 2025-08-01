@@ -35,6 +35,11 @@ export class CreateLoanTermsDto {
       'ratio must be a string representing a positive number with up to 4 decimal places',
   })
   ratio: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @Matches(/^\d+$/, { message: 'chainId must be a numeric string' })
+  chainId: string;
 }
 
 export class UpdateLoanTermsDto {
@@ -64,6 +69,11 @@ export class UpdateLoanTermsDto {
       'ratio must be a string representing a positive number with up to 4 decimal places',
   })
   ratio?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d+$/, { message: 'chainId must be a numeric string' })
+  chainId?: string;
 }
 
 export class GetLoanTermByCollateralTokenAddressParamDto {
