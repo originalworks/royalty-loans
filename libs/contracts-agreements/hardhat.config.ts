@@ -12,18 +12,26 @@ dotenv.config();
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: '0.8.13',
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 2000,
+    compilers: [
+      {
+        version: '0.8.20',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 2000,
+          },
+        },
       },
-    },
-  },
-  paths: {
-    sources: './libs',
-    artifacts: './artifacts',
-    cache: './cache',
+      {
+        version: '0.8.23',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 2000,
+          },
+        },
+      },
+    ],
   },
   networks: {
     base_sepolia: {
@@ -133,6 +141,7 @@ const config: HardhatUserConfig = {
   },
   typechain: {
     outDir: 'typechain',
+    target: 'ethers-v6',
   },
 };
 

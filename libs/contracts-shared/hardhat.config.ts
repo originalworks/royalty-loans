@@ -16,11 +16,6 @@ const config: HardhatUserConfig = {
     version: '0.8.24',
     settings: { evmVersion: 'cancun' },
   },
-  paths: {
-    sources: './libs',
-    artifacts: './artifacts',
-    cache: './cache',
-  },
   typechain: {
     outDir: 'typechain',
   },

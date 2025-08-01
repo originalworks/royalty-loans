@@ -1,4 +1,7 @@
 {
+  "include": [
+    "libs/scripts/**/*.ts"
+  ],
   "compilerOptions": {
     "composite": true,
     "declarationMap": true,
