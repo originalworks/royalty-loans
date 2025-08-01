@@ -28,6 +28,9 @@ export class LoanTerm {
   @Column('decimal', { precision: 10, scale: 4 })
   ratio: string;
 
+  @Column({ nullable: false })
+  chainId: string;
+
   @CreateDateColumn()
   createdAt: Date;
 
