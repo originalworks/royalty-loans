@@ -17,7 +17,7 @@ import {
 import { useLoanOffers } from '../../hooks';
 import { ConnectButton } from '../../components';
 import { erc20Abi, royaltyLoanAbi } from '../../generated/smart-contracts';
-import { LOAN_OFFERS_LIST_QUERY, STATISTICS_QUERY } from './queries';
+import { LOAN_OFFERS_LIST_QUERY, STATISTICS_QUERY } from '../queries';
 
 export const LoanOffersList = () => {
   const config = useConfig();
