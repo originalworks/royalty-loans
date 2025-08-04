@@ -1,6 +1,4 @@
 import axios from 'axios';
-import { useChainId } from 'wagmi';
-import { polygon } from 'wagmi/chains';
 import { BrowserRouter, Route, Routes, Outlet } from 'react-router';
 
 import {
@@ -32,7 +30,6 @@ import { DevtoolsPanel, DevtoolsProvider } from '@refinedev/devtools';
 
 import {
   BACKEND_URL,
-  ENVIRONMENT,
   BASE_SUBGRAPH_URL,
   POLYGON_SUBGRAPH_URL,
 } from './config/config';
@@ -84,7 +81,6 @@ const gqlDataProvider = (client: Client) =>
   });
 
 function App() {
-  const chainId = useChainId();
   const { isLoading, user, logout, getAccessTokenSilently } = useAuth0();
 
   const authProvider: AuthProvider = {
