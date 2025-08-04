@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { LoanTerm } from './loanTerms.entity';
 import { Repository } from 'typeorm';
 import { TypeOrmCrudService } from '@dataui/crud-typeorm';
+import { GetLoanTermByCollateralTokenAddressParamDto } from './loanTerms.dto';
 
 @Injectable()
 export class LoanTermsService extends TypeOrmCrudService<LoanTerm> {
@@ -15,9 +16,13 @@ export class LoanTermsService extends TypeOrmCrudService<LoanTerm> {
     super(loanTermsRepo);
   }
 
-  async findByCollateralTokenAddress(
-    collateralTokenAddress: string,
-  ): Promise<LoanTerm> {
-    return await this.loanTermsRepo.findOneByOrFail({ collateralTokenAddress });
+  async findByCollateralTokenAddress({
+    collateralTokenAddress,
+    chainId,
+  }: GetLoanTermByCollateralTokenAddressParamDto): Promise<LoanTerm> {
+    return await this.loanTermsRepo.findOneByOrFail({
+      collateralTokenAddress,
+      chainId,
+    });
   }
 }

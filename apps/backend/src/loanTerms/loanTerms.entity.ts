@@ -3,6 +3,7 @@ import {
   CreateDateColumn,
   Entity,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
@@ -12,11 +13,12 @@ export const bigintTransformer = {
 };
 
 @Entity({ name: 'LoanTerms' })
+@Unique('collateralTokenAddress_chainId', ['collateralTokenAddress', 'chainId'])
 export class LoanTerm {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ nullable: false, unique: true })
+  @Column({ nullable: false })
   collateralTokenAddress: string;
 
   @Column({ type: 'bigint', nullable: false, transformer: bigintTransformer })
