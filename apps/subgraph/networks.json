@@ -18,5 +18,15 @@
       "address": "0x46Bc2338a282383fe2585Ef5F0171E62FdCEf3B0",
       "startBlock": 27756618
     }
+  },
+  "matic": {
+    "RoyaltyLoanFactory": {
+      "address": "0xb65F374D10fa525652e488C3e74958d1ba0CBF67",
+      "startBlock": 74667920
+    },
+    "ERC20Token": {
+      "address": "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359",
+      "startBlock": 74667920
+    }
   }
 }
