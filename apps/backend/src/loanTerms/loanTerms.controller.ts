@@ -37,12 +37,10 @@ export class LoanTermsController implements CrudController<LoanTerm> {
   constructor(public service: LoanTermsService) {}
 
   @Public()
-  @Get('collateral/:collateralTokenAddress')
+  @Get('collateral/:collateralTokenAddress/:chainId')
   async getByWalletAddress(
     @Param() params: GetLoanTermByCollateralTokenAddressParamDto,
   ) {
-    return this.service.findByCollateralTokenAddress(
-      params.collateralTokenAddress,
-    );
+    return this.service.findByCollateralTokenAddress(params);
   }
 }

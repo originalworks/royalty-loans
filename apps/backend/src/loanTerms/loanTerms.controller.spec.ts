@@ -102,13 +102,28 @@ describe('AppController', () => {
 
     it('GetOneByCollateralTokenAddress', async () => {
       const entry = await loanTermsRepo.findOneBy({ id: 5 });
-      const res = await request(app.getHttpServer())
+      const entryOnDifferentChain = await factory.create<LoanTerm>(
+        LoanTerm.name,
+        {
+          collateralTokenAddress: entry?.collateralTokenAddress,
+          chainId: '2',
+        },
+      );
+      let res = await request(app.getHttpServer())
         .get(
-          `/loan-terms/collateral/${entry?.collateralTokenAddress.toUpperCase()}`,
+          `/loan-terms/collateral/${entry?.collateralTokenAddress.toUpperCase()}/${entry?.chainId}`,
         )
         .expect(200);
 
       expect(res.body.id).toEqual(5);
+
+      res = await request(app.getHttpServer())
+        .get(
+          `/loan-terms/collateral/${entry?.collateralTokenAddress.toUpperCase()}/${entryOnDifferentChain.chainId}`,
+        )
+        .expect(200);
+
+      expect(res.body.id).toEqual(entryOnDifferentChain.id);
     });
   });
 });
