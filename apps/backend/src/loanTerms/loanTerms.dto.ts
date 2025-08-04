@@ -80,4 +80,8 @@ export class GetLoanTermByCollateralTokenAddressParamDto {
   @IsEthereumAddress()
   @Transform(({ value }) => value.toLowerCase())
   collateralTokenAddress: string;
+
+  @IsString()
+  @Matches(/^\d+$/, { message: 'chainId must be a numeric string' })
+  chainId: string;
 }
