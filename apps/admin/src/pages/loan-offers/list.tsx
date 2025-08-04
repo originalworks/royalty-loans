@@ -14,19 +14,22 @@ import {
   TextFieldComponent as TextField,
 } from '@refinedev/mui';
 
-import { useLoanOffers } from '../../hooks';
 import { ConnectButton } from '../../components';
+import { useLoanOffers, useDataProvider } from '../../hooks';
 import { erc20Abi, royaltyLoanAbi } from '../../generated/smart-contracts';
 import { LOAN_OFFERS_LIST_QUERY, STATISTICS_QUERY } from '../queries';
 
 export const LoanOffersList = () => {
   const config = useConfig();
   const { isConnected } = useAccount();
+
   const [results, setResults] = useState<
     Array<{ contract: string; active: boolean; canRepay: boolean }>
   >([]);
-  const [pageSize, setPageSize] = useState<number>(10);
   const [page, setPage] = useState<number>(0);
+  const [pageSize, setPageSize] = useState<number>(10);
+
+  const dataProvider = useDataProvider();
   const { isLoading, provideLoanFn, processRepaymentFn } = useLoanOffers();
 
   const { data } = useOne({
@@ -35,7 +38,7 @@ export const LoanOffersList = () => {
     meta: {
       gqlQuery: STATISTICS_QUERY,
     },
-    dataProviderName: 'graphQl',
+    dataProviderName: dataProvider,
   });
 
   const { dataGridProps } = useDataGrid({
@@ -50,7 +53,7 @@ export const LoanOffersList = () => {
         skip: page * pageSize,
       },
     },
-    dataProviderName: 'graphQl',
+    dataProviderName: dataProvider,
     syncWithLocation: false,
   });
 
