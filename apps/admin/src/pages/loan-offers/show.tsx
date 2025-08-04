@@ -1,4 +1,5 @@
 import { ethers } from 'ethers';
+import { useChainId, useChains } from 'wagmi';
 
 import {
   Show,
@@ -13,6 +14,8 @@ import { LOAN_OFFER_SHOW_QUERY } from '../queries';
 
 export const LoanOfferShow = () => {
   const { id } = useParsed();
+  const chainId = useChainId();
+  const chains = useChains();
   const dataProvider = useDataProvider(true);
 
   const { query } = useShow({
@@ -46,6 +49,8 @@ export const LoanOfferShow = () => {
         )
       : initialCumulated;
 
+  const foundChain = chains.find((chain) => chain.id === chainId);
+
   return (
     <Show isLoading={isLoading}>
       <Stack gap={1}>
@@ -53,6 +58,15 @@ export const LoanOfferShow = () => {
           ID
         </Typography>
         <TextField value={record?.id} />
+
+        {foundChain && (
+          <>
+            <Typography variant="body1" fontWeight="bold">
+              Network
+            </Typography>
+            <TextField value={foundChain.name} />
+          </>
+        )}
 
         <Typography variant="body1" fontWeight="bold">
           Contract Address

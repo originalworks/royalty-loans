@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 import { readContract } from 'wagmi/actions';
-import { useAccount, useConfig } from 'wagmi';
 import { useEffect, useState, useMemo } from 'react';
+import { useAccount, useChainId, useChains, useConfig } from 'wagmi';
 
 import {
   List,
@@ -21,7 +21,9 @@ import { LOAN_OFFERS_LIST_QUERY, STATISTICS_QUERY } from '../queries';
 
 export const LoanOffersList = () => {
   const config = useConfig();
+  const chainId = useChainId();
   const { isConnected } = useAccount();
+  const chains = useChains();
 
   const [results, setResults] = useState<
     Array<{ contract: string; active: boolean; canRepay: boolean }>
@@ -119,6 +121,20 @@ export const LoanOffersList = () => {
         display: 'flex',
         align: 'left',
         headerAlign: 'left',
+      },
+      {
+        field: 'chainId',
+        headerName: 'Network',
+        type: 'string',
+        minWidth: 100,
+        display: 'flex',
+        align: 'left',
+        headerAlign: 'left',
+        renderCell: function render() {
+          const foundChain = chains.find((chain) => chain.id === chainId);
+          if (!foundChain) return null;
+          return <TextField value={foundChain.name} />;
+        },
       },
       {
         field: 'loanContract',
@@ -285,7 +301,7 @@ export const LoanOffersList = () => {
         },
       },
     ],
-    [isConnected, isLoading, results],
+    [isConnected, isLoading, results, chains, chainId],
   );
 
   return (
