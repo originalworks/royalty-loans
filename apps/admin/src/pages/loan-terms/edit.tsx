@@ -1,14 +1,23 @@
+import { useChains } from 'wagmi';
+import { Controller } from 'react-hook-form';
+
 import { Edit } from '@refinedev/mui';
-import { Box, TextField } from '@mui/material';
 import { useForm } from '@refinedev/react-hook-form';
+import { Autocomplete, Box, TextField } from '@mui/material';
 
 export const LoanTermEdit = () => {
+  const chains = useChains();
+
   const {
-    setValue,
-    saveButtonProps,
+    control,
     register,
+    setValue,
+    getValues,
     formState: { errors },
+    saveButtonProps,
   } = useForm({});
+
+  const defaultChain = getValues().chainId || chains[0].id.toString();
 
   return (
     <Edit saveButtonProps={saveButtonProps}>
@@ -38,6 +47,41 @@ export const LoanTermEdit = () => {
           onChange={(event) =>
             setValue('collateralTokenAddress', event.target.value.toLowerCase())
           }
+        />
+
+        <Controller
+          control={control}
+          name="chainId"
+          rules={{ required: 'This field is required' }}
+          defaultValue={defaultChain}
+          render={({ field }) => (
+            <Autocomplete
+              id="chainId"
+              {...field}
+              options={chains.map((chain) => chain.id.toString())}
+              onChange={(_, value) => field.onChange(value)}
+              getOptionLabel={(item) =>
+                chains.find((chain) => chain.id.toString() === item)?.name || ''
+              }
+              isOptionEqualToValue={(option, value) =>
+                value === undefined || option?.toString() === value?.toString()
+              }
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Network"
+                  margin="normal"
+                  variant="outlined"
+                  fullWidth
+                  error={!!(errors as any)?.chainId}
+                  helperText={(errors as any)?.chainId?.message}
+                  slotProps={{
+                    inputLabel: { shrink: true },
+                  }}
+                />
+              )}
+            />
+          )}
         />
 
         <TextField
