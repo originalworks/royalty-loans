@@ -8,10 +8,12 @@ import {
 import { Stack, Typography } from '@mui/material';
 import { useShow, useParsed } from '@refinedev/core';
 
+import { useDataProvider } from '../../hooks';
 import { TRANSACTION_SHOW_QUERY } from '../queries';
 
 export const TransactionShow = () => {
   const { id } = useParsed();
+  const dataProvider = useDataProvider(true);
 
   const { query } = useShow({
     id,
@@ -19,7 +21,7 @@ export const TransactionShow = () => {
     meta: {
       gqlQuery: TRANSACTION_SHOW_QUERY,
     },
-    dataProviderName: 'graphQl',
+    dataProviderName: dataProvider,
   });
 
   const { data, isLoading } = query;

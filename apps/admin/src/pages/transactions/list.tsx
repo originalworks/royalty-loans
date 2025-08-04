@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 
 import {
   List,
@@ -12,14 +12,17 @@ import { useOne } from '@refinedev/core';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { Stack, TextField as InputField } from '@mui/material';
 
+import { useDataProvider } from '../../hooks';
 import { TRANSACTIONS_LIST_QUERY, STATISTICS_QUERY } from '../queries';
 
 export const TransactionsList = () => {
   const [pageSize, setPageSize] = useState<number>(10);
   const [page, setPage] = useState<number>(0);
 
-  const [contractAddresses, setContractAddresses] = React.useState('');
-  const [tokenAddresses, setTokenAddresses] = React.useState('');
+  const [contractAddresses, setContractAddresses] = useState('');
+  const [tokenAddresses, setTokenAddresses] = useState('');
+
+  const dataProvider = useDataProvider();
 
   const { data } = useOne({
     id: 'status',
@@ -27,7 +30,7 @@ export const TransactionsList = () => {
     meta: {
       gqlQuery: STATISTICS_QUERY,
     },
-    dataProviderName: 'graphQl',
+    dataProviderName: dataProvider,
   });
 
   const { dataGridProps } = useDataGrid({
@@ -60,7 +63,7 @@ export const TransactionsList = () => {
         },
       },
     },
-    dataProviderName: 'graphQl',
+    dataProviderName: dataProvider,
     syncWithLocation: false,
   });
 
