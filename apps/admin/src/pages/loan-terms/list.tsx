@@ -1,4 +1,5 @@
 import React from 'react';
+import { useChains } from 'wagmi';
 
 import {
   List,
@@ -7,10 +8,13 @@ import {
   ShowButton,
   useDataGrid,
   DeleteButton,
+  TextFieldComponent as TextField,
 } from '@refinedev/mui';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 
 export const LoanTermsList = () => {
+  const chains = useChains();
+
   const { dataGridProps } = useDataGrid({
     sorters: {
       initial: [
@@ -43,6 +47,21 @@ export const LoanTermsList = () => {
         flex: 1,
         align: 'left',
         headerAlign: 'left',
+      },
+      {
+        field: 'chainId',
+        headerName: 'Network',
+        type: 'string',
+        minWidth: 100,
+        display: 'flex',
+        align: 'left',
+        headerAlign: 'left',
+        renderCell: function render({ value }) {
+          if (!value) return null;
+          const foundChain = chains.find((chain) => chain.id === Number(value));
+          if (!foundChain) return null;
+          return <TextField value={foundChain.name} />;
+        },
       },
       {
         field: 'feePercentagePpm',
@@ -109,7 +128,7 @@ export const LoanTermsList = () => {
         },
       },
     ],
-    [],
+    [chains],
   );
 
   return (
