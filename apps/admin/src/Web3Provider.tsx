@@ -5,7 +5,7 @@ import { ConnectKitProvider, getDefaultConfig } from 'connectkit';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import { RPC_URL, ENVIRONMENT } from './config/config';
+import { BASE_RPC_URL, ENVIRONMENT } from './config/config';
 
 const config =
   ENVIRONMENT === 'PROD'
@@ -17,7 +17,7 @@ const config =
           // Your dApps chains
           chains: [base],
           transports: {
-            [base.id]: http(RPC_URL, {
+            [base.id]: http(BASE_RPC_URL, {
               batch: true,
             }),
           },
@@ -32,7 +32,7 @@ const config =
           // Your dApps chains
           chains: [baseSepolia],
           transports: {
-            [baseSepolia.id]: http(RPC_URL, {
+            [baseSepolia.id]: http(BASE_RPC_URL, {
               batch: true,
             }),
           },

@@ -37,13 +37,13 @@ import {
 import { Login } from './pages/login';
 import { Header } from './components';
 import { AppIcon } from './components/app-icon';
-import { BACKEND_URL, SUBGRAPH_URL } from './config/config';
+import { BACKEND_URL, BASE_SUBGRAPH_URL } from './config/config';
 import { ColorModeContextProvider } from './contexts/color-mode';
 import { LoanOfferShow, LoanOffersList } from './pages/loan-offers';
 import { TransactionShow, TransactionsList } from './pages/transactions';
 
 const gqlClient = new Client({
-  url: SUBGRAPH_URL,
+  url: BASE_SUBGRAPH_URL,
   exchanges: [fetchExchange],
 });
 
