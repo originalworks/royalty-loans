@@ -13,7 +13,9 @@ export const useDataProvider = (goBack = false) => {
   const chainId = useChainId();
 
   const [dataProvider, setDataProvider] = useState<string>(
-    chainId === polygon.id ? 'graphQlPolygon' : 'graphQlBase',
+    ENVIRONMENT === 'PROD' && chainId === polygon.id
+      ? 'graphQlPolygon'
+      : 'graphQlBase',
   );
 
   const handleChangeDataProvider = (id: number) => {
