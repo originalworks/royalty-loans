@@ -1,0 +1,56 @@
+{
+  "name": "@royalty-loans/contracts-loans",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": {
+      "types": "./index.ts",
+      "import": "./index.ts",
+      "default": "./index.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {},
+  "nx": {
+    "targets": {
+      "prepare": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "ts-node scripts/symlink-shared.ts"
+        }
+      },
+      "test": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "npx hardhat test",
+          "cwd": "libs/contracts-loans"
+        }
+      },
+      "compile": {
+        "dependsOn": [
+          "prepare"
+        ],
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "npx hardhat compile",
+          "cwd": "libs/contracts-loans"
+        }
+      },
+      "lint": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "eslint \"{src,test}/**/*.ts\" --fix",
+          "cwd": "libs/contracts-loans"
+        }
+      },
+      "typecheck": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "tsc --noEmit"
+        }
+      }
+    }
+  }
+}
