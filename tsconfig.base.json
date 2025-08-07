@@ -3,6 +3,7 @@
     "scripts/**/*.ts"
   ],
   "compilerOptions": {
+    "baseUrl": ".",
     "composite": true,
     "declarationMap": true,
     "emitDeclarationOnly": true,
@@ -24,5 +25,10 @@
     "customConditions": [
       "development"
     ],
+    "paths": {
+      "@royalty-loans/*": [
+        "libs/contracts-*"
+      ],
+    }
   }
 }
