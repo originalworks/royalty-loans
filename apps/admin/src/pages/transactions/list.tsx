@@ -1,5 +1,6 @@
 import { ethers } from 'ethers';
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
+import { useChainId, useChains } from 'wagmi';
 
 import {
   List,
@@ -12,14 +13,19 @@ import { useOne } from '@refinedev/core';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { Stack, TextField as InputField } from '@mui/material';
 
+import { useDataProvider } from '../../hooks';
 import { TRANSACTIONS_LIST_QUERY, STATISTICS_QUERY } from '../queries';
 
 export const TransactionsList = () => {
+  const chainId = useChainId();
+  const chains = useChains();
   const [pageSize, setPageSize] = useState<number>(10);
   const [page, setPage] = useState<number>(0);
 
-  const [contractAddresses, setContractAddresses] = React.useState('');
-  const [tokenAddresses, setTokenAddresses] = React.useState('');
+  const [contractAddresses, setContractAddresses] = useState('');
+  const [tokenAddresses, setTokenAddresses] = useState('');
+
+  const dataProvider = useDataProvider();
 
   const { data } = useOne({
     id: 'status',
@@ -27,7 +33,7 @@ export const TransactionsList = () => {
     meta: {
       gqlQuery: STATISTICS_QUERY,
     },
-    dataProviderName: 'graphQl',
+    dataProviderName: dataProvider,
   });
 
   const { dataGridProps } = useDataGrid({
@@ -60,7 +66,7 @@ export const TransactionsList = () => {
         },
       },
     },
-    dataProviderName: 'graphQl',
+    dataProviderName: dataProvider,
     syncWithLocation: false,
   });
 
@@ -74,6 +80,20 @@ export const TransactionsList = () => {
         display: 'flex',
         align: 'left',
         headerAlign: 'left',
+      },
+      {
+        field: 'chainId',
+        headerName: 'Network',
+        type: 'string',
+        minWidth: 100,
+        display: 'flex',
+        align: 'left',
+        headerAlign: 'left',
+        renderCell: function render() {
+          const foundChain = chains.find((chain) => chain.id === chainId);
+          if (!foundChain) return null;
+          return <TextField value={foundChain.name} />;
+        },
       },
       {
         field: 'loanContract__id',
@@ -171,7 +191,7 @@ export const TransactionsList = () => {
         },
       },
     ],
-    [],
+    [chainId, chains],
   );
 
   return (

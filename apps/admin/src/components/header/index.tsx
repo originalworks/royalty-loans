@@ -1,4 +1,6 @@
-import React, { useContext } from 'react';
+import { watchChainId } from 'wagmi/actions';
+import React, { useContext, useEffect } from 'react';
+import { useConfig, useChains, useDisconnect, useAccount } from 'wagmi';
 
 import Stack from '@mui/material/Stack';
 import AppBar from '@mui/material/AppBar';
@@ -24,9 +26,23 @@ type IUser = {
 export const Header: React.FC<RefineThemedLayoutV2HeaderProps> = ({
   sticky = true,
 }) => {
+  const config = useConfig();
+  const chains = useChains();
+  const { disconnect } = useDisconnect();
+  const { isConnected, chainId } = useAccount();
   const { mode, setMode } = useContext(ColorModeContext);
 
   const { data: user } = useGetIdentity<IUser>();
+
+  watchChainId(config, {
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    onChange() {},
+  });
+
+  useEffect(() => {
+    if (isConnected && chains.findIndex((chain) => chain.id === chainId) < 0)
+      disconnect();
+  }, [chainId, chains, isConnected, disconnect]);
 
   return (
     <AppBar position={sticky ? 'sticky' : 'relative'}>

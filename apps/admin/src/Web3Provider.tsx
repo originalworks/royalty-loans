@@ -1,11 +1,11 @@
 import React from 'react';
-import { base, baseSepolia } from 'wagmi/chains';
+import { base, baseSepolia, polygon } from 'wagmi/chains';
 import { WagmiProvider, createConfig, http } from 'wagmi';
 import { ConnectKitProvider, getDefaultConfig } from 'connectkit';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import { RPC_URL, ENVIRONMENT } from './config/config';
+import { BASE_RPC_URL, ENVIRONMENT, POLYGON_RPC_URL } from './config/config';
 
 const config =
   ENVIRONMENT === 'PROD'
@@ -15,9 +15,12 @@ const config =
           appName: 'OW Admin',
           walletConnectProjectId: 'ddf84945a65baaea510744142de8d6a6',
           // Your dApps chains
-          chains: [base],
+          chains: [base, polygon],
           transports: {
-            [base.id]: http(RPC_URL, {
+            [base.id]: http(BASE_RPC_URL, {
+              batch: true,
+            }),
+            [polygon.id]: http(POLYGON_RPC_URL, {
               batch: true,
             }),
           },
@@ -32,7 +35,7 @@ const config =
           // Your dApps chains
           chains: [baseSepolia],
           transports: {
-            [baseSepolia.id]: http(RPC_URL, {
+            [baseSepolia.id]: http(BASE_RPC_URL, {
               batch: true,
             }),
           },
