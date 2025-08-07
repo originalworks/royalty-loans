@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
+    "postinstall": "nx run-many --target=compile --all",
     "backend:start": "nx run backend:serve",
     "backend:build": "nx run backend:build",
     "backend:test": "nx run backend:test",
@@ -15,6 +16,7 @@
     "subgraph:codegen": "nx run subgraph:codegen",
     "subgraph:build-base": "nx run subgraph:build --network base",
     "subgraph:build-sepolia": "nx run subgraph:build --network base-sepolia",
+    "subgraph:deploy": "nx run subgraph:deploy",
     "subgraph:build-polygon": "nx run subgraph:build --network matic",
     "subgraph:test": "nx run subgraph:test"
   },
