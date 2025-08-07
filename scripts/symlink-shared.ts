@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const rootDir = path.resolve(__dirname, '../../');
+const rootDir = path.resolve(__dirname, '../');
 const sharedContractsPath = path.join(
   rootDir,
   'libs',
