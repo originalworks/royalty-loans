@@ -1,32 +1,37 @@
 import { ethers } from 'ethers';
 import { readContract } from 'wagmi/actions';
-import { useAccount, useConfig } from 'wagmi';
 import { useEffect, useState, useMemo } from 'react';
+import { useAccount, useChainId, useChains, useConfig } from 'wagmi';
 
+import {
+  List,
+  DateField,
+  ShowButton,
+  useDataGrid,
+  TextFieldComponent as TextField,
+} from '@refinedev/mui';
 import { Button } from '@mui/material';
 import { useOne } from '@refinedev/core';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
-import {
-  List,
-  ShowButton,
-  useDataGrid,
-  DateField,
-  TextFieldComponent as TextField,
-} from '@refinedev/mui';
 
-import { useLoanOffers } from '../../hooks';
 import { ConnectButton } from '../../components';
+import { useLoanOffers, useDataProvider } from '../../hooks';
 import { erc20Abi, royaltyLoanAbi } from '../../generated/smart-contracts';
 import { LOAN_OFFERS_LIST_QUERY, STATISTICS_QUERY } from '../queries';
 
 export const LoanOffersList = () => {
   const config = useConfig();
+  const chainId = useChainId();
   const { isConnected } = useAccount();
+  const chains = useChains();
+
   const [results, setResults] = useState<
     Array<{ contract: string; active: boolean; canRepay: boolean }>
   >([]);
-  const [pageSize, setPageSize] = useState<number>(10);
   const [page, setPage] = useState<number>(0);
+  const [pageSize, setPageSize] = useState<number>(10);
+
+  const dataProvider = useDataProvider();
   const { isLoading, provideLoanFn, processRepaymentFn } = useLoanOffers();
 
   const { data } = useOne({
@@ -35,7 +40,7 @@ export const LoanOffersList = () => {
     meta: {
       gqlQuery: STATISTICS_QUERY,
     },
-    dataProviderName: 'graphQl',
+    dataProviderName: dataProvider,
   });
 
   const { dataGridProps } = useDataGrid({
@@ -50,7 +55,7 @@ export const LoanOffersList = () => {
         skip: page * pageSize,
       },
     },
-    dataProviderName: 'graphQl',
+    dataProviderName: dataProvider,
     syncWithLocation: false,
   });
 
@@ -116,6 +121,20 @@ export const LoanOffersList = () => {
         display: 'flex',
         align: 'left',
         headerAlign: 'left',
+      },
+      {
+        field: 'chainId',
+        headerName: 'Network',
+        type: 'string',
+        minWidth: 100,
+        display: 'flex',
+        align: 'left',
+        headerAlign: 'left',
+        renderCell: function render() {
+          const foundChain = chains.find((chain) => chain.id === chainId);
+          if (!foundChain) return null;
+          return <TextField value={foundChain.name} />;
+        },
       },
       {
         field: 'loanContract',
@@ -282,7 +301,7 @@ export const LoanOffersList = () => {
         },
       },
     ],
-    [isConnected, isLoading, results],
+    [isConnected, isLoading, results, chains, chainId],
   );
 
   return (

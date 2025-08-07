@@ -15,12 +15,12 @@ jobs:
     steps:
       - name: "Checkout"
         uses: actions/checkout@v4
-      
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -38,9 +38,11 @@ jobs:
           VITE_AUTH0_ISSUER: ${{ secrets.VITE_AUTH0_ISSUER }}
           VITE_AUTH0_AUDIENCE: ${{ secrets.VITE_AUTH0_AUDIENCE }}
           VITE_AUTH0_CLIENT_ID: ${{ secrets.VITE_AUTH0_CLIENT_ID }}
-          VITE_RPC_URL: ${{ secrets.VITE_BASE_RPC_URL }}
-          VITE_SUBGRAPH_URL: ${{ secrets.VITE_BASE_SUBGRAPH_URL }}
           VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL_PROD }}
+          VITE_BASE_RPC_URL: ${{ secrets.VITE_BASE_RPC_URL }}
+          VITE_BASE_SUBGRAPH_URL: ${{ secrets.VITE_BASE_SUBGRAPH_URL }}
+          VITE_POLYGON_RPC_URL: ${{ secrets.VITE_POLYGON_RPC_URL }}
+          VITE_POLYGON_SUBGRAPH_URL: ${{ secrets.VITE_BASE_SUBGRAPH_URL }}
           VITE_PROD_DOMAIN: ${{ secrets.PROD_DOMAIN }}
           VITE_STAGE_DOMAIN: ${{ secrets.STAGE_DOMAIN }}
         run: npx nx run admin:build --no-cloud
@@ -48,7 +50,7 @@ jobs:
       - name: Deploy to S3
         run: |
           aws s3 sync apps/admin/dist s3://${{ secrets.PROD_ADMIN_S3_BUCKET }} --delete
-      
+
       - name: Invalidate CloudFront
         run: |
           aws cloudfront create-invalidation \

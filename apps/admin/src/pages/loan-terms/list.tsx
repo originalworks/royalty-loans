@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useChainId, useChains } from 'wagmi';
 
 import {
   List,
@@ -7,16 +8,32 @@ import {
   ShowButton,
   useDataGrid,
   DeleteButton,
+  TextFieldComponent as TextField,
 } from '@refinedev/mui';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
+import { Autocomplete, Stack, TextField as InputField } from '@mui/material';
 
 export const LoanTermsList = () => {
+  const chains = useChains();
+  const chainId = useChainId();
+
+  const [chain, setChain] = useState<string>(chainId.toString());
+
   const { dataGridProps } = useDataGrid({
     sorters: {
       initial: [
         {
           field: 'id',
           order: 'desc',
+        },
+      ],
+    },
+    filters: {
+      initial: [
+        {
+          field: 'chainId',
+          operator: 'eq',
+          value: chain,
         },
       ],
     },
@@ -43,6 +60,25 @@ export const LoanTermsList = () => {
         flex: 1,
         align: 'left',
         headerAlign: 'left',
+      },
+      {
+        field: 'chainId',
+        headerName: 'Network',
+        type: 'string',
+        minWidth: 100,
+        display: 'flex',
+        align: 'left',
+        headerAlign: 'left',
+        renderCell: function render({ value }) {
+          if (!value) return null;
+          const foundChain = chains.find((chain) => chain.id === Number(value));
+          if (!foundChain) return null;
+          return <TextField value={foundChain.name} />;
+        },
+        sortable: false,
+        filterable: false,
+        hideable: false,
+        disableColumnMenu: true,
       },
       {
         field: 'feePercentagePpm',
@@ -109,11 +145,54 @@ export const LoanTermsList = () => {
         },
       },
     ],
-    [],
+    [chains],
   );
 
   return (
     <List>
+      <Stack direction="row" gap={1}>
+        <Autocomplete
+          id="chainId"
+          sx={{ flex: 1, marginTop: 0 }}
+          disableClearable
+          defaultValue={
+            chains.find((chain) => chain.id === chainId)?.id.toString() ||
+            chains[0].id.toString()
+          }
+          options={chains.map((chain) => chain.id.toString())}
+          onChange={(_, value) => {
+            setChain(value);
+            dataGridProps.onFilterModelChange({
+              items: [
+                {
+                  field: 'chainId',
+                  operator: 'eq',
+                  value,
+                },
+              ],
+            });
+          }}
+          getOptionLabel={(item) =>
+            chains.find((chain) => chain.id.toString() === item)?.name || ''
+          }
+          isOptionEqualToValue={(option, value) =>
+            value === undefined || option?.toString() === value?.toString()
+          }
+          renderInput={(params) => (
+            <InputField
+              {...params}
+              label="Network"
+              margin="normal"
+              variant="outlined"
+              fullWidth
+              slotProps={{
+                inputLabel: { shrink: true },
+              }}
+            />
+          )}
+        />
+      </Stack>
+
       <DataGrid {...dataGridProps} columns={columns} />
     </List>
   );

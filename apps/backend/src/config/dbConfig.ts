@@ -1,5 +1,6 @@
 import { DataSourceOptions } from 'typeorm';
 import { entities } from './entities';
+import path from 'path';
 
 export type DbConfigs = 'db' | 'test' | 'local' | 'migration';
 
@@ -26,7 +27,9 @@ export const dbConfigs: { [k in DbConfigs]: DataSourceOptions } = {
     database: process.env.DB_DATABASE,
     type: 'postgres',
     entities,
-    migrations: ['infrastructure/out/dist/migrations/*.js'],
+    migrations: [
+      path.resolve(__dirname, '../../infrastructure/out/dist/migrations/*.js'),
+    ],
     synchronize: false,
   },
   test: {

@@ -1,3 +1,5 @@
+import { useChains } from 'wagmi';
+
 import {
   Show,
   DateField,
@@ -7,10 +9,14 @@ import { useShow } from '@refinedev/core';
 import { Stack, Typography } from '@mui/material';
 
 export const LoanTermsShow = () => {
+  const chains = useChains();
   const { query } = useShow({});
   const { data, isLoading } = query;
 
   const record = data?.data;
+  const foundChain = chains.find(
+    (chain) => chain.id === Number(record?.chainId),
+  );
 
   return (
     <Show isLoading={isLoading}>
@@ -24,6 +30,15 @@ export const LoanTermsShow = () => {
           Collateral Token
         </Typography>
         <TextField value={record?.collateralTokenAddress} />
+
+        {foundChain && (
+          <>
+            <Typography variant="body1" fontWeight="bold">
+              Network
+            </Typography>
+            <TextField value={foundChain.name} />
+          </>
+        )}
 
         <Typography variant="body1" fontWeight="bold">
           Fee Ppm (1% = 10000)
