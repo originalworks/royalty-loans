@@ -16,8 +16,7 @@
     "subgraph:build-base": "nx run subgraph:build --network base",
     "subgraph:build-sepolia": "nx run subgraph:build --network base-sepolia",
     "subgraph:deploy": "nx run subgraph:deploy",
-    "subgraph:test": "nx run subgraph:test",
-    "prepare-contracts": "ts-node libs/contracts/symlink-contracts.ts"
+    "subgraph:test": "nx run subgraph:test"
   },
   "private": true,
   "dependencies": {
