@@ -18,7 +18,7 @@
     "subgraph:build-sepolia": "nx run subgraph:build --network base-sepolia",
     "subgraph:deploy": "nx run subgraph:deploy",
     "subgraph:build-polygon": "nx run subgraph:build --network matic",
-    "subgraph:test": "nx run subgraph:test",
+    "subgraph:test": "nx run subgraph:test"
   },
   "private": true,
   "dependencies": {
