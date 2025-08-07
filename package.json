@@ -16,7 +16,8 @@
     "subgraph:build-base": "nx run subgraph:build --network base",
     "subgraph:build-sepolia": "nx run subgraph:build --network base-sepolia",
     "subgraph:deploy": "nx run subgraph:deploy",
-    "subgraph:test": "nx run subgraph:test"
+    "subgraph:test": "nx run subgraph:test",
+    "postinstall": "nx run-many --target=compile --all"
   },
   "private": true,
   "dependencies": {
