@@ -264,7 +264,7 @@ export const LoanOffersList = () => {
           return (
             <>
               <ShowButton hideText recordItemId={row.id} />
-              {row.status === 'active' &&
+              {row.status === 'Active' &&
                 results.find(({ contract }) => contract === row.loanContract)
                   ?.canRepay &&
                 (isConnected ? (
@@ -280,8 +280,8 @@ export const LoanOffersList = () => {
                   <ConnectButton />
                 ))}
 
-              {(row.status === 'pending' ||
-                (row.status === 'pending' &&
+              {(row.status === 'Pending' ||
+                (row.status === 'Pending' &&
                   !results.find(({ contract }) => contract === row.loanContract)
                     ?.active)) &&
                 (isConnected ? (
