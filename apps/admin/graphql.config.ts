@@ -1,7 +1,7 @@
 import type { IGraphQLConfig } from 'graphql-config';
 
 const config: IGraphQLConfig = {
-  schema: process.env.VITE_SUBGRAPH_URL,
+  schema: process.env.VITE_BASE_SUBGRAPH_URL,
   extensions: {
     codegen: {
       hooks: {
