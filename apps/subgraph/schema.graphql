@@ -38,6 +38,7 @@ type LoanContract @entity(immutable: false) {
   loanAmount: BigInt!
   recoupmentAmount: BigInt!
   repaidAmount: BigInt!
+  actualRepaid: BigInt!
   feePpm: BigInt!
   status: LoanStatus!
   timestamp: BigInt!
@@ -50,6 +51,7 @@ type Expense @entity(immutable: true) {
   loanContract: LoanContract!
   transactionHash: Bytes!
   kind: ExpenseKind!
+  value: BigInt
   baseFeePerGas: BigInt
   gasLimit: BigInt!
   gasPrice: BigInt! # format to gwei
