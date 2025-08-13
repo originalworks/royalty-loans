@@ -36,6 +36,7 @@ export function handleLoanContractCreated(
       .div(BigInt.fromI32(1000000)),
   );
   entity.repaidAmount = BigInt.zero();
+  entity.actualRepaid = BigInt.zero();
   entity.feePpm = event.params.feePpm;
   entity.status = 'Pending';
   entity.timestamp = event.block.timestamp;

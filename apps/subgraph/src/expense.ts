@@ -8,6 +8,7 @@ export function createExpense(
   loanContract: Bytes,
   kind: string,
   event: ethereum.Event,
+  value: BigInt | null = null,
 ): Expense {
   const expenseId = txHash.concat(Bytes.fromUTF8(':expense'));
   const expense = new Expense(expenseId);
@@ -15,6 +16,7 @@ export function createExpense(
   expense.transactionHash = txHash;
   expense.kind = kind;
   expense.baseFeePerGas = event.block.baseFeePerGas;
+  expense.value = value;
 
   const transaction = event.transaction;
   expense.gasLimit = transaction.gasLimit;

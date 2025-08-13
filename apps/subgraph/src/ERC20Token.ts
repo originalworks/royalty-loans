@@ -15,6 +15,11 @@ export function handleERC20Transfer(event: TransferEvent): void {
       'ERC20Transfer',
       event,
     );
+
+    loanContract.actualRepaid = loanContract.actualRepaid.plus(
+      event.params.value,
+    );
+    loanContract.save();
   }
 }
 
