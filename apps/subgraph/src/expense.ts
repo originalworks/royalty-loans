@@ -9,12 +9,14 @@ export function createExpense(
   kind: string,
   event: ethereum.Event,
   value: BigInt | null = null,
+  from: Bytes | null = null,
 ): Expense {
   const expenseId = txHash.concat(Bytes.fromUTF8(':expense'));
   const expense = new Expense(expenseId);
   expense.loanContract = loanContract;
   expense.transactionHash = txHash;
   expense.kind = kind;
+  expense.from = from;
   expense.baseFeePerGas = event.block.baseFeePerGas;
   expense.value = value;
 

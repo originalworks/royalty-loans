@@ -44,10 +44,12 @@ type LoanContract @entity(immutable: false) {
   timestamp: BigInt!
   transactionHash: Bytes!
   expenses: [Expense!]! @derivedFrom(field: "loanContract")
+  loanRepaid: LoanRepaid
 }
 
 type Expense @entity(immutable: true) {
   id: Bytes!
+  from: Bytes
   loanContract: LoanContract!
   transactionHash: Bytes!
   kind: ExpenseKind!

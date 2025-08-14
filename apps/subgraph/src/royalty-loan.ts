@@ -75,6 +75,7 @@ export function handleLoanRepaid(event: LoanRepaidEvent): void {
   if (loan !== null) {
     loan.repaidAmount = loan.repaidAmount.plus(event.params.repaymentAmount);
     loan.status = 'Recouped';
+    loan.loanRepaid = entity.id;
     loan.save();
   }
 
