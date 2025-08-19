@@ -6,8 +6,8 @@ import {
   LoanContractCreated as LoanContractCreatedEvent,
 } from '../generated/RoyaltyLoanFactory/RoyaltyLoanFactory';
 import { InitializedFactory, LoanContract } from '../generated/schema';
-import { recordStats } from './helpers';
 import { createExpense } from './expense';
+import { initializeStats, recordStats } from './helpers';
 
 export function handleInitialized(event: InitializedEvent): void {
   const entity = new InitializedFactory(
@@ -18,6 +18,8 @@ export function handleInitialized(event: InitializedEvent): void {
   entity.timestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
   entity.save();
+
+  initializeStats();
 }
 
 export function handleLoanContractCreated(
@@ -36,6 +38,7 @@ export function handleLoanContractCreated(
       .div(BigInt.fromI32(1000000)),
   );
   entity.repaidAmount = BigInt.zero();
+  entity.actualRepaid = BigInt.zero();
   entity.feePpm = event.params.feePpm;
   entity.status = 'Pending';
   entity.timestamp = event.block.timestamp;
