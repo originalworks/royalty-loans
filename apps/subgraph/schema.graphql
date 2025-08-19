@@ -38,18 +38,22 @@ type LoanContract @entity(immutable: false) {
   loanAmount: BigInt!
   recoupmentAmount: BigInt!
   repaidAmount: BigInt!
+  actualRepaid: BigInt!
   feePpm: BigInt!
   status: LoanStatus!
   timestamp: BigInt!
   transactionHash: Bytes!
   expenses: [Expense!]! @derivedFrom(field: "loanContract")
+  loanRepaid: LoanRepaid
 }
 
 type Expense @entity(immutable: true) {
   id: Bytes!
+  from: Bytes
   loanContract: LoanContract!
   transactionHash: Bytes!
   kind: ExpenseKind!
+  value: BigInt
   baseFeePerGas: BigInt
   gasLimit: BigInt!
   gasPrice: BigInt! # format to gwei
