@@ -240,7 +240,11 @@ export const LoanOffersList = () => {
               accumulator + Number(currentValue.totalCost),
             0,
           );
-          return <TextField value={ethers.formatEther(cumulatedTotalCost)} />;
+          return (
+            <TextField
+              value={ethers.formatEther(cumulatedTotalCost.toString())}
+            />
+          );
         },
       },
       {
