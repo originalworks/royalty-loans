@@ -42,7 +42,7 @@ jobs:
           VITE_BASE_RPC_URL: ${{ secrets.VITE_BASE_RPC_URL }}
           VITE_BASE_SUBGRAPH_URL: ${{ secrets.VITE_BASE_SUBGRAPH_URL }}
           VITE_POLYGON_RPC_URL: ${{ secrets.VITE_POLYGON_RPC_URL }}
-          VITE_POLYGON_SUBGRAPH_URL: ${{ secrets.VITE_BASE_SUBGRAPH_URL }}
+          VITE_POLYGON_SUBGRAPH_URL: ${{ secrets.VITE_POLYGON_SUBGRAPH_URL }}
           VITE_PROD_DOMAIN: ${{ secrets.PROD_DOMAIN }}
           VITE_STAGE_DOMAIN: ${{ secrets.STAGE_DOMAIN }}
         run: npx nx run admin:build --no-cloud
