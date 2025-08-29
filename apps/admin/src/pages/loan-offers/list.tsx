@@ -14,8 +14,8 @@ import { Button } from '@mui/material';
 import { useOne } from '@refinedev/core';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 
-import { ConnectButton } from '../../components';
 import { useLoanOffers, useDataProvider } from '../../hooks';
+import { ConnectButton, CustomColumnMenu } from '../../components';
 import { erc20Abi, royaltyLoanAbi } from '../../generated/smart-contracts';
 import { LOAN_OFFERS_LIST_QUERY, STATISTICS_QUERY } from '../queries';
 
@@ -192,6 +192,8 @@ export const LoanOffersList = () => {
         display: 'flex',
         align: 'left',
         headerAlign: 'left',
+        sortable: false,
+        disableColumnMenu: true,
       },
       {
         field: 'cumulatedGasPrice',
@@ -202,6 +204,7 @@ export const LoanOffersList = () => {
         align: 'center',
         headerAlign: 'center',
         sortable: false,
+        disableColumnMenu: true,
         renderCell: function render({ row }) {
           const expenses = row.expenses as Array<{
             gasPrice: string;
@@ -228,6 +231,7 @@ export const LoanOffersList = () => {
         align: 'center',
         headerAlign: 'center',
         sortable: false,
+        disableColumnMenu: true,
         renderCell: function render({ row }) {
           const expenses = row.expenses as Array<{
             gasPrice: string;
@@ -262,8 +266,9 @@ export const LoanOffersList = () => {
         align: 'center',
         headerAlign: 'center',
         minWidth: 220,
-        sortable: false,
         display: 'flex',
+        sortable: false,
+        disableColumnMenu: true,
         renderCell: function render({ row }) {
           return (
             <>
@@ -324,6 +329,7 @@ export const LoanOffersList = () => {
         }}
         columns={columns}
         disableColumnFilter
+        slots={{ columnMenu: CustomColumnMenu }}
       />
     </List>
   );
