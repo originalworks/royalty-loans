@@ -13,6 +13,8 @@ import {
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { Autocomplete, Stack, TextField as InputField } from '@mui/material';
 
+import { CustomColumnMenu } from '../../components/column-menu';
+
 export const LoanTermsList = () => {
   const chains = useChains();
   const chainId = useChainId();
@@ -193,7 +195,11 @@ export const LoanTermsList = () => {
         />
       </Stack>
 
-      <DataGrid {...dataGridProps} columns={columns} />
+      <DataGrid
+        {...dataGridProps}
+        columns={columns}
+        slots={{ columnMenu: CustomColumnMenu }}
+      />
     </List>
   );
 };
