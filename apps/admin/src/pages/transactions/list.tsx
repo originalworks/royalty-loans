@@ -14,6 +14,7 @@ import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { Stack, TextField as InputField } from '@mui/material';
 
 import { useDataProvider } from '../../hooks';
+import { CustomColumnMenu } from '../../components';
 import { TRANSACTIONS_LIST_QUERY, STATISTICS_QUERY } from '../queries';
 
 export const TransactionsList = () => {
@@ -89,6 +90,8 @@ export const TransactionsList = () => {
         display: 'flex',
         align: 'left',
         headerAlign: 'left',
+        sortable: false,
+        disableColumnMenu: true,
         renderCell: function render() {
           const foundChain = chains.find((chain) => chain.id === chainId);
           if (!foundChain) return null;
@@ -130,6 +133,8 @@ export const TransactionsList = () => {
         flex: 1,
         align: 'left',
         headerAlign: 'left',
+        sortable: false,
+        disableColumnMenu: true,
       },
       {
         field: 'transactionHash',
@@ -184,8 +189,9 @@ export const TransactionsList = () => {
         align: 'center',
         headerAlign: 'center',
         minWidth: 100,
-        sortable: false,
         display: 'flex',
+        sortable: false,
+        disableColumnMenu: true,
         renderCell: function render({ row }) {
           return <ShowButton hideText recordItemId={row.id} />;
         },
@@ -234,6 +240,7 @@ export const TransactionsList = () => {
         }}
         columns={columns}
         disableColumnFilter
+        slots={{ columnMenu: CustomColumnMenu }}
       />
     </List>
   );
