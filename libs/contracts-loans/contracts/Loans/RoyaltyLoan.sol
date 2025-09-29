@@ -1,18 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 import './IRoyaltyLoan.sol';
-import '@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol';
+import '@openzeppelin/contracts/utils/Strings.sol';
 import '@openzeppelin/contracts/interfaces/IERC1155.sol';
 import '@openzeppelin/contracts/interfaces/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import '@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import './IAgreementERC1155.sol';
 
 contract RoyaltyLoan is IRoyaltyLoan, ERC1155Holder, Initializable {
   using SafeERC20 for IERC20;
+  using Strings for uint256;
 
-  IERC1155 public collateralToken;
-  uint256 public collateralTokenId;
-  uint256 public collateralAmount;
+  Collateral[] public collaterals;
+  IERC1155[] public collateralTokens;
+  uint256[] public collateralTokenIds;
+  uint256[] public collateralAmounts;
   IERC20 public paymentToken;
   address public borrower;
   address public lender;
@@ -30,23 +34,47 @@ contract RoyaltyLoan is IRoyaltyLoan, ERC1155Holder, Initializable {
   }
 
   function initialize(
-    address _collateralTokenAddress,
-    uint256 _collateralTokenId,
-    uint256 _collateralAmount,
+    Collateral[] calldata _collaterals,
     address _paymentTokenAddress,
     address _borrowerAddress,
     uint256 _feePpm,
     uint256 _loanAmount,
     uint256 _duration
   ) public initializer {
-    require(
-      _collateralTokenAddress != address(0),
-      'RoyaltyLoan: Invalid collateral token address'
-    );
-    require(
-      _collateralAmount > 0,
-      'RoyaltyLoan: Collateral amount must be greater than 0'
-    );
+    for (uint i = 0; i < _collaterals.length; i++) {
+      require(
+        _collaterals[i].tokenAddress != address(0),
+        string(
+          abi.encodePacked(
+            'RoyaltyLoan: Invalid collateral token address at position ',
+            i.toString()
+          )
+        )
+      );
+
+      require(
+        _collaterals[i].tokenAmount > 0,
+        string(
+          abi.encodePacked(
+            'RoyaltyLoan: Collateral amount must be greater than 0 at position ',
+            i.toString()
+          )
+        )
+      );
+
+      require(
+        IERC1155(collaterals[i].tokenAddress).balanceOf(
+          address(this),
+          collaterals[i].tokenId
+        ) == collaterals[i].tokenAmount,
+        string(
+          abi.encodePacked(
+            'RoyaltyLoan: Collateral was not transferred in the required amount at position ',
+            i.toString()
+          )
+        )
+      );
+    }
     require(_loanAmount > 0, 'RoyaltyLoan: Loan amount must be greater than 0');
     require(_feePpm <= 1_000_000, 'RoyaltyLoan: FeePpm exceeds 100%');
     require(
@@ -55,15 +83,7 @@ contract RoyaltyLoan is IRoyaltyLoan, ERC1155Holder, Initializable {
     );
     require(_duration > 0, 'RoyaltyLoan: Duration must be greater than 0');
 
-    collateralToken = IERC1155(_collateralTokenAddress);
-    collateralTokenId = _collateralTokenId;
-    collateralAmount = _collateralAmount;
-
-    require(
-      collateralToken.balanceOf(address(this), collateralTokenId) ==
-        collateralAmount,
-      'RoyaltyLoan: Collateral was not transferred in the required amount'
-    );
+    collaterals = _collaterals;
     paymentToken = IERC20(_paymentTokenAddress);
     borrower = _borrowerAddress;
     feePpm = _feePpm;
@@ -90,20 +110,35 @@ contract RoyaltyLoan is IRoyaltyLoan, ERC1155Holder, Initializable {
     emit LoanProvided(lender);
   }
 
+  function claimCollateralBalance(address _collateralTokenAddress) private {
+    if (paymentToken.balanceOf(_collateralTokenAddress) > 0) {
+      IAgreementERC1155(_collateralTokenAddress).claimHolderFunds(
+        address(this),
+        address(paymentToken)
+      );
+    }
+  }
+
   function processRepayment() external {
     require(loanActive == true, 'RoyaltyLoan: Loan is inactive');
     uint256 currentBalance = paymentToken.balanceOf(address(this));
     require(currentBalance > 0, 'RoyaltyLoan: No payment token to process');
 
+    for (uint i = 0; i < collaterals.length; i++) {
+      claimCollateralBalance(collaterals[i].tokenAddress);
+    }
+
     if (currentBalance >= _totalDue) {
       // Full repayment
-      collateralToken.safeTransferFrom(
-        address(this),
-        borrower,
-        collateralTokenId,
-        collateralAmount,
-        ''
-      );
+      for (uint i = 0; i < collaterals.length; i++) {
+        IERC1155(collaterals[i].tokenAddress).safeTransferFrom(
+          address(this),
+          borrower,
+          collaterals[i].tokenId,
+          collaterals[i].tokenAmount,
+          ''
+        );
+      }
 
       require(
         paymentToken.transfer(lender, _totalDue),
@@ -161,13 +196,17 @@ contract RoyaltyLoan is IRoyaltyLoan, ERC1155Holder, Initializable {
       msg.sender == borrower,
       'RoyaltyLoan: Only borrower can revoke the loan'
     );
-    collateralToken.safeTransferFrom(
-      address(this),
-      borrower,
-      collateralTokenId,
-      collateralAmount,
-      ''
-    );
+
+    for (uint i = 0; i < collaterals.length; i++) {
+      IERC1155(collaterals[i].tokenAddress).safeTransferFrom(
+        address(this),
+        borrower,
+        collaterals[i].tokenId,
+        collaterals[i].tokenAmount,
+        ''
+      );
+    }
+
     uint256 currentBalance = paymentToken.balanceOf(address(this));
     if (currentBalance > 0) {
       require(
