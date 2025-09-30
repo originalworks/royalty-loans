@@ -41,6 +41,7 @@ contract RoyaltyLoan is IRoyaltyLoan, ERC1155Holder, Initializable {
     uint256 _loanAmount,
     uint256 _duration
   ) public initializer {
+    delete collaterals;
     for (uint i = 0; i < _collaterals.length; i++) {
       require(
         _collaterals[i].tokenAddress != address(0),
@@ -74,6 +75,8 @@ contract RoyaltyLoan is IRoyaltyLoan, ERC1155Holder, Initializable {
           )
         )
       );
+
+      collaterals.push(_collaterals[i]);
     }
     require(_loanAmount > 0, 'RoyaltyLoan: Loan amount must be greater than 0');
     require(_feePpm <= 1_000_000, 'RoyaltyLoan: FeePpm exceeds 100%');
@@ -83,7 +86,6 @@ contract RoyaltyLoan is IRoyaltyLoan, ERC1155Holder, Initializable {
     );
     require(_duration > 0, 'RoyaltyLoan: Duration must be greater than 0');
 
-    collaterals = _collaterals;
     paymentToken = IERC20(_paymentTokenAddress);
     borrower = _borrowerAddress;
     feePpm = _feePpm;
