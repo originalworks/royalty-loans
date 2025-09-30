@@ -40,6 +40,7 @@ type LoanContract @entity(immutable: false) {
   id: Bytes!
   loanContract: Bytes! # address
   borrower: Bytes! # address
+  isPackLoan: Boolean!
   collaterals: [LoanContractCollateral!]! @derivedFrom(field: "loanContract")
   loanAmount: BigInt!
   recoupmentAmount: BigInt!
