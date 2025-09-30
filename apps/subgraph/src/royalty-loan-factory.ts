@@ -29,9 +29,12 @@ export function handleInitialized(event: InitializedEvent): void {
 export function handleLoanContractCreated(
   event: LoanContractCreatedEvent,
 ): void {
+  const collaterals = event.params.collaterals;
+
   const entity = new LoanContract(event.params.loanContract);
   entity.loanContract = event.params.loanContract;
   entity.borrower = event.params.borrower;
+  entity.isPackLoan = collaterals.length > 1;
   entity.loanAmount = event.params.loanAmount;
   entity.recoupmentAmount = event.params.loanAmount.plus(
     event.params.loanAmount
@@ -46,7 +49,6 @@ export function handleLoanContractCreated(
   entity.transactionHash = event.transaction.hash;
   entity.save();
 
-  const collaterals = event.params.collaterals;
   for (let i = 0; i < collaterals.length; i++) {
     const element = collaterals[i];
     const collateral = new LoanContractCollateral(
