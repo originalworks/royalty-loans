@@ -25,7 +25,7 @@ dataSources:
       eventHandlers:
         - event: Initialized(uint64)
           handler: handleInitialized
-        - event: LoanContractCreated(address,address,address,uint256,uint256,uint256,uint256)
+        - event: LoanContractCreated(address,address,(address,uint256,uint256)[],uint256,uint256)
           handler: handleLoanContractCreated
           receipt: true
       file: ./src/royalty-loan-factory.ts
