@@ -1,12 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { LoanTerm } from './loanTerms.entity';
 import { Repository, In } from 'typeorm';
+
+import { InjectRepository } from '@nestjs/typeorm';
+import { Injectable, Logger } from '@nestjs/common';
 import { TypeOrmCrudService } from '@dataui/crud-typeorm';
+
 import {
-  GetLoanTermByCollateralTokenAddressParamDto,
   GetLoanTermsByCollateralAddressesBodyDto,
+  GetLoanTermByCollateralTokenAddressParamDto,
 } from './loanTerms.dto';
+import { LoanTerm } from './loanTerms.entity';
 
 @Injectable()
 export class LoanTermsService extends TypeOrmCrudService<LoanTerm> {
