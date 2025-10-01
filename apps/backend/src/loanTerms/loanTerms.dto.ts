@@ -1,12 +1,12 @@
-import { Transform } from 'class-transformer';
 import {
   IsArray,
-  IsEthereumAddress,
+  Matches,
+  IsString,
   IsNotEmpty,
   IsOptional,
-  IsString,
-  Matches,
+  IsEthereumAddress,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateLoanTermsDto {
   @IsNotEmpty()
