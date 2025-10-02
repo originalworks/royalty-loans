@@ -1,5 +1,13 @@
+import {
+  Get,
+  Body,
+  Post,
+  Param,
+  HttpCode,
+  UseGuards,
+  Controller,
+} from '@nestjs/common';
 import { Crud, CrudController } from '@dataui/crud';
-import { Controller, Get, Post, Param, UseGuards, Body } from '@nestjs/common';
 
 import { Auth0Guard } from '../auth/auth.guard';
 import { Public } from '../auth/auth.decorator';
@@ -40,7 +48,7 @@ export class LoanTermsController implements CrudController<LoanTerm> {
 
   @Public()
   @Get('collateral/:collateralTokenAddress/:chainId')
-  async getByWalletAddress(
+  async getLoanTermByCollateralAddress(
     @Param() params: GetLoanTermByCollateralTokenAddressParamDto,
   ) {
     return this.service.findByCollateralTokenAddress(params);
@@ -48,6 +56,7 @@ export class LoanTermsController implements CrudController<LoanTerm> {
 
   @Public()
   @Post('collaterals')
+  @HttpCode(200)
   async getLoanTermsByCollateralAddresses(
     @Body() body: GetLoanTermsByCollateralAddressesBodyDto,
   ) {
