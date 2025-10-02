@@ -39,9 +39,10 @@ export class LoanTermsService extends TypeOrmCrudService<LoanTerm> {
     chainId,
     tokenAddresses,
   }: GetLoanTermsByCollateralAddressesBodyDto): Promise<LoanTerm[]> {
-    return await this.loanTermsRepo.findBy({
+    const res = await this.loanTermsRepo.findBy({
       chainId,
       collateralTokenAddress: In(tokenAddresses),
     });
+    return res.sort((a, b) => a.id - b.id);
   }
 }
