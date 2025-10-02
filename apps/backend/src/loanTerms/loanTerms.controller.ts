@@ -1,14 +1,24 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import {
+  Get,
+  Body,
+  Post,
+  Param,
+  HttpCode,
+  UseGuards,
+  Controller,
+} from '@nestjs/common';
 import { Crud, CrudController } from '@dataui/crud';
+
 import { Auth0Guard } from '../auth/auth.guard';
-import { LoanTerm } from './loanTerms.entity';
-import { LoanTermsService } from './loanTerms.service';
+import { Public } from '../auth/auth.decorator';
 import {
   CreateLoanTermsDto,
-  GetLoanTermByCollateralTokenAddressParamDto,
   UpdateLoanTermsDto,
+  GetLoanTermsByCollateralAddressesBodyDto,
+  GetLoanTermByCollateralTokenAddressParamDto,
 } from './loanTerms.dto';
-import { Public } from '../auth/auth.decorator';
+import { LoanTerm } from './loanTerms.entity';
+import { LoanTermsService } from './loanTerms.service';
 
 @Crud({
   model: {
@@ -38,9 +48,18 @@ export class LoanTermsController implements CrudController<LoanTerm> {
 
   @Public()
   @Get('collateral/:collateralTokenAddress/:chainId')
-  async getByWalletAddress(
+  async getLoanTermByCollateralAddress(
     @Param() params: GetLoanTermByCollateralTokenAddressParamDto,
   ) {
     return this.service.findByCollateralTokenAddress(params);
+  }
+
+  @Public()
+  @Post('collaterals')
+  @HttpCode(200)
+  async getLoanTermsByCollateralAddresses(
+    @Body() body: GetLoanTermsByCollateralAddressesBodyDto,
+  ) {
+    return this.service.findAllLoanTermsByCollateralTokenAddresses(body);
   }
 }
