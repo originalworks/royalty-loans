@@ -5,9 +5,9 @@ import { Auth0Guard } from '../auth/auth.guard';
 import { Public } from '../auth/auth.decorator';
 import {
   CreateLoanTermsDto,
-  GetLoanTermByCollateralTokenAddressParamDto,
-  GetLoanTermsByCollateralAddressesBodyDto,
   UpdateLoanTermsDto,
+  GetLoanTermsByCollateralAddressesBodyDto,
+  GetLoanTermByCollateralTokenAddressParamDto,
 } from './loanTerms.dto';
 import { LoanTerm } from './loanTerms.entity';
 import { LoanTermsService } from './loanTerms.service';
