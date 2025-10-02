@@ -1,8 +1,8 @@
 import { Repository, In } from 'typeorm';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { Injectable, Logger } from '@nestjs/common';
 import { TypeOrmCrudService } from '@dataui/crud-typeorm';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import {
   GetLoanTermsByCollateralAddressesBodyDto,
@@ -25,10 +25,14 @@ export class LoanTermsService extends TypeOrmCrudService<LoanTerm> {
     collateralTokenAddress,
     chainId,
   }: GetLoanTermByCollateralTokenAddressParamDto): Promise<LoanTerm> {
-    return await this.loanTermsRepo.findOneByOrFail({
-      collateralTokenAddress,
-      chainId,
-    });
+    try {
+      return await this.loanTermsRepo.findOneByOrFail({
+        collateralTokenAddress,
+        chainId,
+      });
+    } catch (error) {
+      throw new NotFoundException(error);
+    }
   }
 
   async findAllLoanTermsByCollateralTokenAddresses({
