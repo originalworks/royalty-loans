@@ -1,16 +1,18 @@
+import request from 'supertest';
+import { DataSource, Repository } from 'typeorm';
+
+import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CanActivate, INestApplication, ValidationPipe } from '@nestjs/common';
-import request from 'supertest';
-import { TypeOrmModule } from '@nestjs/typeorm';
+
+import { clearDatabase } from '../../tests/typeorm.utils';
 import { Factory, getFactory } from '../../tests/factory';
-import { DataSource, Repository } from 'typeorm';
-import { LoanTerm } from './loanTerms.entity';
 import { dbConfigs } from '../config/dbConfig';
-import { LoanTermsModule } from './loanTerms.module';
 import { Auth0Guard } from '../auth/auth.guard';
 import { AuthModule } from '../auth/auth.module';
-import { clearDatabase } from '../../tests/typeorm.utils';
-import { ConfigModule } from '@nestjs/config';
+import { LoanTerm } from './loanTerms.entity';
+import { LoanTermsModule } from './loanTerms.module';
 
 describe('AppController', () => {
   let factory: Factory;
