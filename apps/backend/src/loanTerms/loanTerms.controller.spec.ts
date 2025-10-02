@@ -1,16 +1,24 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { CanActivate, INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { Factory, getFactory } from '../../tests/factory';
 import { DataSource, Repository } from 'typeorm';
-import { LoanTerm } from './loanTerms.entity';
+
+import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Test, TestingModule } from '@nestjs/testing';
+import { CanActivate, ValidationPipe, INestApplication } from '@nestjs/common';
+
+import {
+  Factory,
+  getFactory,
+  zeroEthAddress,
+  randomEthAddress,
+} from '../../tests/factory';
+import { clearDatabase } from '../../tests/typeorm.utils';
 import { dbConfigs } from '../config/dbConfig';
-import { LoanTermsModule } from './loanTerms.module';
 import { Auth0Guard } from '../auth/auth.guard';
 import { AuthModule } from '../auth/auth.module';
-import { clearDatabase } from '../../tests/typeorm.utils';
-import { ConfigModule } from '@nestjs/config';
+import { LoanTerm } from './loanTerms.entity';
+import { LoanTermsModule } from './loanTerms.module';
+import { GetLoanTermsByCollateralAddressesBodyDto } from './loanTerms.dto';
 
 describe('AppController', () => {
   let factory: Factory;
@@ -100,7 +108,7 @@ describe('AppController', () => {
       await request(app.getHttpServer()).delete('/loan-terms/1').expect(200);
     });
 
-    it('GetOneByCollateralTokenAddress', async () => {
+    it('getLoanTermByCollateralAddress - happy path', async () => {
       const entry = await loanTermsRepo.findOneBy({ id: 5 });
       const entryOnDifferentChain = await factory.create<LoanTerm>(
         LoanTerm.name,
@@ -124,6 +132,88 @@ describe('AppController', () => {
         .expect(200);
 
       expect(res.body.id).toEqual(entryOnDifferentChain.id);
+    });
+
+    it('getLoanTermByCollateralAddress - catch error', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/loan-terms/collateral/${zeroEthAddress}/2`)
+        .expect(404);
+
+      expect(res.text).toEqual(
+        '{"criteria":{"collateralTokenAddress":"0x0000000000000000000000000000000000000000","chainId":"2"},"message":"Could not find any entity of type \\"LoanTerm\\" matching: {\\n    \\"collateralTokenAddress\\": \\"0x0000000000000000000000000000000000000000\\",\\n    \\"chainId\\": \\"2\\"\\n}"}',
+      );
+    });
+
+    it('getLoanTermsByCollateralAddresses - happy path - all addresses have loan terms', async () => {
+      const firstEntry = await loanTermsRepo.findOneBy({ id: 1 });
+      const secondEntry = await loanTermsRepo.findOneBy({ id: 2 });
+      const dto: GetLoanTermsByCollateralAddressesBodyDto = {
+        chainId: '1',
+        tokenAddresses: [
+          firstEntry?.collateralTokenAddress || '',
+          secondEntry?.collateralTokenAddress || '',
+        ],
+      };
+
+      const res = await request(app.getHttpServer())
+        .post('/loan-terms/collaterals')
+        .send(dto)
+        .expect(200);
+
+      expect(res.body.length).toEqual(2);
+      expect(res.body[0].id).toEqual(1);
+      expect(res.body[1].id).toEqual(2);
+    });
+
+    it('getLoanTermsByCollateralAddresses - happy path - only one address has loan terms', async () => {
+      const entry = await loanTermsRepo.findOneBy({ id: 2 });
+      const dto: GetLoanTermsByCollateralAddressesBodyDto = {
+        chainId: '1',
+        tokenAddresses: [
+          randomEthAddress(),
+          entry?.collateralTokenAddress || '',
+        ],
+      };
+
+      const res = await request(app.getHttpServer())
+        .post('/loan-terms/collaterals')
+        .send(dto)
+        .expect(200);
+
+      expect(res.body.length).toEqual(1);
+      expect(res.body[0].id).toEqual(2);
+    });
+
+    it('getLoanTermsByCollateralAddresses - none of the addresses have loan terms', async () => {
+      const dto: GetLoanTermsByCollateralAddressesBodyDto = {
+        chainId: '2',
+        tokenAddresses: [randomEthAddress(), randomEthAddress()],
+      };
+
+      const res = await request(app.getHttpServer())
+        .post('/loan-terms/collaterals')
+        .send(dto)
+        .expect(200);
+
+      expect(res.body.length).toEqual(0);
+    });
+
+    it('getLoanTermsByCollateralAddresses - catch error - wrong params', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/loan-terms/collaterals')
+        .send({})
+        .expect(400);
+
+      expect(res.body).toEqual({
+        error: 'Bad Request',
+        message: [
+          'chainId must be a numeric string',
+          'chainId must be a string',
+          'each value in tokenAddresses must be a string',
+          'tokenAddresses must be an array',
+        ],
+        statusCode: 400,
+      });
     });
   });
 });
