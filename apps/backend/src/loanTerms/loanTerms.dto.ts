@@ -1,11 +1,12 @@
-import { Transform } from 'class-transformer';
 import {
-  IsEthereumAddress,
+  IsArray,
+  Matches,
+  IsString,
   IsNotEmpty,
   IsOptional,
-  IsString,
-  Matches,
+  IsEthereumAddress,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateLoanTermsDto {
   @IsNotEmpty()
@@ -84,4 +85,19 @@ export class GetLoanTermByCollateralTokenAddressParamDto {
   @IsString()
   @Matches(/^\d+$/, { message: 'chainId must be a numeric string' })
   chainId: string;
+}
+
+export class GetLoanTermsByCollateralAddressesBodyDto {
+  @IsString()
+  @Matches(/^\d+$/, { message: 'chainId must be a numeric string' })
+  chainId: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @Transform(({ value }) =>
+    Array.isArray(value)
+      ? value.map((v: string) => v.toLowerCase())
+      : [String(value).toLowerCase()],
+  )
+  tokenAddresses: string[];
 }
