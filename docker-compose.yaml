@@ -18,13 +18,13 @@ services:
       DB_USER: postgres
       DB_PASSWORD: postgres
       DB_DATABASE: postgres
-    
+
   test-runner:
     extends:
       service: base
     depends_on:
       - db
-    command: "npm run test"
+    command: "npm run backend:test"
 
   local:
     extends:
@@ -38,12 +38,12 @@ services:
     command: >
       sh -c "
         echo '📦 Running migrations...' &&
-        npx nx run backend:esbuild && 
+        npx nx run backend:esbuild &&
         npx nx run backend:typeorm-migration-run &&
         echo '🚀 Starting local app...' &&
         npx nx run backend:serve
       "
-  
+
   db:
     image: postgres:17.5
     ports:
