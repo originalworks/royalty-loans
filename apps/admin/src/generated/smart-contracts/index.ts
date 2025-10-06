@@ -498,23 +498,34 @@ export const royaltyLoanAbi = [
   },
   {
     type: 'function',
-    inputs: [],
-    name: 'collateralAmount',
+    inputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    name: 'collateralAmounts',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
   {
     type: 'function',
-    inputs: [],
-    name: 'collateralToken',
+    inputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    name: 'collateralTokenIds',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    name: 'collateralTokens',
     outputs: [{ name: '', internalType: 'contract IERC1155', type: 'address' }],
     stateMutability: 'view',
   },
   {
     type: 'function',
-    inputs: [],
-    name: 'collateralTokenId',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    inputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    name: 'collaterals',
+    outputs: [
+      { name: 'tokenAddress', internalType: 'address', type: 'address' },
+      { name: 'tokenId', internalType: 'uint256', type: 'uint256' },
+      { name: 'tokenAmount', internalType: 'uint256', type: 'uint256' },
+    ],
     stateMutability: 'view',
   },
   {
@@ -542,12 +553,15 @@ export const royaltyLoanAbi = [
     type: 'function',
     inputs: [
       {
-        name: '_collateralTokenAddress',
-        internalType: 'address',
-        type: 'address',
+        name: '_collaterals',
+        internalType: 'struct ICollateral.Collateral[]',
+        type: 'tuple[]',
+        components: [
+          { name: 'tokenAddress', internalType: 'address', type: 'address' },
+          { name: 'tokenId', internalType: 'uint256', type: 'uint256' },
+          { name: 'tokenAmount', internalType: 'uint256', type: 'uint256' },
+        ],
       },
-      { name: '_collateralTokenId', internalType: 'uint256', type: 'uint256' },
-      { name: '_collateralAmount', internalType: 'uint256', type: 'uint256' },
       {
         name: '_paymentTokenAddress',
         internalType: 'address',
