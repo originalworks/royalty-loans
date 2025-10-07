@@ -31,6 +31,10 @@ export const LoanOfferShow = () => {
 
   const record = data?.data;
 
+  const collaterals = record?.collaterals as Array<{
+    tokenAddress: string;
+    tokenAmount: string;
+  }>;
   const expenses = record?.expenses as Array<{
     gasPrice: string;
     totalCost: string;
@@ -74,14 +78,22 @@ export const LoanOfferShow = () => {
         <TextField value={record?.loanContract} />
 
         <Typography variant="body1" fontWeight="bold">
-          Collateral Token
+          Collateral Tokens
         </Typography>
-        <TextField value={record?.collateralToken} />
+        <TextField
+          value={collaterals
+            .map((collateral) => collateral.tokenAddress)
+            .join(', ')}
+        />
 
         <Typography variant="body1" fontWeight="bold">
-          Collateral Amount
+          Collateral Amounts
         </Typography>
-        <TextField value={record?.collateralAmount} />
+        <TextField
+          value={collaterals
+            .map((collateral) => collateral.tokenAmount)
+            .join(', ')}
+        />
 
         <Typography variant="body1" fontWeight="bold">
           Loan Amount
