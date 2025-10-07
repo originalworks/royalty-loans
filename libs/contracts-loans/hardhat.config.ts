@@ -7,23 +7,7 @@ import '@nomicfoundation/hardhat-chai-matchers';
 import '@nomicfoundation/hardhat-verify';
 import '@openzeppelin/hardhat-upgrades';
 
-import { extendConfig, HardhatUserConfig } from 'hardhat/config';
-import { HardhatConfig } from 'hardhat/types';
-
-// extendConfig(
-//   (config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) => {
-//     if (!userConfig.networks) return;
-
-//     for (const networkName of Object.keys(userConfig.networks)) {
-//       const whitelistedAddresses =
-//         userConfig.networks[networkName]?.whitelistedAddresses ?? [];
-//       config.networks[networkName].whitelistedAddresses = whitelistedAddresses;
-
-//       const env = userConfig.networks[networkName]?.env ?? 'local';
-//       config.networks[networkName].env = env;
-//     }
-//   },
-// );
+import { HardhatUserConfig } from 'hardhat/config';
 
 dotenv.config();
 
