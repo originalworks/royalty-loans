@@ -14,9 +14,14 @@ import { Button } from '@mui/material';
 import { useOne } from '@refinedev/core';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 
+import {
+  erc20Abi,
+  royaltyLoanAbi,
+  agreementErc1155Abi,
+} from '../../generated/smart-contracts';
 import { useLoanOffers, useDataProvider } from '../../hooks';
 import { ConnectButton, CustomColumnMenu } from '../../components';
-import { erc20Abi, royaltyLoanAbi } from '../../generated/smart-contracts';
+import { LoanContractCollateral } from '../../generated/graphql/schema.types';
 import { LOAN_OFFERS_LIST_QUERY, STATISTICS_QUERY } from '../queries';
 
 export const LoanOffersList = () => {
@@ -62,12 +67,16 @@ export const LoanOffersList = () => {
   useEffect(() => {
     async function fetchData() {
       if (!dataGridProps.rows || dataGridProps.rows.length === 0) return;
-      const contracts: Array<`0x${string}`> = dataGridProps.rows.map(
-        (row) => row.loanContract,
-      );
+      const contracts: Array<{
+        contract: `0x${string}`;
+        collaterals: Array<LoanContractCollateral>;
+      }> = dataGridProps.rows.map((row) => ({
+        contract: row.loanContract,
+        collaterals: row.collaterals,
+      }));
 
       try {
-        contracts.map(async (contract) => {
+        contracts.map(async ({ contract, collaterals }) => {
           const data = await readContract(config, {
             address: contract,
             abi: royaltyLoanAbi,
@@ -91,7 +100,17 @@ export const LoanOffersList = () => {
               functionName: 'balanceOf',
               args: [contract],
             });
-            if (amount > 0)
+            let totalAmount = 0;
+            collaterals.map(async ({ tokenAddress }) => {
+              const [singleClaimableAmount] = await readContract(config, {
+                abi: agreementErc1155Abi,
+                address: tokenAddress,
+                functionName: 'getClaimableAmount',
+                args: [paymentToken, contract],
+              });
+              totalAmount += Number(singleClaimableAmount);
+            });
+            if (amount > 0 || totalAmount > 0)
               setResults((prevState) => [
                 ...prevState,
                 { contract, active: data, canRepay: true },
@@ -147,7 +166,7 @@ export const LoanOffersList = () => {
         headerAlign: 'left',
       },
       {
-        field: 'collateralToken',
+        field: 'collaterals',
         headerName: 'Collateral Token',
         type: 'string',
         minWidth: 300,
@@ -155,6 +174,20 @@ export const LoanOffersList = () => {
         flex: 1,
         align: 'left',
         headerAlign: 'left',
+        renderCell: function render({ row }) {
+          const collaterals = row.collaterals as Array<{
+            tokenAddress: string;
+          }>;
+          if (!collaterals) return null;
+
+          return (
+            <TextField
+              value={collaterals
+                .map((collateral) => collateral.tokenAddress)
+                .join(', ')}
+            />
+          );
+        },
       },
       {
         field: 'collateralAmount',
@@ -164,6 +197,20 @@ export const LoanOffersList = () => {
         display: 'flex',
         align: 'left',
         headerAlign: 'left',
+        renderCell: function render({ row }) {
+          const collaterals = row.collaterals as Array<{
+            tokenAmount: string;
+          }>;
+          if (!collaterals) return null;
+
+          return (
+            <TextField
+              value={collaterals
+                .map((collateral) => collateral.tokenAmount)
+                .join(', ')}
+            />
+          );
+        },
       },
       {
         field: 'loanAmount',
