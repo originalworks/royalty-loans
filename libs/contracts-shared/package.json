@@ -15,17 +15,22 @@
   "dependencies": {},
   "nx": {
     "targets": {
-      "test": {
-        "executor": "nx:run-commands",
-        "options": {
-          "command": "npx hardhat test",
-          "cwd": "libs/contracts-shared"
-        }
+      "postinstall": {
+        "dependsOn": [
+          "compile"
+        ]
       },
       "compile": {
         "executor": "nx:run-commands",
         "options": {
           "command": "npx hardhat compile",
+          "cwd": "libs/contracts-shared"
+        }
+      },
+      "test": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "npx hardhat test",
           "cwd": "libs/contracts-shared"
         }
       },
