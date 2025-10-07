@@ -41,10 +41,11 @@ contract RoyaltyLoan is IRoyaltyLoan, ERC1155Holder, Initializable {
     uint256 _loanAmount,
     uint256 _duration
   ) public initializer {
-    delete collaterals;
     for (uint i = 0; i < _collaterals.length; i++) {
+      Collateral calldata collateral = _collaterals[i];
+
       require(
-        _collaterals[i].tokenAddress != address(0),
+        collateral.tokenAddress != address(0),
         string(
           abi.encodePacked(
             'RoyaltyLoan: Invalid collateral token address at position ',
@@ -54,7 +55,7 @@ contract RoyaltyLoan is IRoyaltyLoan, ERC1155Holder, Initializable {
       );
 
       require(
-        _collaterals[i].tokenAmount > 0,
+        collateral.tokenAmount > 0,
         string(
           abi.encodePacked(
             'RoyaltyLoan: Collateral amount must be greater than 0 at position ',
@@ -64,10 +65,10 @@ contract RoyaltyLoan is IRoyaltyLoan, ERC1155Holder, Initializable {
       );
 
       require(
-        IERC1155(collaterals[i].tokenAddress).balanceOf(
+        IERC1155(collateral.tokenAddress).balanceOf(
           address(this),
-          collaterals[i].tokenId
-        ) == collaterals[i].tokenAmount,
+          collateral.tokenId
+        ) == collateral.tokenAmount,
         string(
           abi.encodePacked(
             'RoyaltyLoan: Collateral was not transferred in the required amount at position ',
@@ -76,7 +77,7 @@ contract RoyaltyLoan is IRoyaltyLoan, ERC1155Holder, Initializable {
         )
       );
 
-      collaterals.push(_collaterals[i]);
+      collaterals.push(collateral);
     }
     require(_loanAmount > 0, 'RoyaltyLoan: Loan amount must be greater than 0');
     require(_feePpm <= 1_000_000, 'RoyaltyLoan: FeePpm exceeds 100%');
@@ -123,12 +124,13 @@ contract RoyaltyLoan is IRoyaltyLoan, ERC1155Holder, Initializable {
 
   function processRepayment() external {
     require(loanActive == true, 'RoyaltyLoan: Loan is inactive');
-    uint256 currentBalance = paymentToken.balanceOf(address(this));
-    require(currentBalance > 0, 'RoyaltyLoan: No payment token to process');
 
     for (uint i = 0; i < collaterals.length; i++) {
       claimCollateralBalance(collaterals[i].tokenAddress);
     }
+
+    uint256 currentBalance = paymentToken.balanceOf(address(this));
+    require(currentBalance > 0, 'RoyaltyLoan: No payment token to process');
 
     if (currentBalance >= _totalDue) {
       // Full repayment
