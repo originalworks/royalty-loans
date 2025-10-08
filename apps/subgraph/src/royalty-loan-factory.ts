@@ -58,6 +58,7 @@ export function handleLoanContractCreated(
     collateral.tokenAddress = element.tokenAddress;
     collateral.tokenId = element.tokenId;
     collateral.tokenAmount = element.tokenAmount;
+    collateral.save();
   }
 
   RoyaltyLoan.create(event.params.loanContract);
