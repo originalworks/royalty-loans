@@ -136,7 +136,7 @@ export const LoanOffersList = () => {
         field: 'id',
         headerName: 'ID',
         type: 'string',
-        minWidth: 100,
+        minWidth: 50,
         display: 'flex',
         align: 'left',
         headerAlign: 'left',
@@ -145,7 +145,7 @@ export const LoanOffersList = () => {
         field: 'chainId',
         headerName: 'Network',
         type: 'string',
-        minWidth: 100,
+        minWidth: 150,
         display: 'flex',
         align: 'left',
         headerAlign: 'left',
@@ -159,7 +159,7 @@ export const LoanOffersList = () => {
         field: 'loanContract',
         headerName: 'Contract Address',
         type: 'string',
-        minWidth: 300,
+        minWidth: 350,
         display: 'flex',
         flex: 1,
         align: 'left',
@@ -167,9 +167,9 @@ export const LoanOffersList = () => {
       },
       {
         field: 'collaterals',
-        headerName: 'Collateral Token',
+        headerName: 'Collateral Tokens',
         type: 'string',
-        minWidth: 300,
+        minWidth: 350,
         display: 'flex',
         flex: 1,
         align: 'left',
@@ -181,11 +181,21 @@ export const LoanOffersList = () => {
           if (!collaterals) return null;
 
           return (
-            <TextField
-              value={collaterals
-                .map((collateral) => collateral.tokenAddress)
-                .join(', ')}
-            />
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                margin: '16px 0',
+                gap: '4px',
+              }}
+            >
+              {collaterals.map((collateral, index) => (
+                <TextField
+                  key={`address-${index}`}
+                  value={collateral.tokenAddress}
+                />
+              ))}
+            </div>
           );
         },
       },
@@ -193,7 +203,7 @@ export const LoanOffersList = () => {
         field: 'collateralAmount',
         headerName: 'Collateral Amount',
         type: 'number',
-        minWidth: 100,
+        minWidth: 140,
         display: 'flex',
         align: 'left',
         headerAlign: 'left',
@@ -204,11 +214,21 @@ export const LoanOffersList = () => {
           if (!collaterals) return null;
 
           return (
-            <TextField
-              value={collaterals
-                .map((collateral) => collateral.tokenAmount)
-                .join(', ')}
-            />
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                margin: '16px 0',
+                gap: '4px',
+              }}
+            >
+              {collaterals.map((collateral, index) => (
+                <TextField
+                  key={`amount-${index}`}
+                  value={collateral.tokenAmount}
+                />
+              ))}
+            </div>
           );
         },
       },
@@ -216,7 +236,7 @@ export const LoanOffersList = () => {
         field: 'loanAmount',
         headerName: 'Loan Amount',
         type: 'number',
-        minWidth: 100,
+        minWidth: 120,
         display: 'flex',
         align: 'left',
         headerAlign: 'left',
@@ -246,7 +266,7 @@ export const LoanOffersList = () => {
         field: 'cumulatedGasPrice',
         headerName: 'Cumulated Gas Price (GWEI)',
         type: 'number',
-        minWidth: 150,
+        minWidth: 250,
         display: 'flex',
         align: 'center',
         headerAlign: 'center',
@@ -374,6 +394,7 @@ export const LoanOffersList = () => {
           page: page,
           pageSize: pageSize,
         }}
+        getRowHeight={() => 'auto'}
         columns={columns}
         disableColumnFilter
         slots={{ columnMenu: CustomColumnMenu }}
