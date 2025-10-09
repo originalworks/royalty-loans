@@ -30,6 +30,9 @@ export const TransactionShow = () => {
   const { data, isLoading } = query;
 
   const record = data?.data;
+  const collaterals = record?.collaterals as Array<{
+    tokenAddress: string;
+  }>;
 
   const foundChain = chains.find((chain) => chain.id === chainId);
 
@@ -56,9 +59,15 @@ export const TransactionShow = () => {
         <TextField value={record?.loanContract.id} />
 
         <Typography variant="body1" fontWeight="bold">
-          Collateral Token
+          Collateral Tokens
         </Typography>
-        <TextField value={record?.loanContract.collateralToken} />
+        {!!collaterals &&
+          collaterals.map((collateral, index) => (
+            <TextField
+              key={`address-${index}`}
+              value={`- ${collateral.tokenAddress}`}
+            />
+          ))}
 
         <Typography variant="body1" fontWeight="bold">
           Type
