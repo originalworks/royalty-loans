@@ -58,6 +58,7 @@ type Expense @entity(immutable: true) {
   id: Bytes!
   from: Bytes
   loanContract: LoanContract!
+  collaterals: [LoanContractCollateral!]!
   transactionHash: Bytes!
   kind: ExpenseKind!
   value: BigInt
