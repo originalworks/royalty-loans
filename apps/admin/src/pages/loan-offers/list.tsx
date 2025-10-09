@@ -100,26 +100,35 @@ export const LoanOffersList = () => {
               functionName: 'balanceOf',
               args: [contract],
             });
-            let totalAmount = 0;
-            collaterals.map(async ({ tokenAddress }) => {
-              const [singleClaimableAmount] = await readContract(config, {
-                abi: agreementErc1155Abi,
-                address: tokenAddress,
-                functionName: 'getClaimableAmount',
-                args: [paymentToken, contract],
-              });
-              totalAmount += Number(singleClaimableAmount);
-            });
-            if (amount > 0 || totalAmount > 0)
+            if (amount > 0)
               setResults((prevState) => [
                 ...prevState,
                 { contract, active: data, canRepay: true },
               ]);
-            else
-              setResults((prevState) => [
-                ...prevState,
-                { contract, active: data, canRepay: false },
-              ]);
+            else {
+              const results = await Promise.all(
+                collaterals.map(async ({ tokenAddress }) => {
+                  const response = await readContract(config, {
+                    abi: agreementErc1155Abi,
+                    address: tokenAddress,
+                    functionName: 'getClaimableAmount',
+                    args: [paymentToken, contract],
+                  });
+                  return Number(response[0]);
+                }),
+              );
+              const totalAmount = results.reduce((acc, num) => acc + num, 0);
+              if (totalAmount > 0)
+                setResults((prevState) => [
+                  ...prevState,
+                  { contract, active: data, canRepay: true },
+                ]);
+              else
+                setResults((prevState) => [
+                  ...prevState,
+                  { contract, active: data, canRepay: false },
+                ]);
+            }
           }
         });
       } catch (error) {
