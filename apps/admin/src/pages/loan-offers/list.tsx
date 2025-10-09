@@ -154,7 +154,7 @@ export const LoanOffersList = () => {
         field: 'chainId',
         headerName: 'Network',
         type: 'string',
-        minWidth: 150,
+        minWidth: 120,
         display: 'flex',
         align: 'left',
         headerAlign: 'left',
