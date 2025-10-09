@@ -80,20 +80,24 @@ export const LoanOfferShow = () => {
         <Typography variant="body1" fontWeight="bold">
           Collateral Tokens
         </Typography>
-        <TextField
-          value={collaterals
-            .map((collateral) => collateral.tokenAddress)
-            .join(', ')}
-        />
+        {!!collaterals &&
+          collaterals.map((collateral, index) => (
+            <TextField
+              key={`address-${index}`}
+              value={`- ${collateral.tokenAddress}`}
+            />
+          ))}
 
         <Typography variant="body1" fontWeight="bold">
           Collateral Amounts
         </Typography>
-        <TextField
-          value={collaterals
-            .map((collateral) => collateral.tokenAmount)
-            .join(', ')}
-        />
+        {!!collaterals &&
+          collaterals.map((collateral, index) => (
+            <TextField
+              key={`amount-${index}`}
+              value={`- ${collateral.tokenAmount}`}
+            />
+          ))}
 
         <Typography variant="body1" fontWeight="bold">
           Loan Amount
