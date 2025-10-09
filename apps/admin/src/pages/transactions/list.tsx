@@ -55,16 +55,11 @@ export const TransactionsList = () => {
                     .split(','),
                 }
               : {}),
+          },
+          collaterals_: {
             ...(tokenAddresses.length > 0
               ? {
-                  collaterals_: {
-                    tokenAddress_in: tokenAddresses
-                      .replace(/ /g, '')
-                      .split(','),
-                  },
-                  // collateralToken_in: tokenAddresses
-                  //   .replace(/ /g, '')
-                  //   .split(','),
+                  tokenAddress_in: tokenAddresses.replace(/ /g, '').split(','),
                 }
               : {}),
           },
@@ -94,13 +89,11 @@ export const TransactionsList = () => {
                     .split(','),
                 }
               : {}),
+          },
+          collaterals_: {
             ...(tokenAddresses.length > 0
               ? {
-                  collaterals_: {
-                    tokenAddress_in: tokenAddresses
-                      .replace(/ /g, '')
-                      .split(','),
-                  },
+                  tokenAddress_in: tokenAddresses.replace(/ /g, '').split(','),
                 }
               : {}),
           },
@@ -152,7 +145,7 @@ export const TransactionsList = () => {
         },
       },
       {
-        field: 'loanContract__collaterals',
+        field: 'collaterals',
         headerName: 'Collateral Tokens',
         type: 'string',
         minWidth: 350,
@@ -161,7 +154,7 @@ export const TransactionsList = () => {
         align: 'left',
         headerAlign: 'left',
         renderCell: function render({ row }) {
-          const collaterals = row.loanContract.collaterals as Array<{
+          const collaterals = row.collaterals as Array<{
             tokenAddress: string;
           }>;
           if (!collaterals) return null;

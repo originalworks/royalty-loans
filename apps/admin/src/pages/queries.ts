@@ -88,10 +88,9 @@ export const TRANSACTIONS_LIST_QUERY = gql`
       id
       loanContract {
         id
-        isPackLoan
-        collaterals {
-          tokenAddress
-        }
+      }
+      collaterals {
+        tokenAddress
       }
       transactionHash
       kind
@@ -112,10 +111,9 @@ export const TRANSACTION_SHOW_QUERY = gql`
       id
       loanContract {
         id
-        isPackLoan
-        collaterals {
-          tokenAddress
-        }
+      }
+      collaterals {
+        tokenAddress
       }
       transactionHash
       kind

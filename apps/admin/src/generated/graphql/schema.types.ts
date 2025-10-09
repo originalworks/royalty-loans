@@ -35,6 +35,7 @@ export type Block_Height = {
 
 export type Expense = {
   baseFeePerGas?: Maybe<Scalars['BigInt']['output']>;
+  collaterals: Array<LoanContractCollateral>;
   cumulativeGasUsed?: Maybe<Scalars['BigInt']['output']>;
   from?: Maybe<Scalars['Bytes']['output']>;
   gasLimit: Scalars['BigInt']['output'];
@@ -47,6 +48,15 @@ export type Expense = {
   totalCost: Scalars['BigInt']['output'];
   transactionHash: Scalars['Bytes']['output'];
   value?: Maybe<Scalars['BigInt']['output']>;
+};
+
+
+export type ExpenseCollateralsArgs = {
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<LoanContractCollateral_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  where?: InputMaybe<LoanContractCollateral_Filter>;
 };
 
 export type ExpenseKind =
@@ -69,6 +79,13 @@ export type Expense_Filter = {
   baseFeePerGas_lte?: InputMaybe<Scalars['BigInt']['input']>;
   baseFeePerGas_not?: InputMaybe<Scalars['BigInt']['input']>;
   baseFeePerGas_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  collaterals?: InputMaybe<Array<Scalars['String']['input']>>;
+  collaterals_?: InputMaybe<LoanContractCollateral_Filter>;
+  collaterals_contains?: InputMaybe<Array<Scalars['String']['input']>>;
+  collaterals_contains_nocase?: InputMaybe<Array<Scalars['String']['input']>>;
+  collaterals_not?: InputMaybe<Array<Scalars['String']['input']>>;
+  collaterals_not_contains?: InputMaybe<Array<Scalars['String']['input']>>;
+  collaterals_not_contains_nocase?: InputMaybe<Array<Scalars['String']['input']>>;
   cumulativeGasUsed?: InputMaybe<Scalars['BigInt']['input']>;
   cumulativeGasUsed_gt?: InputMaybe<Scalars['BigInt']['input']>;
   cumulativeGasUsed_gte?: InputMaybe<Scalars['BigInt']['input']>;
@@ -185,6 +202,7 @@ export type Expense_Filter = {
 
 export type Expense_OrderBy =
   | 'baseFeePerGas'
+  | 'collaterals'
   | 'cumulativeGasUsed'
   | 'from'
   | 'gasLimit'
