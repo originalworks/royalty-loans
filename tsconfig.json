@@ -7,6 +7,9 @@
       "path": "./apps/backend"
     },
     {
+      "path": "./apps/auth-gateway"
+    },
+    {
       "path": "./apps/admin"
     },
     {

@@ -1,0 +1,103 @@
+{
+  "name": "@royalty-loans/auth-gateway",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "targets": {
+      "build": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "webpack-cli build",
+          "args": [
+            "node-env=production"
+          ]
+        },
+        "configurations": {
+          "development": {
+            "args": [
+              "node-env=development"
+            ]
+          }
+        }
+      },
+      "esbuild": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "node bundler.mjs && npx tsc -p tsconfig.migrations.json",
+          "cwd": "apps/auth-gatewaty"
+        }
+      },
+      "serve": {
+        "continuous": true,
+        "executor": "@nx/js:node",
+        "defaultConfiguration": "development",
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "buildTarget": "@royalty-loans/auth-gatewaty:build",
+          "runBuildTargetDependencies": false
+        },
+        "configurations": {
+          "development": {
+            "buildTarget": "@royalty-loans/auth-gatewaty:build:development"
+          },
+          "production": {
+            "buildTarget": "@royalty-loans/auth-gatewaty:build:production"
+          }
+        }
+      },
+      "test": {
+        "options": {
+          "passWithNoTests": true
+        }
+      },
+      "typeorm": {
+        "executor": "nx:run-commands",
+        "outputs": [],
+        "options": {
+          "commands": [
+            {
+              "command": "TS_NODE_PROJECT=apps/auth-gatewaty/tsconfig.app.json node --require ts-node/register ./node_modules/typeorm/cli.js"
+            }
+          ]
+        }
+      },
+      "typeorm-migration-generate": {
+        "executor": "nx:run-commands",
+        "outputs": [],
+        "options": {
+          "commands": [
+            {
+              "command": "nx run auth-gatewaty:typeorm migration:generate apps/auth-gatewaty/src/migrations/{args.name} -d apps/auth-gatewaty/src/dataSource.ts --pretty"
+            }
+          ]
+        }
+      },
+      "typeorm-migration-run": {
+        "executor": "nx:run-commands",
+        "outputs": [],
+        "options": {
+          "commands": [
+            {
+              "command": "nx run auth-gatewaty:typeorm migration:run -d apps/auth-gatewaty/src/dataSource.ts"
+            }
+          ]
+        }
+      },
+      "lint": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "eslint \"{src,test}/**/*.ts\" --fix",
+          "cwd": "apps/auth-gatewaty"
+        }
+      },
+      "typecheck": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "tsc --noEmit -p apps/auth-gatewaty/tsconfig.app.json"
+        }
+      }
+    }
+  }
+}
