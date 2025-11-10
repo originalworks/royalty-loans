@@ -3,6 +3,7 @@ enum LoanStatus {
   Active
   Revoked
   Recouped
+  Expired
 }
 
 enum ExpenseKind {
