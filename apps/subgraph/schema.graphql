@@ -28,13 +28,20 @@ type Stats @entity(immutable: false) {
   expensesCount: BigInt!
 }
 
+type LoanContractCollateral @entity(immutable: true) {
+  id: Bytes!
+  loanContract: LoanContract!
+  tokenAddress: Bytes! # address
+  tokenId: BigInt!
+  tokenAmount: BigInt!
+}
+
 type LoanContract @entity(immutable: false) {
   id: Bytes!
   loanContract: Bytes! # address
   borrower: Bytes! # address
-  collateralToken: Bytes! # address
-  collateralTokenId: BigInt!
-  collateralAmount: BigInt!
+  isPackLoan: Boolean!
+  collaterals: [LoanContractCollateral!]! @derivedFrom(field: "loanContract")
   loanAmount: BigInt!
   recoupmentAmount: BigInt!
   repaidAmount: BigInt!
@@ -52,6 +59,7 @@ type Expense @entity(immutable: true) {
   id: Bytes!
   from: Bytes
   loanContract: LoanContract!
+  collaterals: [LoanContractCollateral!]!
   transactionHash: Bytes!
   kind: ExpenseKind!
   value: BigInt

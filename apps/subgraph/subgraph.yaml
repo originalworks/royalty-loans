@@ -9,8 +9,8 @@ dataSources:
     network: base-sepolia
     source:
       abi: RoyaltyLoanFactory
-      address: "0x63D5BFFf71d1BFE6a093348020aecd9506Fc7EEd"
-      startBlock: 27756618
+      address: "0x7F089CB03A9Ad6e89F2a42A186059Dce29FC2360"
+      startBlock: 32038340
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -25,7 +25,7 @@ dataSources:
       eventHandlers:
         - event: Initialized(uint64)
           handler: handleInitialized
-        - event: LoanContractCreated(address,address,address,uint256,uint256,uint256,uint256)
+        - event: LoanContractCreated(address,address,(address,uint256,uint256)[],uint256,uint256)
           handler: handleLoanContractCreated
           receipt: true
       file: ./src/royalty-loan-factory.ts
@@ -35,7 +35,7 @@ dataSources:
     source:
       abi: ERC20
       address: "0x46Bc2338a282383fe2585Ef5F0171E62FdCEf3B0"
-      startBlock: 27756618
+      startBlock: 32038340
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
