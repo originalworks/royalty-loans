@@ -7,6 +7,7 @@ import {
   LoanPartialyRepaid,
 } from '../generated/schema';
 import {
+  InitializeCall,
   LoanRepaid as LoanRepaidEvent,
   Initialized as InitializedEvent,
   LoanRevoked as LoanRevokedEvent,
@@ -14,6 +15,14 @@ import {
   LoanPartialyRepaid as LoanPartialyRepaidEvent,
 } from '../generated/templates/RoyaltyLoan/RoyaltyLoan';
 import { createExpense } from './expense';
+
+export function handleLoanInitialized(call: InitializeCall): void {
+  const loan = LoanContract.load(call.to);
+  if (loan !== null) {
+    loan.expirationDate = call.block.timestamp.plus(call.inputs._duration);
+    loan.save();
+  }
+}
 
 export function handleInitialized(event: InitializedEvent): void {
   const entity = new InitializedLoan(
