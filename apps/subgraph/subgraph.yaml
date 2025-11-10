@@ -75,6 +75,9 @@ templates:
       abis:
         - name: RoyaltyLoan
           file: ./abis/RoyaltyLoan.json
+      callHandlers:
+        - function: initialize(address,uint256,uint256,address,address,uint256,uint256,uint256)
+          handler: handleLoanInitialized
       eventHandlers:
         - event: Initialized(uint64)
           handler: handleInitialized

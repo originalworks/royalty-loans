@@ -47,6 +47,7 @@ export function handleLoanContractCreated(
   entity.status = 'Pending';
   entity.timestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
+  entity.expirationDate = BigInt.zero();
   entity.save();
 
   for (let i = 0; i < collaterals.length; i++) {
