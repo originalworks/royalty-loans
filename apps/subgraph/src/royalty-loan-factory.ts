@@ -43,6 +43,7 @@ export function handleLoanContractCreated(
   entity.status = 'Pending';
   entity.timestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
+  entity.expirationDate = BigInt.zero();
   entity.save();
 
   RoyaltyLoan.create(event.params.loanContract);
