@@ -213,6 +213,7 @@ export type Expense_OrderBy =
   | 'loanContract'
   | 'loanContract__actualRepaid'
   | 'loanContract__borrower'
+  | 'loanContract__expirationDate'
   | 'loanContract__feePpm'
   | 'loanContract__id'
   | 'loanContract__isPackLoan'
@@ -365,6 +366,7 @@ export type LoanContract = {
   borrower: Scalars['Bytes']['output'];
   collaterals: Array<LoanContractCollateral>;
   expenses: Array<Expense>;
+  expirationDate: Scalars['BigInt']['output'];
   feePpm: Scalars['BigInt']['output'];
   id: Scalars['Bytes']['output'];
   isPackLoan: Scalars['Boolean']['output'];
@@ -473,6 +475,7 @@ export type LoanContractCollateral_OrderBy =
   | 'loanContract'
   | 'loanContract__actualRepaid'
   | 'loanContract__borrower'
+  | 'loanContract__expirationDate'
   | 'loanContract__feePpm'
   | 'loanContract__id'
   | 'loanContract__isPackLoan'
@@ -511,6 +514,14 @@ export type LoanContract_Filter = {
   borrower_not_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
   collaterals_?: InputMaybe<LoanContractCollateral_Filter>;
   expenses_?: InputMaybe<Expense_Filter>;
+  expirationDate?: InputMaybe<Scalars['BigInt']['input']>;
+  expirationDate_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  expirationDate_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  expirationDate_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  expirationDate_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  expirationDate_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  expirationDate_not?: InputMaybe<Scalars['BigInt']['input']>;
+  expirationDate_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
   feePpm?: InputMaybe<Scalars['BigInt']['input']>;
   feePpm_gt?: InputMaybe<Scalars['BigInt']['input']>;
   feePpm_gte?: InputMaybe<Scalars['BigInt']['input']>;
@@ -618,6 +629,7 @@ export type LoanContract_OrderBy =
   | 'borrower'
   | 'collaterals'
   | 'expenses'
+  | 'expirationDate'
   | 'feePpm'
   | 'id'
   | 'isPackLoan'
@@ -889,6 +901,7 @@ export type LoanRevoked_OrderBy =
 
 export type LoanStatus =
   | 'Active'
+  | 'Expired'
   | 'Pending'
   | 'Recouped'
   | 'Revoked';
