@@ -1,6 +1,6 @@
 import { BigInt, Bytes, ethereum } from '@graphprotocol/graph-ts';
 
-import { Expense } from '../generated/schema';
+import { Expense, LoanContract } from '../generated/schema';
 import { recordStats } from './helpers';
 
 export function createExpense(
@@ -32,6 +32,17 @@ export function createExpense(
     expense.totalCost = receipt.gasUsed.times(transaction.gasPrice);
   }
   expense.timestamp = event.block.timestamp;
+
+  expense.collaterals = [];
+  const loan = LoanContract.load(loanContract);
+  if (loan !== null) {
+    const collaterals = loan.collaterals.load();
+    const collateralIds: Bytes[] = [];
+    for (let i = 0; i < collaterals.length; i++) {
+      collateralIds.push(collaterals[i].id);
+    }
+    expense.collaterals = collateralIds;
+  }
 
   expense.save();
 
