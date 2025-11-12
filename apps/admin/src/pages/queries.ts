@@ -41,6 +41,7 @@ export const LOAN_OFFERS_LIST_QUERY = gql`
         gasPrice
         totalCost
       }
+      expirationDate
     }
   }
 `;
@@ -66,6 +67,7 @@ export const LOAN_OFFER_SHOW_QUERY = gql`
         gasPrice
         totalCost
       }
+      expirationDate
     }
   }
 `;

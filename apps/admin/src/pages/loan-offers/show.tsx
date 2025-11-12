@@ -112,7 +112,13 @@ export const LoanOfferShow = () => {
         <Typography variant="body1" fontWeight="bold">
           Status
         </Typography>
-        <TextField value={record?.status} />
+        <TextField
+          value={
+            Number(record?.expirationDate * 100) < Date.now()
+              ? 'Expired'
+              : record?.status
+          }
+        />
 
         {cumulated.gasPrice && (
           <>

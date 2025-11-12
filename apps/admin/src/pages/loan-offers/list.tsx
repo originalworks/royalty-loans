@@ -31,7 +31,12 @@ export const LoanOffersList = () => {
   const chains = useChains();
 
   const [results, setResults] = useState<
-    Array<{ contract: string; active: boolean; canRepay: boolean }>
+    Array<{
+      contract: string;
+      active: boolean;
+      canRepay: boolean;
+      isExpired: boolean;
+    }>
   >([]);
   const [page, setPage] = useState<number>(0);
   const [pageSize, setPageSize] = useState<number>(10);
@@ -70,67 +75,79 @@ export const LoanOffersList = () => {
       const contracts: Array<{
         contract: `0x${string}`;
         collaterals: Array<LoanContractCollateral>;
+        isExpired: boolean;
       }> = dataGridProps.rows.map((row) => ({
         contract: row.loanContract,
         collaterals: row.collaterals,
+        isExpired: Number(row.expirationDate * 1000) < Date.now(),
       }));
 
       try {
-        contracts.map(async ({ contract, collaterals }) => {
-          const data = await readContract(config, {
-            address: contract,
-            abi: royaltyLoanAbi,
-            functionName: 'loanActive',
-          });
-          const paymentToken = await readContract(config, {
-            abi: royaltyLoanAbi,
-            address: contract,
-            functionName: 'paymentToken',
-            args: [],
-          });
-          if (!paymentToken)
+        for (let i = 0; i < contracts.length; i += 1) {
+          const { contract, collaterals, isExpired } = contracts[i];
+
+          if (isExpired) {
             setResults((prevState) => [
               ...prevState,
-              { contract, active: data, canRepay: false },
+              { contract, active: false, canRepay: false, isExpired },
             ]);
-          else {
-            const amount = await readContract(config, {
-              abi: erc20Abi,
-              address: paymentToken,
-              functionName: 'balanceOf',
-              args: [contract],
+          } else {
+            const data = await readContract(config, {
+              address: contract,
+              abi: royaltyLoanAbi,
+              functionName: 'loanActive',
             });
-            if (amount > 0)
+            const paymentToken = await readContract(config, {
+              abi: royaltyLoanAbi,
+              address: contract,
+              functionName: 'paymentToken',
+              args: [],
+            });
+            console.log({ contract, data, paymentToken });
+            if (!paymentToken)
               setResults((prevState) => [
                 ...prevState,
-                { contract, active: data, canRepay: true },
+                { contract, active: data, canRepay: false, isExpired },
               ]);
             else {
-              const results = await Promise.all(
-                collaterals.map(async ({ tokenAddress }) => {
-                  const response = await readContract(config, {
-                    abi: agreementErc1155Abi,
-                    address: tokenAddress,
-                    functionName: 'getClaimableAmount',
-                    args: [paymentToken, contract],
-                  });
-                  return Number(response[0]);
-                }),
-              );
-              const totalAmount = results.reduce((acc, num) => acc + num, 0);
-              if (totalAmount > 0)
+              const amount = await readContract(config, {
+                abi: erc20Abi,
+                address: paymentToken,
+                functionName: 'balanceOf',
+                args: [contract],
+              });
+              if (amount > 0)
                 setResults((prevState) => [
                   ...prevState,
-                  { contract, active: data, canRepay: true },
+                  { contract, active: data, canRepay: true, isExpired },
                 ]);
-              else
-                setResults((prevState) => [
-                  ...prevState,
-                  { contract, active: data, canRepay: false },
-                ]);
+              else {
+                const results = await Promise.all(
+                  collaterals.map(async ({ tokenAddress }) => {
+                    const response = await readContract(config, {
+                      abi: agreementErc1155Abi,
+                      address: tokenAddress,
+                      functionName: 'getClaimableAmount',
+                      args: [paymentToken, contract],
+                    });
+                    return Number(response[0]);
+                  }),
+                );
+                const totalAmount = results.reduce((acc, num) => acc + num, 0);
+                if (totalAmount > 0)
+                  setResults((prevState) => [
+                    ...prevState,
+                    { contract, active: data, canRepay: true, isExpired },
+                  ]);
+                else
+                  setResults((prevState) => [
+                    ...prevState,
+                    { contract, active: data, canRepay: false, isExpired },
+                  ]);
+              }
             }
           }
-        });
+        }
       } catch (error) {
         console.error('Error reading contracts:', error);
       }
@@ -270,6 +287,18 @@ export const LoanOffersList = () => {
         headerAlign: 'left',
         sortable: false,
         disableColumnMenu: true,
+        renderCell: function render({ value, row }) {
+          const result = results.find(
+            ({ contract }) => contract === row.loanContract,
+          );
+          if (value === 'Active' || result?.active) {
+            return <TextField value="Active" />;
+          }
+          if (!result?.active && value === 'Pending' && result?.isExpired) {
+            return <TextField value="Expired" />;
+          }
+          return <TextField value={value} />;
+        },
       },
       {
         field: 'cumulatedGasPrice',
@@ -346,12 +375,14 @@ export const LoanOffersList = () => {
         sortable: false,
         disableColumnMenu: true,
         renderCell: function render({ row }) {
+          const result = results.find(
+            ({ contract }) => contract === row.loanContract,
+          );
           return (
             <>
               <ShowButton hideText recordItemId={row.id} />
-              {row.status === 'Active' &&
-                results.find(({ contract }) => contract === row.loanContract)
-                  ?.canRepay &&
+              {(row.status === 'Active' || result?.active) &&
+                result?.canRepay &&
                 (isConnected ? (
                   <Button
                     size="large"
@@ -365,10 +396,8 @@ export const LoanOffersList = () => {
                   <ConnectButton />
                 ))}
 
-              {(row.status === 'Pending' ||
-                (row.status === 'Pending' &&
-                  !results.find(({ contract }) => contract === row.loanContract)
-                    ?.active)) &&
+              {row.status === 'Pending' &&
+                !result?.active &&
                 (isConnected ? (
                   <Button
                     size="large"
