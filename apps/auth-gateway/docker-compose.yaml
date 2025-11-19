@@ -1,0 +1,38 @@
+version: "3.7"
+
+services:
+  base:
+    build:
+      context: .
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    volumes:
+      - ../..:/app
+    user: node
+    working_dir: /app/apps/auth-gateway
+    environment:
+      ENVIRONMENT: test
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_DATABASE: postgres
+
+  test-runner:
+    extends:
+      service: base
+    depends_on:
+      - anvil
+    command: "npm run auth-gateway:test"
+
+  anvil:
+    image: ghcr.io/foundry-rs/foundry
+    entrypoint: [
+        "anvil",
+        "--host", "0.0.0.0",
+        "--chain-id", "84532",
+        "--mnemonic", "test test test test test test test test test test test junk"
+      ]
+    ports:
+      - "8545:8545"

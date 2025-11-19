@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "composite": true,
     "outDir": "dist",
     "types": [
       "node"
@@ -16,7 +17,6 @@
   },
   "include": [
     "src/**/*.ts",
-    "tests"
   ],
   "exclude": [
     "out-tsc",

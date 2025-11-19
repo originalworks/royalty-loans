@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
+import '@openzeppelin/contracts/token/ERC1155/ERC1155.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpgradeable.sol';
 import '../../Loans/IAgreementERC1155.sol';
 // To be able to deploy it with tests

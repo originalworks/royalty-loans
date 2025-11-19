@@ -19,7 +19,6 @@ await esbuild.build({
     }),
   ],
   external: [
-    '@aws-sdk/*',
     '@nestjs/microservices',
     '@nestjs/websockets',
     'class-transformer/storage',

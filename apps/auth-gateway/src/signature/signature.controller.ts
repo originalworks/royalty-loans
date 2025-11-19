@@ -1,28 +1,28 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Post,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
 import { SignatureService } from './signature.service';
 import {
+  EIP712_DELEGATED_AUTH_TYPES,
   EIP712_DOMAIN,
   EIP712_SHAREHOLDER_AUTH_TYPES,
+  IDelegatedAuthType,
   IShareholderAuthType,
 } from './signature.const';
-import { ethers, verifyTypedData } from 'ethers';
-import { GetShareholderPaymentDataDto } from './signature.dto';
+import {
+  GetDelegatedPaymentDataDto,
+  GetShareholderPaymentDataDto,
+} from './signature.dto';
+import { ZeroAddress } from 'ethers';
 
 @Controller('payment-details')
 export class SignatureController {
   constructor(private signatureService: SignatureService) {}
 
   @Get('shareholder/template')
-  getPersonalSigTemplate() {
+  getShareholderSigTemplate() {
     const message: IShareholderAuthType = {
-      shareholder: ethers.ZeroAddress,
+      shareholder: ZeroAddress,
       issuedAt: 0,
+      chainId: '0',
     };
 
     return {
@@ -33,30 +33,32 @@ export class SignatureController {
   }
 
   @Post('shareholder')
+  @HttpCode(200)
   async getShareholderPaymentData(@Body() body: GetShareholderPaymentDataDto) {
     await this.signatureService.handleShareholderPaymentData(body);
   }
 
-  //   @Post('eip712')
-  //   async handleEIP712Sig() {}
+  @Get('delegated/template')
+  handleDelegatedSigTemplate() {
+    const message: IDelegatedAuthType = {
+      shareholder: ZeroAddress,
+      delegate: ZeroAddress,
+      assets: [ZeroAddress],
+      chainId: '0',
+      startDate: 0,
+      endDate: 0,
+    };
 
-  //   @Get()
+    return {
+      domain: EIP712_DOMAIN,
+      types: EIP712_DELEGATED_AUTH_TYPES,
+      message,
+    };
+  }
 
-  //   @Get('eip712/template')
-  //   handleEIP712SigTemplate() {
-  //     const message: IEIP712AuthorizationType = {
-  //       shareholder: '0x0000000000000000000000000000000000000000',
-  //       delegate: '0x0000000000000000000000000000000000000000',
-  //       assets: ['0x0000000000000000000000000000000000000000'],
-  //       startDate: 0,
-  //       endDate: 0,
-  //       expirationDate: 0,
-  //     };
-
-  //     return {
-  //       domain: EIP712_DOMAIN,
-  //       types: EIP712_TYPES,
-  //       message,
-  //     };
-  //   }
+  @Post('delegated')
+  @HttpCode(200)
+  async getDelegatedPaymentData(@Body() body: GetDelegatedPaymentDataDto) {
+    await this.signatureService.handleDelegatedPaymentData(body);
+  }
 }

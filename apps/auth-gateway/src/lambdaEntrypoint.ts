@@ -2,8 +2,6 @@ import awsServerlessExpress from '@vendia/serverless-express';
 import { APIGatewayProxyEvent, Callback, Context } from 'aws-lambda';
 import { AppInstance } from './app.instance';
 
-export { runMigrations } from './runMigrations';
-
 let appServer: ReturnType<typeof awsServerlessExpress>;
 
 export const app = async (
