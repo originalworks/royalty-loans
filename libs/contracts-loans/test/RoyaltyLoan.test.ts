@@ -1,5 +1,4 @@
 import { ethers } from 'hardhat';
-import { expect } from 'chai';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import {
   AgreementERC1155,
@@ -9,6 +8,8 @@ import {
 } from '../typechain';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { fixture } from './fixture';
+
+let expect: Chai.ExpectStatic;
 
 describe('RoyaltyLoanFactory', () => {
   let deployer: SignerWithAddress;
@@ -30,6 +31,10 @@ describe('RoyaltyLoanFactory', () => {
   let createLoanWithFactory: Awaited<
     ReturnType<typeof fixture>
   >['createLoanWithFactory'];
+
+  before(async () => {
+    expect = (await import('chai')).expect;
+  });
 
   beforeEach(async () => {
     const deployment = await fixture();
@@ -340,7 +345,7 @@ describe('RoyaltyLoanFactory', () => {
     });
   });
 
-  describe.only('processRepayment', () => {
+  describe('processRepayment', () => {
     it('successfully makes full repayment', async () => {
       const loan = await createLoanWithFactory(borrower, [
         { collateralToken: collateralTokenA },
@@ -578,7 +583,7 @@ describe('RoyaltyLoanFactory', () => {
       expect(await loan.loanActive()).to.equal(false);
     });
 
-    it.only('triggers claimHolderFunds on AgreementsERC1155', async () => {
+    it('triggers claimHolderFunds on AgreementsERC1155', async () => {
       const loan = await createLoanWithFactory(borrower, [
         { collateralToken: collateralTokenA },
         { collateralToken: collateralTokenB }, // By default borrower has 3000 shares but 1000 were collateralized
