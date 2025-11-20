@@ -1,31 +1,18 @@
 import { BigInt, Address } from '@graphprotocol/graph-ts';
 
-import {
-  LoanContract,
-  InitializedFactory,
-  LoanContractCollateral,
-} from '../generated/schema';
 import { RoyaltyLoan } from '../generated/templates';
 import {
   Initialized as InitializedEvent,
   LoanContractCreated as LoanContractCreatedEventNew,
   LoanContractCreated1 as LoanContractCreatedEventOld,
 } from '../generated/RoyaltyLoanFactory/RoyaltyLoanFactory';
+import { LoanContract, LoanContractCollateral } from '../generated/schema';
 import { createExpense } from './expense';
 import { initializeStats, recordStats } from './helpers';
 
 const offerDuration = 432000;
 
 export function handleInitialized(event: InitializedEvent): void {
-  const entity = new InitializedFactory(
-    event.transaction.hash.concatI32(event.logIndex.toI32()),
-  );
-  entity.version = event.params.version;
-  entity.blockNumber = event.block.number;
-  entity.timestamp = event.block.timestamp;
-  entity.transactionHash = event.transaction.hash;
-  entity.save();
-
   initializeStats();
 }
 

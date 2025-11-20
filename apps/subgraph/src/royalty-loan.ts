@@ -3,28 +3,15 @@ import {
   LoanRevoked,
   LoanContract,
   LoanProvided,
-  InitializedLoan,
   LoanPartialyRepaid,
 } from '../generated/schema';
 import {
   LoanRepaid as LoanRepaidEvent,
-  Initialized as InitializedEvent,
   LoanRevoked as LoanRevokedEvent,
   LoanProvided as LoanProvidedEvent,
   LoanPartialyRepaid as LoanPartialyRepaidEvent,
 } from '../generated/templates/RoyaltyLoan/RoyaltyLoan';
 import { createExpense } from './expense';
-
-export function handleInitialized(event: InitializedEvent): void {
-  const entity = new InitializedLoan(
-    event.transaction.hash.concatI32(event.logIndex.toI32()),
-  );
-  entity.version = event.params.version;
-  entity.blockNumber = event.block.number;
-  entity.blockTimestamp = event.block.timestamp;
-  entity.transactionHash = event.transaction.hash;
-  entity.save();
-}
 
 export function handleLoanProvided(event: LoanProvidedEvent): void {
   const entity = new LoanProvided(event.address);

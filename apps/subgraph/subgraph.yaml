@@ -17,7 +17,6 @@ dataSources:
         - Stats
         - Expense
         - LoanContract
-        - InitializedFactory
         - LoanContractCollateral
       abis:
         - name: RoyaltyLoanFactory
@@ -48,7 +47,6 @@ dataSources:
         - Stats
         - Expense
         - LoanContract
-        - InitializedFactory
         - LoanContractCollateral
       abis:
         - name: RoyaltyLoanFactoryV1
@@ -103,14 +101,11 @@ templates:
         - LoanRevoked
         - LoanContract
         - LoanProvided
-        - InitializedLoan
         - LoanPartialyRepaid
       abis:
         - name: RoyaltyLoan
           file: ./abis/RoyaltyLoan.json
       eventHandlers:
-        - event: Initialized(uint64)
-          handler: handleInitialized
         - event: LoanProvided(address)
           handler: handleLoanProvided
           receipt: true
