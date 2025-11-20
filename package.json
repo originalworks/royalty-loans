@@ -11,8 +11,6 @@
     "admin:build": "nx run admin:build",
     "admin:codegen": "nx run admin:codegen",
     "admin:generate": "nx run admin:generate",
-    "contracts:test": "nx run contracts:test",
-    "contracts:compile": "nx run contracts:compile",
     "subgraph:codegen": "nx run subgraph:codegen",
     "subgraph:build-base": "nx run subgraph:build --network base",
     "subgraph:build-sepolia": "nx run subgraph:build --network base-sepolia",
