@@ -103,7 +103,6 @@ export const LoanOffersList = () => {
               functionName: 'paymentToken',
               args: [],
             });
-            console.log({ contract, data, paymentToken });
             if (!paymentToken)
               setResults((prevState) => [
                 ...prevState,
