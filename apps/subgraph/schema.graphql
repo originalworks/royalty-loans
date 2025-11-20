@@ -53,7 +53,10 @@ type LoanContract @entity(immutable: false) {
   transactionHash: Bytes!
   expenses: [Expense!]! @derivedFrom(field: "loanContract")
   loanRepaid: LoanRepaid
+  paymentTokenAddress: Bytes!
+  templateAddress: Bytes!
   expirationDate: BigInt!
+  offerDuration: BigInt!
 }
 
 type Expense @entity(immutable: true) {
