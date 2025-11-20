@@ -6,24 +6,16 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts/interfaces/IERC1155.sol';
 import '@openzeppelin/contracts/proxy/Clones.sol';
-import './IRoyaltyLoan.sol';
-import '../shared/Whitelist/WhitelistConsumer.sol';
+import '../../Loans/IRoyaltyLoan.sol';
+import '../../shared/Whitelist/WhitelistConsumer.sol';
 
-contract RoyaltyLoanFactory is
+contract RoyaltyLoanFactoryV1 is
   WhitelistConsumer,
   Initializable,
   OwnableUpgradeable,
   UUPSUpgradeable
 {
   event TemplateChanged(address previousAddress, address newAddress);
-  event OfferDurationChanged(
-    uint256 previousOfferDuration,
-    uint256 newOfferDuration
-  );
-  event PaymentTokenChanged(
-    address previousPaymentToken,
-    address newPaymentToken
-  );
 
   event LoanContractCreated(
     address loanContract,
@@ -32,10 +24,7 @@ contract RoyaltyLoanFactory is
     uint256 collateralTokenId,
     uint256 collateralAmount,
     uint256 loanAmount,
-    uint256 feePpm,
-    uint256 offerDuration,
-    address paymentTokenAddress,
-    address templateAddress
+    uint256 feePpm
   );
 
   bytes1 public constant OPERATIONAL_WHITELIST = 0x01;
@@ -106,9 +95,7 @@ contract RoyaltyLoanFactory is
       _duration > 0,
       'RoyaltyLoanFactory: _duration must be greater than 0'
     );
-    uint256 previousDuration = offerDuration;
     offerDuration = _duration;
-    emit OfferDurationChanged(previousDuration, _duration);
   }
 
   function setOfferDuration(
@@ -122,10 +109,7 @@ contract RoyaltyLoanFactory is
       _paymentTokenAddress != address(0),
       'RoyaltyLoanFactory: _paymentTokenAddress is the zero address'
     );
-    address previousPaymentTokenAddress = paymentTokenAddress;
     paymentTokenAddress = _paymentTokenAddress;
-
-    emit PaymentTokenChanged(previousPaymentTokenAddress, _paymentTokenAddress);
   }
 
   function setPaymentTokenAddress(
@@ -169,10 +153,7 @@ contract RoyaltyLoanFactory is
       collateralTokenId,
       collateralAmount,
       loanAmount,
-      feePpm,
-      offerDuration,
-      paymentTokenAddress,
-      templateAddress
+      feePpm
     );
 
     return clone;

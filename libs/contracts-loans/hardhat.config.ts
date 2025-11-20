@@ -33,24 +33,8 @@ const config: HardhatUserConfig = {
     },
   },
   etherscan: {
-    apiKey: {
-      holesky: process.env.ETHERSCAN_API_KEY || '',
-      sepolia: process.env.ETHERSCAN_API_KEY || '',
-      chiado: process.env.BLOCKSCOUT_API_KEY || '',
-      base_sepolia: process.env.BASESCAN_API_KEY ?? '',
-      base: process.env.BASESCAN_API_KEY ?? '',
-      polygon: process.env.POLYGONSCAN_API_KEY ?? '',
-    },
-    customChains: [
-      {
-        network: 'base_sepolia',
-        chainId: 84532,
-        urls: {
-          apiURL: 'https://api-sepolia.basescan.org/api',
-          browserURL: 'https://sepolia-explorer.base.org',
-        },
-      },
-    ],
+    apiKey: process.env.ETHERSCAN_API_KEY,
+    enabled: false,
   },
   typechain: {
     outDir: 'typechain',

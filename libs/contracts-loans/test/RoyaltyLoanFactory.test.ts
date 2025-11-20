@@ -1,5 +1,4 @@
 import { ethers } from 'hardhat';
-import { expect } from 'chai';
 import {
   AgreementERC1155Mock,
   ERC20TokenMock,
@@ -12,6 +11,8 @@ import {
 } from '../typechain';
 import { fixture, deployProxy } from './fixture';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
+
+let expect: Chai.ExpectStatic;
 
 describe('RoyaltyLoanFactory', () => {
   let deployer: SignerWithAddress;
@@ -28,6 +29,10 @@ describe('RoyaltyLoanFactory', () => {
   let createLoanWithFactory: Awaited<
     ReturnType<typeof fixture>
   >['createLoanWithFactory'];
+
+  before(async () => {
+    expect = (await import('chai')).expect;
+  });
 
   beforeEach(async () => {
     const deployment = await fixture();
