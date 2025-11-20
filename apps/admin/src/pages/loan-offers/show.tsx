@@ -89,6 +89,11 @@ export const LoanOfferShow = () => {
           ))}
 
         <Typography variant="body1" fontWeight="bold">
+          Borrower
+        </Typography>
+        <TextField value={record?.borrower} />
+
+        <Typography variant="body1" fontWeight="bold">
           Collateral Amounts
         </Typography>
         {!!collaterals &&

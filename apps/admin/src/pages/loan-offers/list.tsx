@@ -225,6 +225,16 @@ export const LoanOffersList = () => {
         },
       },
       {
+        field: 'borrower',
+        headerName: 'Borrower',
+        type: 'string',
+        minWidth: 350,
+        display: 'flex',
+        flex: 1,
+        align: 'left',
+        headerAlign: 'left',
+      },
+      {
         field: 'collateralAmount',
         headerName: 'Collateral Amount',
         type: 'number',
