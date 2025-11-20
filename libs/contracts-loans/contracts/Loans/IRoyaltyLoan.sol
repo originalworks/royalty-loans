@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
-interface IRoyaltyLoan {
+import './ICollateral.sol';
+
+interface IRoyaltyLoan is ICollateral {
   event LoanProvided(address lender);
   event LoanPartialyRepaid(uint256 repaymentAmount);
   event LoanRepaid(uint256 repaymentAmount);
   event LoanRevoked();
 
   function initialize(
-    address _collateralTokenAddress,
-    uint256 _collateralTokenId,
-    uint256 _collateralAmount,
+    Collateral[] calldata _collaterals,
     address _paymentTokenAddress,
     address _borrowerAddress,
     uint256 _feePpm,

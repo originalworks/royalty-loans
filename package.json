@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "postinstall": "nx run-many --target=compile --all",
+    "postinstall": "nx run-many --target=postinstall --all",
     "backend:start": "nx run backend:serve",
     "backend:build": "nx run backend:build",
     "backend:test": "nx run backend:test",
@@ -11,13 +11,10 @@
     "admin:build": "nx run admin:build",
     "admin:codegen": "nx run admin:codegen",
     "admin:generate": "nx run admin:generate",
-    "contracts:test": "nx run contracts:test",
-    "contracts:compile": "nx run contracts:compile",
     "subgraph:codegen": "nx run subgraph:codegen",
     "subgraph:build-base": "nx run subgraph:build --network base",
     "subgraph:build-sepolia": "nx run subgraph:build --network base-sepolia",
-    "subgraph:build-polygon": "nx run subgraph:build --network matic",
-    "subgraph:test": "nx run subgraph:test"
+    "subgraph:build-polygon": "nx run subgraph:build --network matic"
   },
   "private": true,
   "dependencies": {
@@ -145,7 +142,6 @@
     "jest-environment-node": "^29.7.0",
     "jiti": "2.4.2",
     "jsdom": "~22.1.0",
-    "matchstick-as": "0.6.0",
     "nx": "21.1.2",
     "prettier": "^3.5.3",
     "supertest": "^7.1.1",

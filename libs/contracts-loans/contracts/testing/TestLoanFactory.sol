@@ -6,20 +6,22 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts/interfaces/IERC1155.sol';
 import '@openzeppelin/contracts/proxy/Clones.sol';
-import './IRoyaltyLoan.sol';
+import '../Loans/IRoyaltyLoan.sol';
 import '../shared/Whitelist/WhitelistConsumer.sol';
 
-contract RoyaltyLoanFactory is
+contract TestRoyaltyLoanFactory is
   WhitelistConsumer,
   Initializable,
   OwnableUpgradeable,
   UUPSUpgradeable
 {
   event TemplateChanged(address previousAddress, address newAddress);
+
   event OfferDurationChanged(
     uint256 previousOfferDuration,
     uint256 newOfferDuration
   );
+
   event PaymentTokenChanged(
     address previousPaymentToken,
     address newPaymentToken
@@ -65,10 +67,6 @@ contract RoyaltyLoanFactory is
   function setWhitelistAddress(
     address _whitelistAddress
   ) external isWhitelistedOn(OPERATIONAL_WHITELIST) {
-    require(
-      _whitelistAddress != address(0),
-      'RoyaltyLoanFactory: _whitelistAddress address is the zero address'
-    );
     _setWhitelistAddress(_whitelistAddress, OPERATIONAL_WHITELIST);
   }
 
@@ -76,18 +74,10 @@ contract RoyaltyLoanFactory is
     address _whitelistAddress,
     bytes1 _whitelistId
   ) internal override {
-    require(
-      _whitelistAddress != address(0),
-      'RoyaltyLoanFactory: _whitelistAddress address is the zero address'
-    );
     super._setWhitelistAddress(_whitelistAddress, _whitelistId);
   }
 
   function _setTemplateAddress(address _templateAddress) private {
-    require(
-      _templateAddress != address(0),
-      'RoyaltyLoanFactory: _templateAddress is the zero address'
-    );
     address previousAddress = templateAddress;
     templateAddress = _templateAddress;
     emit TemplateChanged(previousAddress, _templateAddress);
@@ -100,13 +90,7 @@ contract RoyaltyLoanFactory is
   }
 
   function _setOfferDuration(uint256 _duration) private {
-    require(
-      _duration > 0,
-      'RoyaltyLoanFactory: _duration must be greater than 0'
-    );
-    uint256 previousDuration = offerDuration;
     offerDuration = _duration;
-    emit OfferDurationChanged(previousDuration, _duration);
   }
 
   function setOfferDuration(
@@ -116,14 +100,7 @@ contract RoyaltyLoanFactory is
   }
 
   function _setPaymentTokenAddress(address _paymentTokenAddress) private {
-    require(
-      _paymentTokenAddress != address(0),
-      'RoyaltyLoanFactory: _paymentTokenAddress is the zero address'
-    );
-    address previousPaymentTokenAddress = paymentTokenAddress;
     paymentTokenAddress = _paymentTokenAddress;
-
-    emit PaymentTokenChanged(previousPaymentTokenAddress, _paymentTokenAddress);
   }
 
   function setPaymentTokenAddress(
@@ -147,6 +124,49 @@ contract RoyaltyLoanFactory is
         collaterals[i].tokenAmount,
         ''
       );
+    }
+
+    IRoyaltyLoan(clone).initialize(
+      collaterals,
+      paymentTokenAddress,
+      msg.sender,
+      feePpm,
+      loanAmount,
+      offerDuration
+    );
+
+    emit LoanContractCreated(
+      clone,
+      msg.sender,
+      collaterals,
+      loanAmount,
+      feePpm,
+      offerDuration,
+      paymentTokenAddress,
+      templateAddress
+    );
+
+    return clone;
+  }
+
+  function testCreateLoanContract(
+    ICollateral.Collateral[] calldata collaterals,
+    uint256 loanAmount,
+    uint256 feePpm,
+    bool omitTransfer
+  ) external returns (address) {
+    address clone = Clones.clone(templateAddress);
+
+    if (!omitTransfer) {
+      for (uint i = 0; i < collaterals.length; i++) {
+        IERC1155(collaterals[i].tokenAddress).safeTransferFrom(
+          msg.sender,
+          clone,
+          collaterals[i].tokenId,
+          collaterals[i].tokenAmount,
+          ''
+        );
+      }
     }
 
     IRoyaltyLoan(clone).initialize(
