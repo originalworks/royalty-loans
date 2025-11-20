@@ -1,6 +1,6 @@
 import hre from 'hardhat';
 
-const LOAN_FACTORY_ADDRESS = '0x63D5BFFf71d1BFE6a093348020aecd9506Fc7EEd';
+const LOAN_FACTORY_ADDRESS = '0x7F089CB03A9Ad6e89F2a42A186059Dce29FC2360';
 const NEW_IMPLEMENTATION_NAME = 'RoyaltyLoanFactory';
 
 const upgradeLoanFactory = async () => {

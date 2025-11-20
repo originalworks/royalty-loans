@@ -32,8 +32,6 @@ describe('RoyaltyLoanFactory', () => {
     ReturnType<typeof fixture>
   >['createLoanWithFactory'];
 
-  let deployLoan: Awaited<ReturnType<typeof fixture>>['deployLoan'];
-
   before(async () => {
     expect = (await import('chai')).expect;
   });
@@ -347,7 +345,7 @@ describe('RoyaltyLoanFactory', () => {
     });
   });
 
-  describe.only('processRepayment', () => {
+  describe('processRepayment', () => {
     it('successfully makes full repayment', async () => {
       const loan = await createLoanWithFactory(borrower, [
         { collateralToken: collateralTokenA },
@@ -585,7 +583,7 @@ describe('RoyaltyLoanFactory', () => {
       expect(await loan.loanActive()).to.equal(false);
     });
 
-    it.only('triggers claimHolderFunds on AgreementsERC1155', async () => {
+    it('triggers claimHolderFunds on AgreementsERC1155', async () => {
       const loan = await createLoanWithFactory(borrower, [
         { collateralToken: collateralTokenA },
         { collateralToken: collateralTokenB }, // By default borrower has 3000 shares but 1000 were collateralized
