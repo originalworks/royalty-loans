@@ -310,8 +310,147 @@
             "offset": 0,
             "slot": "1",
             "type": "t_address",
+            "contract": "RoyaltyLoanFactoryV1",
+            "src": "contracts/archive/Loans/RoyaltyLoanFactoryV1.sol:30"
+          },
+          {
+            "label": "offerDuration",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_uint256",
+            "contract": "RoyaltyLoanFactoryV1",
+            "src": "contracts/archive/Loans/RoyaltyLoanFactoryV1.sol:31"
+          },
+          {
+            "label": "templateAddress",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_address",
+            "contract": "RoyaltyLoanFactoryV1",
+            "src": "contracts/archive/Loans/RoyaltyLoanFactoryV1.sol:32"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "RoyaltyLoanFactoryV1",
+            "src": "contracts/archive/Loans/RoyaltyLoanFactoryV1.sol:34"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)73_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(OwnableStorage)13_storage": {
+            "label": "struct OwnableUpgradeable.OwnableStorage",
+            "members": [
+              {
+                "label": "_owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bytes1": {
+            "label": "bytes1",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_bytes1,t_address)": {
+            "label": "mapping(bytes1 => address)",
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "6874f01d707dca906bab00fd5b2ece2cd15f9126edad48d11c0d231732178566": {
+      "address": "0x25322afd01788F19C6395Af3fC5c162f827d79fB",
+      "txHash": "0xa01e4c8f557f919e322c0ea1b3fa03673fbe6c1183410e3a11c83447c4493311",
+      "layout": {
+        "solcVersion": "0.8.24",
+        "storage": [
+          {
+            "label": "whitelists",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_mapping(t_bytes1,t_address)",
+            "contract": "WhitelistConsumer",
+            "src": "contracts/shared/Whitelist/WhitelistConsumer.sol:8"
+          },
+          {
+            "label": "paymentTokenAddress",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_address",
             "contract": "RoyaltyLoanFactory",
-            "src": "contracts/Loans/RoyaltyLoanFactory.sol:30"
+            "src": "contracts/Loans/RoyaltyLoanFactory.sol:41"
           },
           {
             "label": "offerDuration",
@@ -319,7 +458,7 @@
             "slot": "2",
             "type": "t_uint256",
             "contract": "RoyaltyLoanFactory",
-            "src": "contracts/Loans/RoyaltyLoanFactory.sol:31"
+            "src": "contracts/Loans/RoyaltyLoanFactory.sol:42"
           },
           {
             "label": "templateAddress",
@@ -327,7 +466,7 @@
             "slot": "3",
             "type": "t_address",
             "contract": "RoyaltyLoanFactory",
-            "src": "contracts/Loans/RoyaltyLoanFactory.sol:32"
+            "src": "contracts/Loans/RoyaltyLoanFactory.sol:43"
           },
           {
             "label": "__gap",
@@ -335,7 +474,7 @@
             "slot": "4",
             "type": "t_array(t_uint256)50_storage",
             "contract": "RoyaltyLoanFactory",
-            "src": "contracts/Loans/RoyaltyLoanFactory.sol:34"
+            "src": "contracts/Loans/RoyaltyLoanFactory.sol:45"
           }
         ],
         "types": {

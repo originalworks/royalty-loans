@@ -17,12 +17,25 @@ contract TestRoyaltyLoanFactory is
 {
   event TemplateChanged(address previousAddress, address newAddress);
 
+  event OfferDurationChanged(
+    uint256 previousOfferDuration,
+    uint256 newOfferDuration
+  );
+
+  event PaymentTokenChanged(
+    address previousPaymentToken,
+    address newPaymentToken
+  );
+
   event LoanContractCreated(
     address loanContract,
     address borrower,
     ICollateral.Collateral[] collaterals,
     uint256 loanAmount,
-    uint256 feePpm
+    uint256 feePpm,
+    uint256 offerDuration,
+    address paymentTokenAddress,
+    address templateAddress
   );
 
   bytes1 public constant OPERATIONAL_WHITELIST = 0x01;
@@ -127,7 +140,10 @@ contract TestRoyaltyLoanFactory is
       msg.sender,
       collaterals,
       loanAmount,
-      feePpm
+      feePpm,
+      offerDuration,
+      paymentTokenAddress,
+      templateAddress
     );
 
     return clone;
@@ -167,7 +183,10 @@ contract TestRoyaltyLoanFactory is
       msg.sender,
       collaterals,
       loanAmount,
-      feePpm
+      feePpm,
+      offerDuration,
+      paymentTokenAddress,
+      templateAddress
     );
 
     return clone;
