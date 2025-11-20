@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "postinstall": "nx run-many --target=compile --all",
+    "postinstall": "nx run-many --target=postinstall --all",
     "backend:start": "nx run backend:serve",
     "backend:build": "nx run backend:build",
     "backend:test": "nx run backend:test",

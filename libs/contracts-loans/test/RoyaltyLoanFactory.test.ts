@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat';
 import {
-  AgreementERC1155Mock,
+  AgreementERC1155,
   ERC20TokenMock,
   RoyaltyLoan,
   RoyaltyLoan__factory,
@@ -9,8 +9,9 @@ import {
   Whitelist,
   Whitelist__factory,
 } from '../typechain';
-import { fixture, deployProxy } from './fixture';
+import { fixture } from './fixture';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
+import { deployProxy } from '@royalty-loans/contracts-shared';
 
 let expect: Chai.ExpectStatic;
 
@@ -23,7 +24,7 @@ describe('RoyaltyLoanFactory', () => {
   let loanFactory: RoyaltyLoanFactory;
   let loanTemplate: RoyaltyLoan;
   let paymentToken: ERC20TokenMock;
-  let collateralToken: AgreementERC1155Mock;
+  let collateralToken: AgreementERC1155;
 
   let defaults: Awaited<ReturnType<typeof fixture>>['defaults'];
   let createLoanWithFactory: Awaited<
@@ -42,7 +43,7 @@ describe('RoyaltyLoanFactory', () => {
       whitelist,
       loanTemplate,
       loanFactory,
-      collateralToken,
+      collaterals: { collateralTokenA: collateralToken },
       paymentToken,
       defaults,
       createLoanWithFactory,
@@ -209,29 +210,35 @@ describe('RoyaltyLoanFactory', () => {
 
   describe('createLoanContract', () => {
     it('creates loan contract and sends shares', async () => {
-      await (await collateralToken.mint(borrower.address, 1n, 1n)).wait();
-
       const borrowerBalanceBefore = await collateralToken.balanceOf(
         borrower.address,
-        1n,
+        defaults.collateralTokenId,
       );
 
-      expect(borrowerBalanceBefore).to.equal(1n);
+      expect(borrowerBalanceBefore).to.equal(defaults.collateralAmount);
 
-      const loan = await createLoanWithFactory(borrower, {
-        collateralAmount: 1n,
-        feePpm: 100n,
-        loanAmount: 1n,
-      });
+      const loan = await createLoanWithFactory(
+        borrower,
+        [
+          {
+            collateralAmount: defaults.collateralAmount,
+            collateralToken: collateralToken,
+          },
+        ],
+        {
+          feePpm: 100n,
+          loanAmount: 1n,
+        },
+      );
 
       const [borrowerBalanceAfter, loanContractBalanceAfter] =
         await collateralToken.balanceOfBatch(
           [borrower.address, await loan.getAddress()],
-          [1n, 1n],
+          [defaults.collateralTokenId, defaults.collateralTokenId],
         );
 
       expect(borrowerBalanceAfter).to.equal(0n);
-      expect(loanContractBalanceAfter).to.equal(1n);
+      expect(loanContractBalanceAfter).to.equal(defaults.collateralAmount);
     });
   });
 });
