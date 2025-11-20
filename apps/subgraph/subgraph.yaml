@@ -1,6 +1,4 @@
 specVersion: 1.2.0
-indexerHints:
-  prune: auto
 schema:
   file: ./schema.graphql
 dataSources:
@@ -25,17 +23,46 @@ dataSources:
       eventHandlers:
         - event: Initialized(uint64)
           handler: handleInitialized
+        - event: LoanContractCreated(address,address,(address,uint256,uint256)[],uint256,uint256,uint256,address,address)
+          handler: handleLoanContractCreatedNew
+          receipt: true
         - event: LoanContractCreated(address,address,(address,uint256,uint256)[],uint256,uint256)
-          handler: handleLoanContractCreated
+          handler: handleLoanContractCreatedOld
           receipt: true
       file: ./src/royalty-loan-factory.ts
+  - kind: ethereum
+    name: RoyaltyLoanFactoryV1
+    network: base-sepolia
+    source:
+      abi: RoyaltyLoanFactoryV1
+      address: "0x63D5BFFf71d1BFE6a093348020aecd9506Fc7EEd"
+      startBlock: 27756618
+      endBlock: 32038340
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - Initialized
+        - LoanContract
+        - Stats
+      abis:
+        - name: RoyaltyLoanFactoryV1
+          file: ./abis/RoyaltyLoanFactoryV1.json
+      eventHandlers:
+        - event: Initialized(uint64)
+          handler: handleInitialized
+        - event: LoanContractCreated(address,address,address,uint256,uint256,uint256,uint256)
+          handler: handleLoanContractCreated
+          receipt: true
+      file: ./src/royalty-loan-factory-v1.ts
   - kind: ethereum
     name: ERC20Token
     network: base-sepolia
     source:
       abi: ERC20
       address: "0x46Bc2338a282383fe2585Ef5F0171E62FdCEf3B0"
-      startBlock: 32038340
+      startBlock: 27756618
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -75,9 +102,6 @@ templates:
       abis:
         - name: RoyaltyLoan
           file: ./abis/RoyaltyLoan.json
-      callHandlers:
-        - function: initialize((address,uint256,uint256)[],address,address,uint256,uint256,uint256)
-          handler: handleLoanInitialized
       eventHandlers:
         - event: Initialized(uint64)
           handler: handleInitialized
