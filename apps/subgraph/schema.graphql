@@ -15,14 +15,6 @@ enum ExpenseKind {
   ERC20Approve
 }
 
-type InitializedFactory @entity(immutable: true) {
-  id: Bytes!
-  version: BigInt! # uint64
-  blockNumber: BigInt!
-  timestamp: BigInt!
-  transactionHash: Bytes!
-}
-
 type Stats @entity(immutable: false) {
   id: String!
   contractsCount: BigInt!
@@ -53,7 +45,10 @@ type LoanContract @entity(immutable: false) {
   transactionHash: Bytes!
   expenses: [Expense!]! @derivedFrom(field: "loanContract")
   loanRepaid: LoanRepaid
+  paymentTokenAddress: Bytes!
+  templateAddress: Bytes!
   expirationDate: BigInt!
+  offerDuration: BigInt!
 }
 
 type Expense @entity(immutable: true) {
@@ -71,14 +66,6 @@ type Expense @entity(immutable: true) {
   cumulativeGasUsed: BigInt
   totalCost: BigInt! # format to ETH
   timestamp: BigInt!
-}
-
-type InitializedLoan @entity(immutable: true) {
-  id: Bytes!
-  version: BigInt! # uint64
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
 }
 
 type LoanProvided @entity(immutable: true) {
