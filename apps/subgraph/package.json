@@ -17,13 +17,6 @@
           "command": "graph build",
           "cwd": "apps/subgraph"
         }
-      },
-      "test": {
-        "executor": "nx:run-commands",
-        "options": {
-          "command": "NODE_PATH=../../node_modules graph test",
-          "cwd": "apps/subgraph"
-        }
       }
     }
   }

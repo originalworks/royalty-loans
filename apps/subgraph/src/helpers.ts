@@ -3,10 +3,14 @@ import { BigInt } from '@graphprotocol/graph-ts';
 import { Stats } from '../generated/schema';
 
 export function initializeStats(): void {
-  const entity = new Stats('status');
-  entity.contractsCount = BigInt.zero();
-  entity.expensesCount = BigInt.zero();
-  entity.save();
+  let entity = Stats.load('status');
+
+  if (entity == null) {
+    entity = new Stats('status');
+    entity.contractsCount = BigInt.zero();
+    entity.expensesCount = BigInt.zero();
+    entity.save();
+  }
 }
 
 export function recordStats(isContract: boolean): void {
