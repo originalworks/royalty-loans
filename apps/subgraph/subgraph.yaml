@@ -14,9 +14,11 @@ dataSources:
       apiVersion: 0.0.9
       language: wasm/assemblyscript
       entities:
-        - Initialized
-        - LoanContract
         - Stats
+        - Expense
+        - LoanContract
+        - InitializedFactory
+        - LoanContractCollateral
       abis:
         - name: RoyaltyLoanFactory
           file: ./abis/RoyaltyLoanFactory.json
@@ -43,9 +45,11 @@ dataSources:
       apiVersion: 0.0.9
       language: wasm/assemblyscript
       entities:
-        - Initialized
-        - LoanContract
         - Stats
+        - Expense
+        - LoanContract
+        - InitializedFactory
+        - LoanContractCollateral
       abis:
         - name: RoyaltyLoanFactoryV1
           file: ./abis/RoyaltyLoanFactoryV1.json
@@ -68,8 +72,9 @@ dataSources:
       apiVersion: 0.0.9
       language: wasm/assemblyscript
       entities:
-        - Expense
         - Stats
+        - Expense
+        - LoanContract
       abis:
         - name: ERC20
           file: ./abis/ERC20.json
@@ -92,13 +97,14 @@ templates:
       apiVersion: 0.0.9
       language: wasm/assemblyscript
       entities:
-        - LoanContract
-        - InitializedLoan
-        - LoanProvided
-        - LoanPartialyRepaid
+        - Stats
+        - Expense
         - LoanRepaid
         - LoanRevoked
-        - Stats
+        - LoanContract
+        - LoanProvided
+        - InitializedLoan
+        - LoanPartialyRepaid
       abis:
         - name: RoyaltyLoan
           file: ./abis/RoyaltyLoan.json
