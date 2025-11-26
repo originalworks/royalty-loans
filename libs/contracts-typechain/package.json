@@ -1,0 +1,60 @@
+{
+    "name": "@royalty-loans/contracts-typechain",
+    "description": "Royalty loans contracts bundle for ethers v5",
+    "version": "1.0.2",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist/"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/originalworks/royalty-loans"
+    },
+    "publishConfig": {
+        "registry": "https://npm.pkg.github.com/originalworks/"
+    },
+    "scripts": {
+        "release": "npm run scripts/release.ts"
+    },
+    "dependencies": {
+        "ethers": "5.8.0"
+    },
+    "devDependencies": {
+        "typechain": "8.3.2",
+        "@typechain/ethers-v5": "11.1.2",
+        "inquirer": "8.2.7",
+        "@types/inquirer": "8.2.7"
+    },
+    "nx": {
+        "targets": {
+            "build": {
+                "dependsOn": [
+                    {
+                        "target": "compile",
+                        "projects": [
+                            "@royalty-loans/contracts-loans",
+                            "@royalty-loans/contracts-agreements",
+                            "@royalty-loans/contracts-shared"
+                        ]
+                    }
+                ],
+                "executor": "nx:run-commands",
+                "options": {
+                    "command": "./scripts/build.sh",
+                    "cwd": "libs/contracts-typechain"
+                }
+            },
+            "release": {
+                "dependsOn": [
+                    "build"
+                ],
+                "executor": "nx:run-commands",
+                "options": {
+                    "command": "ts-node ./scripts/release.ts",
+                    "cwd": "libs/contracts-typechain"
+                }
+            }
+        }
+    }
+}
