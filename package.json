@@ -14,7 +14,8 @@
     "subgraph:codegen": "nx run subgraph:codegen",
     "subgraph:build-base": "nx run subgraph:build --network base",
     "subgraph:build-sepolia": "nx run subgraph:build --network base-sepolia",
-    "subgraph:build-polygon": "nx run subgraph:build --network matic"
+    "subgraph:build-polygon": "nx run subgraph:build --network matic",
+    "contracts:release": "nx run contracts-typechain:release"
   },
   "private": true,
   "dependencies": {
