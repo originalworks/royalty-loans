@@ -32,7 +32,9 @@ jobs:
               
       - name: "Create .npmrc"
         run: |
-            echo "//npm.pkg.github.com/:_authToken=${{secrets.GITHUB_TOKEN}}" >> ~/.npmrc
+            echo "@originalworks:registry=https://npm.pkg.github.com" >> ~/.npmrc
+            echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
+            echo "always-auth=true" >> ~/.npmrc
         
       - name: "Publish"
         run: |
