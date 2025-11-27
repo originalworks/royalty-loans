@@ -12,7 +12,7 @@
         "url": "https://github.com/originalworks/royalty-loans"
     },
     "publishConfig": {
-        "registry": "https://npm.pkg.github.com/originalworks/"
+        "registry": "https://npm.pkg.github.com"
     },
     "scripts": {
         "release": "npm run scripts/release.ts"
