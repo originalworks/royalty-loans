@@ -11,6 +11,9 @@
         "type": "git",
         "url": "https://github.com/originalworks/royalty-loans.git"
     },
+    "publishConfig": {
+        "registry": "https://npm.pkg.github.com"
+    },
     "scripts": {
         "release": "npm run scripts/release.ts"
     },

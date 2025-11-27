@@ -24,8 +24,6 @@ jobs:
           node-version: '22.x'
           registry-url: 'https://npm.pkg.github.com'
           scope: '@originalworks'
-          always-auth: true
-
 
       - name: "Setup environment"
         run: npm ci
