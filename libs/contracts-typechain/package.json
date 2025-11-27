@@ -1,5 +1,5 @@
 {
-    "name": "@royalty-loans/contracts-typechain",
+    "name": "@originalworks/contracts-typechain",
     "description": "Royalty loans contracts bundle for ethers v5",
     "version": "0.0.7",
     "main": "dist/index.js",
@@ -9,10 +9,7 @@
     ],
     "repository": {
         "type": "git",
-        "url": "https://github.com/originalworks/royalty-loans"
-    },
-    "publishConfig": {
-        "registry": "https://npm.pkg.github.com"
+        "url": "https://github.com/originalworks/royalty-loans.git"
     },
     "scripts": {
         "release": "npm run scripts/release.ts"
