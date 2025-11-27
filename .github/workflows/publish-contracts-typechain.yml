@@ -19,25 +19,21 @@ jobs:
         uses: actions/checkout@v4
 
       - name: "Setup node"
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '22.x'
           registry-url: 'https://npm.pkg.github.com'
           scope: '@originalworks'
-          package-manager-cache: false
           always-auth: true
 
 
       - name: "Setup environment"
         run: npm ci
-              
-      - name: "Create .npmrc"
-        run: |
-            echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
-            echo "@originalworks:registry=https://npm.pkg.github.com" >> ~/.npmrc
         
       - name: "Publish"
         run: |
           cd libs/contracts-typechain
           sed -i 's/@royalty-loans\//@originalworks\//' package.json
-          npm publish 
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
