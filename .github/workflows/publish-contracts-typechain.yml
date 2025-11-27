@@ -24,10 +24,11 @@ jobs:
           registry-url: 'https://npm.pkg.github.com'
           scope: '@originalworks'
           package-manager-cache: false
+          always-auth: true
 
 
       - name: "Setup environment"
-        uses: ./.github/actions/setup-env
+        run: npm ci
               
       - name: "Create .npmrc"
         run: |
