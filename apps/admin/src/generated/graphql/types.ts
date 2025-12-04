@@ -16,8 +16,8 @@ export type LoanOffersListQueryVariables = Types.Exact<{
 
 
 export type LoanOffersListQuery = { loanContracts: Array<(
-    Pick<Types.LoanContract, 'id' | 'loanContract' | 'borrower' | 'collateralToken' | 'collateralTokenId' | 'collateralAmount' | 'loanAmount' | 'feePpm' | 'status' | 'timestamp' | 'transactionHash'>
-    & { expenses: Array<Pick<Types.Expense, 'gasPrice' | 'totalCost'>> }
+    Pick<Types.LoanContract, 'id' | 'loanContract' | 'borrower' | 'isPackLoan' | 'loanAmount' | 'feePpm' | 'status' | 'timestamp' | 'transactionHash' | 'expirationDate'>
+    & { collaterals: Array<Pick<Types.LoanContractCollateral, 'tokenAddress' | 'tokenId' | 'tokenAmount'>>, expenses: Array<Pick<Types.Expense, 'gasPrice' | 'totalCost'>> }
   )> };
 
 export type LoanOfferQueryVariables = Types.Exact<{
@@ -26,8 +26,8 @@ export type LoanOfferQueryVariables = Types.Exact<{
 
 
 export type LoanOfferQuery = { loanContract?: Types.Maybe<(
-    Pick<Types.LoanContract, 'id' | 'loanContract' | 'borrower' | 'collateralToken' | 'collateralTokenId' | 'collateralAmount' | 'loanAmount' | 'feePpm' | 'status' | 'timestamp' | 'transactionHash'>
-    & { expenses: Array<Pick<Types.Expense, 'gasPrice' | 'totalCost'>> }
+    Pick<Types.LoanContract, 'id' | 'loanContract' | 'borrower' | 'isPackLoan' | 'loanAmount' | 'feePpm' | 'status' | 'timestamp' | 'transactionHash' | 'expirationDate'>
+    & { collaterals: Array<Pick<Types.LoanContractCollateral, 'tokenAddress' | 'tokenId' | 'tokenAmount'>>, expenses: Array<Pick<Types.Expense, 'gasPrice' | 'totalCost'>> }
   )> };
 
 export type TransactionsListQueryVariables = Types.Exact<{
@@ -41,7 +41,7 @@ export type TransactionsListQueryVariables = Types.Exact<{
 
 export type TransactionsListQuery = { expenses: Array<(
     Pick<Types.Expense, 'id' | 'transactionHash' | 'kind' | 'baseFeePerGas' | 'gasLimit' | 'gasPrice' | 'gasUsed' | 'cumulativeGasUsed' | 'totalCost' | 'timestamp'>
-    & { loanContract: Pick<Types.LoanContract, 'id' | 'collateralToken'> }
+    & { loanContract: Pick<Types.LoanContract, 'id'>, collaterals: Array<Pick<Types.LoanContractCollateral, 'tokenAddress'>> }
   )> };
 
 export type TransactionQueryVariables = Types.Exact<{
@@ -51,5 +51,5 @@ export type TransactionQueryVariables = Types.Exact<{
 
 export type TransactionQuery = { expense?: Types.Maybe<(
     Pick<Types.Expense, 'id' | 'transactionHash' | 'kind' | 'baseFeePerGas' | 'gasLimit' | 'gasPrice' | 'gasUsed' | 'cumulativeGasUsed' | 'totalCost' | 'timestamp'>
-    & { loanContract: Pick<Types.LoanContract, 'id' | 'collateralToken'> }
+    & { loanContract: Pick<Types.LoanContract, 'id'>, collaterals: Array<Pick<Types.LoanContractCollateral, 'tokenAddress'>> }
   )> };

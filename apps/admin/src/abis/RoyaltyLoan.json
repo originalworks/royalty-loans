@@ -97,8 +97,14 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "collateralAmount",
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "collateralAmounts",
     "outputs": [
       {
         "internalType": "uint256",
@@ -110,8 +116,33 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "collateralToken",
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "collateralTokenIds",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "collateralTokens",
     "outputs": [
       {
         "internalType": "contract IERC1155",
@@ -123,12 +154,28 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "collateralTokenId",
-    "outputs": [
+    "inputs": [
       {
         "internalType": "uint256",
         "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "collaterals",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "tokenAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tokenAmount",
         "type": "uint256"
       }
     ],
@@ -177,19 +224,26 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "_collateralTokenAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_collateralTokenId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_collateralAmount",
-        "type": "uint256"
+        "components": [
+          {
+            "internalType": "address",
+            "name": "tokenAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "tokenId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "tokenAmount",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct ICollateral.Collateral[]",
+        "name": "_collaterals",
+        "type": "tuple[]"
       },
       {
         "internalType": "address",
