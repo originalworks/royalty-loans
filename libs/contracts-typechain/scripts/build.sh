@@ -25,6 +25,7 @@ contracts=(
   "RoyaltyLoanFactory"
   "ERC20TokenMock"
   "Whitelist"
+  "ERC1967Proxy"
 )
 
 # Build find arguments for contract names
@@ -41,6 +42,8 @@ files=$(find "$WORKING_DIR"/../contracts-*/artifacts/contracts/ -type f \( "${fi
 for f in $files; do
   cp "$f" "$ARTIFACTS_DIR/"
 done
+
+cp "$(find "$WORKING_DIR"/../contracts-agreements/artifacts/@openzeppelin/ -type f -name "ERC1967Proxy.json")" "$ARTIFACTS_DIR/"
 
 npx typechain --target ethers-v5 --out-dir "$SRC_DIR" "$ARTIFACTS_DIR"/*.json
 tsc "$SRC_DIR/index.ts" --outDir "$DIST_DIR" --declaration --skipLibCheck
