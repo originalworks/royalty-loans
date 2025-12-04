@@ -11,5 +11,13 @@ export default defineConfig({
       abi: require('./src/abis/ERC20.json'),
       name: 'ERC20',
     },
+    {
+      abi: require('./src/abis/ERC20TokenMock.json'),
+      name: 'ERC20TokenMock',
+    },
+    {
+      abi: require('./src/abis/AgreementERC1155.json'),
+      name: 'AgreementERC1155',
+    },
   ],
 });

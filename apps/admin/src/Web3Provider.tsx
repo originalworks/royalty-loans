@@ -3,6 +3,7 @@ import { base, baseSepolia, polygon } from 'wagmi/chains';
 import { WagmiProvider, createConfig, http } from 'wagmi';
 import { ConnectKitProvider, getDefaultConfig } from 'connectkit';
 
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { BASE_RPC_URL, ENVIRONMENT, POLYGON_RPC_URL } from './config/config';
@@ -52,6 +53,7 @@ export const Web3Provider: React.FC<React.PropsWithChildren<unknown>> = ({
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <ConnectKitProvider>{children}</ConnectKitProvider>
+        <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
     </WagmiProvider>
   );

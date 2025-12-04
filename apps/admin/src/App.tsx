@@ -45,6 +45,7 @@ import { AppIcon } from './components/app-icon';
 import { ColorModeContextProvider } from './contexts/color-mode';
 import { LoanOfferShow, LoanOffersList } from './pages/loan-offers';
 import { TransactionShow, TransactionsList } from './pages/transactions';
+import { AAList } from './pages/AA';
 
 const gqlBaseClient = new Client({
   url: BASE_SUBGRAPH_URL,
@@ -183,6 +184,10 @@ function App() {
                     list: '/transactions',
                     show: '/transactions/show/:id',
                   },
+                  {
+                    name: 'aa-playground',
+                    list: '/aa-playground',
+                  },
                 ]}
                 options={{
                   syncWithLocation: true,
@@ -222,6 +227,9 @@ function App() {
                     <Route path="/transactions">
                       <Route index element={<TransactionsList />} />
                       <Route path="show/:id" element={<TransactionShow />} />
+                    </Route>
+                    <Route path="/aa-playground">
+                      <Route index element={<AAList />} />
                     </Route>
                     <Route path="*" element={<ErrorComponent />} />
                   </Route>

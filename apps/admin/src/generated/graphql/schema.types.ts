@@ -36,6 +36,7 @@ export type Block_Height = {
 export type Expense = {
   baseFeePerGas?: Maybe<Scalars['BigInt']['output']>;
   cumulativeGasUsed?: Maybe<Scalars['BigInt']['output']>;
+  from?: Maybe<Scalars['Bytes']['output']>;
   gasLimit: Scalars['BigInt']['output'];
   gasPrice: Scalars['BigInt']['output'];
   gasUsed?: Maybe<Scalars['BigInt']['output']>;
@@ -45,6 +46,7 @@ export type Expense = {
   timestamp: Scalars['BigInt']['output'];
   totalCost: Scalars['BigInt']['output'];
   transactionHash: Scalars['Bytes']['output'];
+  value?: Maybe<Scalars['BigInt']['output']>;
 };
 
 export type ExpenseKind =
@@ -75,6 +77,16 @@ export type Expense_Filter = {
   cumulativeGasUsed_lte?: InputMaybe<Scalars['BigInt']['input']>;
   cumulativeGasUsed_not?: InputMaybe<Scalars['BigInt']['input']>;
   cumulativeGasUsed_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  from?: InputMaybe<Scalars['Bytes']['input']>;
+  from_contains?: InputMaybe<Scalars['Bytes']['input']>;
+  from_gt?: InputMaybe<Scalars['Bytes']['input']>;
+  from_gte?: InputMaybe<Scalars['Bytes']['input']>;
+  from_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  from_lt?: InputMaybe<Scalars['Bytes']['input']>;
+  from_lte?: InputMaybe<Scalars['Bytes']['input']>;
+  from_not?: InputMaybe<Scalars['Bytes']['input']>;
+  from_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
+  from_not_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
   gasLimit?: InputMaybe<Scalars['BigInt']['input']>;
   gasLimit_gt?: InputMaybe<Scalars['BigInt']['input']>;
   gasLimit_gte?: InputMaybe<Scalars['BigInt']['input']>;
@@ -161,17 +173,27 @@ export type Expense_Filter = {
   transactionHash_not?: InputMaybe<Scalars['Bytes']['input']>;
   transactionHash_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
   transactionHash_not_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  value?: InputMaybe<Scalars['BigInt']['input']>;
+  value_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  value_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  value_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  value_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  value_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  value_not?: InputMaybe<Scalars['BigInt']['input']>;
+  value_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
 };
 
 export type Expense_OrderBy =
   | 'baseFeePerGas'
   | 'cumulativeGasUsed'
+  | 'from'
   | 'gasLimit'
   | 'gasPrice'
   | 'gasUsed'
   | 'id'
   | 'kind'
   | 'loanContract'
+  | 'loanContract__actualRepaid'
   | 'loanContract__borrower'
   | 'loanContract__collateralAmount'
   | 'loanContract__collateralToken'
@@ -187,7 +209,8 @@ export type Expense_OrderBy =
   | 'loanContract__transactionHash'
   | 'timestamp'
   | 'totalCost'
-  | 'transactionHash';
+  | 'transactionHash'
+  | 'value';
 
 export type InitializedFactory = {
   blockNumber: Scalars['BigInt']['output'];
@@ -322,6 +345,7 @@ export type InitializedLoan_OrderBy =
   | 'version';
 
 export type LoanContract = {
+  actualRepaid: Scalars['BigInt']['output'];
   borrower: Scalars['Bytes']['output'];
   collateralAmount: Scalars['BigInt']['output'];
   collateralToken: Scalars['Bytes']['output'];
@@ -331,6 +355,7 @@ export type LoanContract = {
   id: Scalars['Bytes']['output'];
   loanAmount: Scalars['BigInt']['output'];
   loanContract: Scalars['Bytes']['output'];
+  loanRepaid?: Maybe<LoanRepaid>;
   recoupmentAmount: Scalars['BigInt']['output'];
   repaidAmount: Scalars['BigInt']['output'];
   status: LoanStatus;
@@ -350,6 +375,14 @@ export type LoanContractExpensesArgs = {
 export type LoanContract_Filter = {
   /** Filter for the block changed event. */
   _change_block?: InputMaybe<BlockChangedFilter>;
+  actualRepaid?: InputMaybe<Scalars['BigInt']['input']>;
+  actualRepaid_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  actualRepaid_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  actualRepaid_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  actualRepaid_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  actualRepaid_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  actualRepaid_not?: InputMaybe<Scalars['BigInt']['input']>;
+  actualRepaid_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
   and?: InputMaybe<Array<InputMaybe<LoanContract_Filter>>>;
   borrower?: InputMaybe<Scalars['Bytes']['input']>;
   borrower_contains?: InputMaybe<Scalars['Bytes']['input']>;
@@ -424,6 +457,27 @@ export type LoanContract_Filter = {
   loanContract_not?: InputMaybe<Scalars['Bytes']['input']>;
   loanContract_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
   loanContract_not_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  loanRepaid?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_?: InputMaybe<LoanRepaid_Filter>;
+  loanRepaid_contains?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_ends_with?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_gt?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_gte?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_in?: InputMaybe<Array<Scalars['String']['input']>>;
+  loanRepaid_lt?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_lte?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_not?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_not_contains?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_not_ends_with?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_not_in?: InputMaybe<Array<Scalars['String']['input']>>;
+  loanRepaid_not_starts_with?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_starts_with?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
   or?: InputMaybe<Array<InputMaybe<LoanContract_Filter>>>;
   recoupmentAmount?: InputMaybe<Scalars['BigInt']['input']>;
   recoupmentAmount_gt?: InputMaybe<Scalars['BigInt']['input']>;
@@ -466,6 +520,7 @@ export type LoanContract_Filter = {
 };
 
 export type LoanContract_OrderBy =
+  | 'actualRepaid'
   | 'borrower'
   | 'collateralAmount'
   | 'collateralToken'
@@ -475,6 +530,12 @@ export type LoanContract_OrderBy =
   | 'id'
   | 'loanAmount'
   | 'loanContract'
+  | 'loanRepaid'
+  | 'loanRepaid__id'
+  | 'loanRepaid__loanContract'
+  | 'loanRepaid__repaymentAmount'
+  | 'loanRepaid__timestamp'
+  | 'loanRepaid__transactionHash'
   | 'recoupmentAmount'
   | 'repaidAmount'
   | 'status'
