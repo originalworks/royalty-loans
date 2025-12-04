@@ -27,6 +27,9 @@ jobs:
       - name: "Setup environment"
         run: npm ci
         
+      - name: "Build"
+        run: npx run nx contracts-typechain:build
+
       - name: "Publish"
         run: |
           cd libs/contracts-typechain
