@@ -10,7 +10,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-      id-token: write
     # if: |
     #   startsWith(github.ref, 'refs/tags/@royalty-loans/contracts-typechain') &&
     #   !contains(github.ref, '-alpha.')
@@ -32,7 +31,7 @@ jobs:
       - name: "Publish"
         run: |
           cd libs/contracts-typechain
-          sed -i 's/@royalty-loans\//@originalworks\//' package.json
+          sed -i 's/@royalty-loans\/contracts-typechain/@originalworks\/contracts/' package.json
           npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
