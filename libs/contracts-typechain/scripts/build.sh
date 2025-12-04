@@ -12,6 +12,7 @@ rm -rf "$ARTIFACTS_DIR" "$SRC_DIR" "$DIST_DIR"
 mkdir -p "$ARTIFACTS_DIR"
 
 contracts=(
+  "AgreementERC20"
   "AgreementERC1155"
   "AgreementFactory"
   "AgreementProxy"
