@@ -15,5 +15,8 @@
     {
       "path": "./libs/contracts-agreements"
     },
+    {
+      "path": "./libs/contracts-typechain"
+    },
   ]
 }
