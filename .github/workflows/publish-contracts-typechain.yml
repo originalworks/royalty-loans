@@ -28,7 +28,7 @@ jobs:
         run: npm ci
         
       - name: "Build"
-        run: npx run nx contracts-typechain:build
+        run: npx nx run contracts-typechain:build
 
       - name: "Publish"
         run: |
