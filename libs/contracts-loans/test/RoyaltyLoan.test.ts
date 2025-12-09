@@ -231,6 +231,16 @@ describe('RoyaltyLoanFactory', () => {
       ).not.to.be.reverted;
     });
 
+    it('reverts with no collaterals provided', async () => {
+      await expect(
+        fakeLoanFactory
+          .connect(borrower)
+          .createLoanContract([], defaults.loanAmount, defaults.feePpm),
+      ).to.be.revertedWith(
+        'RoyaltyLoan: At least 1 collateral must be provided',
+      );
+    });
+
     it('works with multiple collaterals', async () => {
       const loan = await createLoanWithFactory(borrower, [
         { collateralToken: collateralTokenA },

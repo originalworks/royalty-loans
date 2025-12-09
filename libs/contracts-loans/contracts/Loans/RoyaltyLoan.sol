@@ -41,6 +41,11 @@ contract RoyaltyLoan is IRoyaltyLoan, ERC1155Holder, Initializable {
     uint256 _loanAmount,
     uint256 _duration
   ) public initializer {
+    require(
+      _collaterals.length > 0,
+      'RoyaltyLoan: At least 1 collateral must be provided'
+    );
+
     for (uint i = 0; i < _collaterals.length; i++) {
       Collateral calldata collateral = _collaterals[i];
 
