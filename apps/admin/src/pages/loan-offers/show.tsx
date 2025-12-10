@@ -31,6 +31,10 @@ export const LoanOfferShow = () => {
 
   const record = data?.data;
 
+  const collaterals = record?.collaterals as Array<{
+    tokenAddress: string;
+    tokenAmount: string;
+  }>;
   const expenses = record?.expenses as Array<{
     gasPrice: string;
     totalCost: string;
@@ -74,14 +78,31 @@ export const LoanOfferShow = () => {
         <TextField value={record?.loanContract} />
 
         <Typography variant="body1" fontWeight="bold">
-          Collateral Token
+          Collateral Tokens
         </Typography>
-        <TextField value={record?.collateralToken} />
+        {!!collaterals &&
+          collaterals.map((collateral, index) => (
+            <TextField
+              key={`address-${index}`}
+              value={`- ${collateral.tokenAddress}`}
+            />
+          ))}
 
         <Typography variant="body1" fontWeight="bold">
-          Collateral Amount
+          Borrower
         </Typography>
-        <TextField value={record?.collateralAmount} />
+        <TextField value={record?.borrower} />
+
+        <Typography variant="body1" fontWeight="bold">
+          Collateral Amounts
+        </Typography>
+        {!!collaterals &&
+          collaterals.map((collateral, index) => (
+            <TextField
+              key={`amount-${index}`}
+              value={`- ${collateral.tokenAmount}`}
+            />
+          ))}
 
         <Typography variant="body1" fontWeight="bold">
           Loan Amount
@@ -96,7 +117,13 @@ export const LoanOfferShow = () => {
         <Typography variant="body1" fontWeight="bold">
           Status
         </Typography>
-        <TextField value={record?.status} />
+        <TextField
+          value={
+            Number(record?.expirationDate * 100) < Date.now()
+              ? 'Expired'
+              : record?.status
+          }
+        />
 
         {cumulated.gasPrice && (
           <>

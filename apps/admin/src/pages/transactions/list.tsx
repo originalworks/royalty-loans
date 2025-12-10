@@ -55,11 +55,11 @@ export const TransactionsList = () => {
                     .split(','),
                 }
               : {}),
+          },
+          collaterals_: {
             ...(tokenAddresses.length > 0
               ? {
-                  collateralToken_in: tokenAddresses
-                    .replace(/ /g, '')
-                    .split(','),
+                  tokenAddress_in: tokenAddresses.replace(/ /g, '').split(','),
                 }
               : {}),
           },
@@ -89,11 +89,11 @@ export const TransactionsList = () => {
                     .split(','),
                 }
               : {}),
+          },
+          collaterals_: {
             ...(tokenAddresses.length > 0
               ? {
-                  collateralToken_in: tokenAddresses
-                    .replace(/ /g, '')
-                    .split(','),
+                  tokenAddress_in: tokenAddresses.replace(/ /g, '').split(','),
                 }
               : {}),
           },
@@ -119,7 +119,7 @@ export const TransactionsList = () => {
         field: 'chainId',
         headerName: 'Network',
         type: 'string',
-        minWidth: 100,
+        minWidth: 120,
         display: 'flex',
         align: 'left',
         headerAlign: 'left',
@@ -135,7 +135,7 @@ export const TransactionsList = () => {
         field: 'loanContract__id',
         headerName: 'Contract Address',
         type: 'string',
-        minWidth: 300,
+        minWidth: 350,
         display: 'flex',
         flex: 1,
         align: 'left',
@@ -145,16 +145,37 @@ export const TransactionsList = () => {
         },
       },
       {
-        field: 'loanContract__collateralToken',
-        headerName: 'Collateral Token',
+        field: 'collaterals',
+        headerName: 'Collateral Tokens',
         type: 'string',
-        minWidth: 300,
+        minWidth: 350,
         display: 'flex',
         flex: 1,
         align: 'left',
         headerAlign: 'left',
         renderCell: function render({ row }) {
-          return <TextField value={row.loanContract.collateralToken} />;
+          const collaterals = row.collaterals as Array<{
+            tokenAddress: string;
+          }>;
+          if (!collaterals) return null;
+
+          return (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                margin: '16px 0',
+                gap: '4px',
+              }}
+            >
+              {collaterals.map((collateral, index) => (
+                <TextField
+                  key={`address-${index}`}
+                  value={collateral.tokenAddress}
+                />
+              ))}
+            </div>
+          );
         },
       },
       {
@@ -275,6 +296,7 @@ export const TransactionsList = () => {
           page: page,
           pageSize: pageSize,
         }}
+        getRowHeight={() => 'auto'}
         columns={columns}
         disableColumnFilter
         slots={{ columnMenu: CustomColumnMenu }}

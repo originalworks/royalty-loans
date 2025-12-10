@@ -35,7 +35,9 @@ export type Block_Height = {
 
 export type Expense = {
   baseFeePerGas?: Maybe<Scalars['BigInt']['output']>;
+  collaterals: Array<LoanContractCollateral>;
   cumulativeGasUsed?: Maybe<Scalars['BigInt']['output']>;
+  from?: Maybe<Scalars['Bytes']['output']>;
   gasLimit: Scalars['BigInt']['output'];
   gasPrice: Scalars['BigInt']['output'];
   gasUsed?: Maybe<Scalars['BigInt']['output']>;
@@ -45,6 +47,16 @@ export type Expense = {
   timestamp: Scalars['BigInt']['output'];
   totalCost: Scalars['BigInt']['output'];
   transactionHash: Scalars['Bytes']['output'];
+  value?: Maybe<Scalars['BigInt']['output']>;
+};
+
+
+export type ExpenseCollateralsArgs = {
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<LoanContractCollateral_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  where?: InputMaybe<LoanContractCollateral_Filter>;
 };
 
 export type ExpenseKind =
@@ -67,6 +79,13 @@ export type Expense_Filter = {
   baseFeePerGas_lte?: InputMaybe<Scalars['BigInt']['input']>;
   baseFeePerGas_not?: InputMaybe<Scalars['BigInt']['input']>;
   baseFeePerGas_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  collaterals?: InputMaybe<Array<Scalars['String']['input']>>;
+  collaterals_?: InputMaybe<LoanContractCollateral_Filter>;
+  collaterals_contains?: InputMaybe<Array<Scalars['String']['input']>>;
+  collaterals_contains_nocase?: InputMaybe<Array<Scalars['String']['input']>>;
+  collaterals_not?: InputMaybe<Array<Scalars['String']['input']>>;
+  collaterals_not_contains?: InputMaybe<Array<Scalars['String']['input']>>;
+  collaterals_not_contains_nocase?: InputMaybe<Array<Scalars['String']['input']>>;
   cumulativeGasUsed?: InputMaybe<Scalars['BigInt']['input']>;
   cumulativeGasUsed_gt?: InputMaybe<Scalars['BigInt']['input']>;
   cumulativeGasUsed_gte?: InputMaybe<Scalars['BigInt']['input']>;
@@ -75,6 +94,16 @@ export type Expense_Filter = {
   cumulativeGasUsed_lte?: InputMaybe<Scalars['BigInt']['input']>;
   cumulativeGasUsed_not?: InputMaybe<Scalars['BigInt']['input']>;
   cumulativeGasUsed_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  from?: InputMaybe<Scalars['Bytes']['input']>;
+  from_contains?: InputMaybe<Scalars['Bytes']['input']>;
+  from_gt?: InputMaybe<Scalars['Bytes']['input']>;
+  from_gte?: InputMaybe<Scalars['Bytes']['input']>;
+  from_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  from_lt?: InputMaybe<Scalars['Bytes']['input']>;
+  from_lte?: InputMaybe<Scalars['Bytes']['input']>;
+  from_not?: InputMaybe<Scalars['Bytes']['input']>;
+  from_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
+  from_not_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
   gasLimit?: InputMaybe<Scalars['BigInt']['input']>;
   gasLimit_gt?: InputMaybe<Scalars['BigInt']['input']>;
   gasLimit_gte?: InputMaybe<Scalars['BigInt']['input']>;
@@ -161,23 +190,33 @@ export type Expense_Filter = {
   transactionHash_not?: InputMaybe<Scalars['Bytes']['input']>;
   transactionHash_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
   transactionHash_not_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  value?: InputMaybe<Scalars['BigInt']['input']>;
+  value_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  value_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  value_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  value_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  value_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  value_not?: InputMaybe<Scalars['BigInt']['input']>;
+  value_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
 };
 
 export type Expense_OrderBy =
   | 'baseFeePerGas'
+  | 'collaterals'
   | 'cumulativeGasUsed'
+  | 'from'
   | 'gasLimit'
   | 'gasPrice'
   | 'gasUsed'
   | 'id'
   | 'kind'
   | 'loanContract'
+  | 'loanContract__actualRepaid'
   | 'loanContract__borrower'
-  | 'loanContract__collateralAmount'
-  | 'loanContract__collateralToken'
-  | 'loanContract__collateralTokenId'
+  | 'loanContract__expirationDate'
   | 'loanContract__feePpm'
   | 'loanContract__id'
+  | 'loanContract__isPackLoan'
   | 'loanContract__loanAmount'
   | 'loanContract__loanContract'
   | 'loanContract__recoupmentAmount'
@@ -187,7 +226,8 @@ export type Expense_OrderBy =
   | 'loanContract__transactionHash'
   | 'timestamp'
   | 'totalCost'
-  | 'transactionHash';
+  | 'transactionHash'
+  | 'value';
 
 export type InitializedFactory = {
   blockNumber: Scalars['BigInt']['output'];
@@ -322,20 +362,31 @@ export type InitializedLoan_OrderBy =
   | 'version';
 
 export type LoanContract = {
+  actualRepaid: Scalars['BigInt']['output'];
   borrower: Scalars['Bytes']['output'];
-  collateralAmount: Scalars['BigInt']['output'];
-  collateralToken: Scalars['Bytes']['output'];
-  collateralTokenId: Scalars['BigInt']['output'];
+  collaterals: Array<LoanContractCollateral>;
   expenses: Array<Expense>;
+  expirationDate: Scalars['BigInt']['output'];
   feePpm: Scalars['BigInt']['output'];
   id: Scalars['Bytes']['output'];
+  isPackLoan: Scalars['Boolean']['output'];
   loanAmount: Scalars['BigInt']['output'];
   loanContract: Scalars['Bytes']['output'];
+  loanRepaid?: Maybe<LoanRepaid>;
   recoupmentAmount: Scalars['BigInt']['output'];
   repaidAmount: Scalars['BigInt']['output'];
   status: LoanStatus;
   timestamp: Scalars['BigInt']['output'];
   transactionHash: Scalars['Bytes']['output'];
+};
+
+
+export type LoanContractCollateralsArgs = {
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<LoanContractCollateral_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  where?: InputMaybe<LoanContractCollateral_Filter>;
 };
 
 
@@ -347,9 +398,109 @@ export type LoanContractExpensesArgs = {
   where?: InputMaybe<Expense_Filter>;
 };
 
+export type LoanContractCollateral = {
+  id: Scalars['Bytes']['output'];
+  loanContract: LoanContract;
+  tokenAddress: Scalars['Bytes']['output'];
+  tokenAmount: Scalars['BigInt']['output'];
+  tokenId: Scalars['BigInt']['output'];
+};
+
+export type LoanContractCollateral_Filter = {
+  /** Filter for the block changed event. */
+  _change_block?: InputMaybe<BlockChangedFilter>;
+  and?: InputMaybe<Array<InputMaybe<LoanContractCollateral_Filter>>>;
+  id?: InputMaybe<Scalars['Bytes']['input']>;
+  id_contains?: InputMaybe<Scalars['Bytes']['input']>;
+  id_gt?: InputMaybe<Scalars['Bytes']['input']>;
+  id_gte?: InputMaybe<Scalars['Bytes']['input']>;
+  id_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  id_lt?: InputMaybe<Scalars['Bytes']['input']>;
+  id_lte?: InputMaybe<Scalars['Bytes']['input']>;
+  id_not?: InputMaybe<Scalars['Bytes']['input']>;
+  id_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
+  id_not_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  loanContract?: InputMaybe<Scalars['String']['input']>;
+  loanContract_?: InputMaybe<LoanContract_Filter>;
+  loanContract_contains?: InputMaybe<Scalars['String']['input']>;
+  loanContract_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  loanContract_ends_with?: InputMaybe<Scalars['String']['input']>;
+  loanContract_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  loanContract_gt?: InputMaybe<Scalars['String']['input']>;
+  loanContract_gte?: InputMaybe<Scalars['String']['input']>;
+  loanContract_in?: InputMaybe<Array<Scalars['String']['input']>>;
+  loanContract_lt?: InputMaybe<Scalars['String']['input']>;
+  loanContract_lte?: InputMaybe<Scalars['String']['input']>;
+  loanContract_not?: InputMaybe<Scalars['String']['input']>;
+  loanContract_not_contains?: InputMaybe<Scalars['String']['input']>;
+  loanContract_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  loanContract_not_ends_with?: InputMaybe<Scalars['String']['input']>;
+  loanContract_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  loanContract_not_in?: InputMaybe<Array<Scalars['String']['input']>>;
+  loanContract_not_starts_with?: InputMaybe<Scalars['String']['input']>;
+  loanContract_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  loanContract_starts_with?: InputMaybe<Scalars['String']['input']>;
+  loanContract_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  or?: InputMaybe<Array<InputMaybe<LoanContractCollateral_Filter>>>;
+  tokenAddress?: InputMaybe<Scalars['Bytes']['input']>;
+  tokenAddress_contains?: InputMaybe<Scalars['Bytes']['input']>;
+  tokenAddress_gt?: InputMaybe<Scalars['Bytes']['input']>;
+  tokenAddress_gte?: InputMaybe<Scalars['Bytes']['input']>;
+  tokenAddress_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  tokenAddress_lt?: InputMaybe<Scalars['Bytes']['input']>;
+  tokenAddress_lte?: InputMaybe<Scalars['Bytes']['input']>;
+  tokenAddress_not?: InputMaybe<Scalars['Bytes']['input']>;
+  tokenAddress_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
+  tokenAddress_not_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  tokenAmount?: InputMaybe<Scalars['BigInt']['input']>;
+  tokenAmount_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  tokenAmount_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  tokenAmount_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  tokenAmount_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  tokenAmount_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  tokenAmount_not?: InputMaybe<Scalars['BigInt']['input']>;
+  tokenAmount_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  tokenId?: InputMaybe<Scalars['BigInt']['input']>;
+  tokenId_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  tokenId_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  tokenId_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  tokenId_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  tokenId_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  tokenId_not?: InputMaybe<Scalars['BigInt']['input']>;
+  tokenId_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+};
+
+export type LoanContractCollateral_OrderBy =
+  | 'id'
+  | 'loanContract'
+  | 'loanContract__actualRepaid'
+  | 'loanContract__borrower'
+  | 'loanContract__expirationDate'
+  | 'loanContract__feePpm'
+  | 'loanContract__id'
+  | 'loanContract__isPackLoan'
+  | 'loanContract__loanAmount'
+  | 'loanContract__loanContract'
+  | 'loanContract__recoupmentAmount'
+  | 'loanContract__repaidAmount'
+  | 'loanContract__status'
+  | 'loanContract__timestamp'
+  | 'loanContract__transactionHash'
+  | 'tokenAddress'
+  | 'tokenAmount'
+  | 'tokenId';
+
 export type LoanContract_Filter = {
   /** Filter for the block changed event. */
   _change_block?: InputMaybe<BlockChangedFilter>;
+  actualRepaid?: InputMaybe<Scalars['BigInt']['input']>;
+  actualRepaid_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  actualRepaid_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  actualRepaid_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  actualRepaid_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  actualRepaid_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  actualRepaid_not?: InputMaybe<Scalars['BigInt']['input']>;
+  actualRepaid_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
   and?: InputMaybe<Array<InputMaybe<LoanContract_Filter>>>;
   borrower?: InputMaybe<Scalars['Bytes']['input']>;
   borrower_contains?: InputMaybe<Scalars['Bytes']['input']>;
@@ -361,33 +512,16 @@ export type LoanContract_Filter = {
   borrower_not?: InputMaybe<Scalars['Bytes']['input']>;
   borrower_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
   borrower_not_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
-  collateralAmount?: InputMaybe<Scalars['BigInt']['input']>;
-  collateralAmount_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  collateralAmount_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  collateralAmount_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  collateralAmount_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  collateralAmount_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  collateralAmount_not?: InputMaybe<Scalars['BigInt']['input']>;
-  collateralAmount_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  collateralToken?: InputMaybe<Scalars['Bytes']['input']>;
-  collateralTokenId?: InputMaybe<Scalars['BigInt']['input']>;
-  collateralTokenId_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  collateralTokenId_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  collateralTokenId_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  collateralTokenId_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  collateralTokenId_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  collateralTokenId_not?: InputMaybe<Scalars['BigInt']['input']>;
-  collateralTokenId_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  collateralToken_contains?: InputMaybe<Scalars['Bytes']['input']>;
-  collateralToken_gt?: InputMaybe<Scalars['Bytes']['input']>;
-  collateralToken_gte?: InputMaybe<Scalars['Bytes']['input']>;
-  collateralToken_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
-  collateralToken_lt?: InputMaybe<Scalars['Bytes']['input']>;
-  collateralToken_lte?: InputMaybe<Scalars['Bytes']['input']>;
-  collateralToken_not?: InputMaybe<Scalars['Bytes']['input']>;
-  collateralToken_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
-  collateralToken_not_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  collaterals_?: InputMaybe<LoanContractCollateral_Filter>;
   expenses_?: InputMaybe<Expense_Filter>;
+  expirationDate?: InputMaybe<Scalars['BigInt']['input']>;
+  expirationDate_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  expirationDate_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  expirationDate_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  expirationDate_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  expirationDate_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  expirationDate_not?: InputMaybe<Scalars['BigInt']['input']>;
+  expirationDate_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
   feePpm?: InputMaybe<Scalars['BigInt']['input']>;
   feePpm_gt?: InputMaybe<Scalars['BigInt']['input']>;
   feePpm_gte?: InputMaybe<Scalars['BigInt']['input']>;
@@ -406,6 +540,10 @@ export type LoanContract_Filter = {
   id_not?: InputMaybe<Scalars['Bytes']['input']>;
   id_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
   id_not_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  isPackLoan?: InputMaybe<Scalars['Boolean']['input']>;
+  isPackLoan_in?: InputMaybe<Array<Scalars['Boolean']['input']>>;
+  isPackLoan_not?: InputMaybe<Scalars['Boolean']['input']>;
+  isPackLoan_not_in?: InputMaybe<Array<Scalars['Boolean']['input']>>;
   loanAmount?: InputMaybe<Scalars['BigInt']['input']>;
   loanAmount_gt?: InputMaybe<Scalars['BigInt']['input']>;
   loanAmount_gte?: InputMaybe<Scalars['BigInt']['input']>;
@@ -424,6 +562,27 @@ export type LoanContract_Filter = {
   loanContract_not?: InputMaybe<Scalars['Bytes']['input']>;
   loanContract_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
   loanContract_not_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  loanRepaid?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_?: InputMaybe<LoanRepaid_Filter>;
+  loanRepaid_contains?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_ends_with?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_gt?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_gte?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_in?: InputMaybe<Array<Scalars['String']['input']>>;
+  loanRepaid_lt?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_lte?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_not?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_not_contains?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_not_ends_with?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_not_in?: InputMaybe<Array<Scalars['String']['input']>>;
+  loanRepaid_not_starts_with?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_starts_with?: InputMaybe<Scalars['String']['input']>;
+  loanRepaid_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
   or?: InputMaybe<Array<InputMaybe<LoanContract_Filter>>>;
   recoupmentAmount?: InputMaybe<Scalars['BigInt']['input']>;
   recoupmentAmount_gt?: InputMaybe<Scalars['BigInt']['input']>;
@@ -466,15 +625,22 @@ export type LoanContract_Filter = {
 };
 
 export type LoanContract_OrderBy =
+  | 'actualRepaid'
   | 'borrower'
-  | 'collateralAmount'
-  | 'collateralToken'
-  | 'collateralTokenId'
+  | 'collaterals'
   | 'expenses'
+  | 'expirationDate'
   | 'feePpm'
   | 'id'
+  | 'isPackLoan'
   | 'loanAmount'
   | 'loanContract'
+  | 'loanRepaid'
+  | 'loanRepaid__id'
+  | 'loanRepaid__loanContract'
+  | 'loanRepaid__repaymentAmount'
+  | 'loanRepaid__timestamp'
+  | 'loanRepaid__transactionHash'
   | 'recoupmentAmount'
   | 'repaidAmount'
   | 'status'
@@ -735,6 +901,7 @@ export type LoanRevoked_OrderBy =
 
 export type LoanStatus =
   | 'Active'
+  | 'Expired'
   | 'Pending'
   | 'Recouped'
   | 'Revoked';
@@ -754,6 +921,8 @@ export type Query = {
   initializedLoan?: Maybe<InitializedLoan>;
   initializedLoans: Array<InitializedLoan>;
   loanContract?: Maybe<LoanContract>;
+  loanContractCollateral?: Maybe<LoanContractCollateral>;
+  loanContractCollaterals: Array<LoanContractCollateral>;
   loanContracts: Array<LoanContract>;
   loanPartialyRepaid?: Maybe<LoanPartialyRepaid>;
   loanPartialyRepaids: Array<LoanPartialyRepaid>;
@@ -831,6 +1000,24 @@ export type QueryLoanContractArgs = {
   block?: InputMaybe<Block_Height>;
   id: Scalars['ID']['input'];
   subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type QueryLoanContractCollateralArgs = {
+  block?: InputMaybe<Block_Height>;
+  id: Scalars['ID']['input'];
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type QueryLoanContractCollateralsArgs = {
+  block?: InputMaybe<Block_Height>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<LoanContractCollateral_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  subgraphError?: _SubgraphErrorPolicy_;
+  where?: InputMaybe<LoanContractCollateral_Filter>;
 };
 
 
@@ -998,6 +1185,8 @@ export type Subscription = {
   initializedLoan?: Maybe<InitializedLoan>;
   initializedLoans: Array<InitializedLoan>;
   loanContract?: Maybe<LoanContract>;
+  loanContractCollateral?: Maybe<LoanContractCollateral>;
+  loanContractCollaterals: Array<LoanContractCollateral>;
   loanContracts: Array<LoanContract>;
   loanPartialyRepaid?: Maybe<LoanPartialyRepaid>;
   loanPartialyRepaids: Array<LoanPartialyRepaid>;
@@ -1075,6 +1264,24 @@ export type SubscriptionLoanContractArgs = {
   block?: InputMaybe<Block_Height>;
   id: Scalars['ID']['input'];
   subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionLoanContractCollateralArgs = {
+  block?: InputMaybe<Block_Height>;
+  id: Scalars['ID']['input'];
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionLoanContractCollateralsArgs = {
+  block?: InputMaybe<Block_Height>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<LoanContractCollateral_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  subgraphError?: _SubgraphErrorPolicy_;
+  where?: InputMaybe<LoanContractCollateral_Filter>;
 };
 
 

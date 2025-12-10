@@ -26,9 +26,12 @@ export const LOAN_OFFERS_LIST_QUERY = gql`
       id
       loanContract
       borrower
-      collateralToken
-      collateralTokenId
-      collateralAmount
+      isPackLoan
+      collaterals {
+        tokenAddress
+        tokenId
+        tokenAmount
+      }
       loanAmount
       feePpm
       status
@@ -38,6 +41,7 @@ export const LOAN_OFFERS_LIST_QUERY = gql`
         gasPrice
         totalCost
       }
+      expirationDate
     }
   }
 `;
@@ -48,9 +52,12 @@ export const LOAN_OFFER_SHOW_QUERY = gql`
       id
       loanContract
       borrower
-      collateralToken
-      collateralTokenId
-      collateralAmount
+      isPackLoan
+      collaterals {
+        tokenAddress
+        tokenId
+        tokenAmount
+      }
       loanAmount
       feePpm
       status
@@ -60,6 +67,7 @@ export const LOAN_OFFER_SHOW_QUERY = gql`
         gasPrice
         totalCost
       }
+      expirationDate
     }
   }
 `;
@@ -82,7 +90,9 @@ export const TRANSACTIONS_LIST_QUERY = gql`
       id
       loanContract {
         id
-        collateralToken
+      }
+      collaterals {
+        tokenAddress
       }
       transactionHash
       kind
@@ -103,7 +113,9 @@ export const TRANSACTION_SHOW_QUERY = gql`
       id
       loanContract {
         id
-        collateralToken
+      }
+      collaterals {
+        tokenAddress
       }
       transactionHash
       kind
