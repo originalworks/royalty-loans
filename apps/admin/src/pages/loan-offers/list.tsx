@@ -21,7 +21,7 @@ import {
 } from '../../generated/smart-contracts';
 import { useLoanOffers, useDataProvider } from '../../hooks';
 import { ConnectButton, CustomColumnMenu } from '../../components';
-import { LoanContractCollateral } from '../../generated/graphql/schema.types';
+import { LoanContractCollateral, LoanStatus } from '../../generated/graphql/schema.types';
 import { LOAN_OFFERS_LIST_QUERY, STATISTICS_QUERY } from '../queries';
 
 export const LoanOffersList = () => {
@@ -73,10 +73,12 @@ export const LoanOffersList = () => {
     async function fetchData() {
       if (!dataGridProps.rows || dataGridProps.rows.length === 0) return;
       const contracts: Array<{
+        status: LoanStatus;
         contract: `0x${string}`;
         collaterals: Array<LoanContractCollateral>;
         isExpired: boolean;
       }> = dataGridProps.rows.map((row) => ({
+        status: row.status,
         contract: row.loanContract,
         collaterals: row.collaterals,
         isExpired: Number(row.expirationDate * 1000) < Date.now(),
@@ -84,9 +86,9 @@ export const LoanOffersList = () => {
 
       try {
         for (let i = 0; i < contracts.length; i += 1) {
-          const { contract, collaterals, isExpired } = contracts[i];
+          const { contract, status, collaterals, isExpired } = contracts[i];
 
-          if (isExpired) {
+          if (status !== 'Active' && isExpired) {
             setResults((prevState) => [
               ...prevState,
               { contract, active: false, canRepay: false, isExpired },
