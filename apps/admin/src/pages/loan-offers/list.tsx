@@ -21,7 +21,10 @@ import {
 } from '../../generated/smart-contracts';
 import { useLoanOffers, useDataProvider } from '../../hooks';
 import { ConnectButton, CustomColumnMenu } from '../../components';
-import { LoanContractCollateral, LoanStatus } from '../../generated/graphql/schema.types';
+import {
+  LoanContractCollateral,
+  LoanStatus,
+} from '../../generated/graphql/schema.types';
 import { LOAN_OFFERS_LIST_QUERY, STATISTICS_QUERY } from '../queries';
 
 export const LoanOffersList = () => {
@@ -409,6 +412,7 @@ export const LoanOffersList = () => {
 
               {row.status === 'Pending' &&
                 !result?.active &&
+                !result?.isExpired &&
                 (isConnected ? (
                   <Button
                     size="large"
