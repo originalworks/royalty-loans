@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 import './interfaces/IBeneficiaryRoyaltyLoan.sol';
-import './interfaces/IAgreementERC1155.sol';
 import '@openzeppelin/contracts/utils/Strings.sol';
 import '@openzeppelin/contracts/interfaces/IERC1155.sol';
 import '@openzeppelin/contracts/interfaces/IERC20.sol';
@@ -150,15 +149,6 @@ contract BeneficiaryRoyaltyLoan is
     emit LoanProvided(lender);
   }
 
-  function claimCollateralBalance(address _collateralTokenAddress) private {
-    if (paymentToken.balanceOf(_collateralTokenAddress) > 0) {
-      IAgreementERC1155(_collateralTokenAddress).claimHolderFunds(
-        address(this),
-        address(paymentToken)
-      );
-    }
-  }
-
   function _distributePaymentTokenToBeneficiaries(uint256 amount) internal {
     require(amount > 0, 'BeneficiaryRoyaltyLoan: No payment token to process');
 
@@ -212,10 +202,6 @@ contract BeneficiaryRoyaltyLoan is
 
   function processRepayment() external nonReentrant {
     require(loanActive == true, 'BeneficiaryRoyaltyLoan: Loan is inactive');
-
-    for (uint i = 0; i < collaterals.length; i++) {
-      claimCollateralBalance(collaterals[i].tokenAddress);
-    }
 
     uint256 currentBalance = paymentToken.balanceOf(address(this));
     require(
