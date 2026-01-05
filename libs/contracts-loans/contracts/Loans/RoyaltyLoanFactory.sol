@@ -7,8 +7,8 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
 import '@openzeppelin/contracts/interfaces/IERC1155.sol';
 import '@openzeppelin/contracts/proxy/Clones.sol';
-import './IRoyaltyLoan.sol';
-import './IBeneficiaryRoyaltyLoan.sol';
+import './interfaces/IRoyaltyLoan.sol';
+import './BeneficiaryRoyaltyLoan.sol';
 import '../shared/Whitelist/WhitelistConsumer.sol';
 
 enum LoanType {
