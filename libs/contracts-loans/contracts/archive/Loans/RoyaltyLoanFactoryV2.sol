@@ -9,7 +9,7 @@ import '@openzeppelin/contracts/proxy/Clones.sol';
 import '../../Loans/IRoyaltyLoan.sol';
 import '../../shared/Whitelist/WhitelistConsumer.sol';
 
-contract RoyaltyLoanFactory is
+contract RoyaltyLoanFactoryV2 is
   WhitelistConsumer,
   Initializable,
   OwnableUpgradeable,
@@ -28,9 +28,7 @@ contract RoyaltyLoanFactory is
   event LoanContractCreated(
     address loanContract,
     address borrower,
-    address collateralToken,
-    uint256 collateralTokenId,
-    uint256 collateralAmount,
+    ICollateral.Collateral[] collaterals,
     uint256 loanAmount,
     uint256 feePpm,
     uint256 offerDuration,
@@ -135,26 +133,24 @@ contract RoyaltyLoanFactory is
   }
 
   function createLoanContract(
-    address collateralTokenAddress,
-    uint256 collateralTokenId,
-    uint256 collateralAmount,
+    ICollateral.Collateral[] calldata collaterals,
     uint256 loanAmount,
-    uint256 feePpm // 0.01% = 100
+    uint256 feePpm
   ) external returns (address) {
     address clone = Clones.clone(templateAddress);
 
-    IERC1155(collateralTokenAddress).safeTransferFrom(
-      msg.sender,
-      clone,
-      collateralTokenId,
-      collateralAmount,
-      ''
-    );
+    for (uint i = 0; i < collaterals.length; i++) {
+      IERC1155(collaterals[i].tokenAddress).safeTransferFrom(
+        msg.sender,
+        clone,
+        collaterals[i].tokenId,
+        collaterals[i].tokenAmount,
+        ''
+      );
+    }
 
     IRoyaltyLoan(clone).initialize(
-      collateralTokenAddress,
-      collateralTokenId,
-      collateralAmount,
+      collaterals,
       paymentTokenAddress,
       msg.sender,
       feePpm,
@@ -165,9 +161,7 @@ contract RoyaltyLoanFactory is
     emit LoanContractCreated(
       clone,
       msg.sender,
-      collateralTokenAddress,
-      collateralTokenId,
-      collateralAmount,
+      collaterals,
       loanAmount,
       feePpm,
       offerDuration,
