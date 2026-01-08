@@ -22,7 +22,6 @@ describe('RoyaltyLoanFactory', () => {
   let borrower: SignerWithAddress;
   let operator: SignerWithAddress;
   let lender: SignerWithAddress;
-  let beneficiary: SignerWithAddress;
 
   let whitelist: Whitelist;
   let loanFactory: RoyaltyLoanFactory;
@@ -40,7 +39,7 @@ describe('RoyaltyLoanFactory', () => {
 
   beforeEach(async () => {
     const deployment = await fixture();
-    [deployer, lender, borrower, operator, beneficiary] = deployment.signers;
+    [deployer, lender, borrower, operator] = deployment.signers;
 
     ({
       whitelist,

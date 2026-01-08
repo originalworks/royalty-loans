@@ -10,7 +10,7 @@ import { fixture } from './fixture';
 
 let expect: Chai.ExpectStatic;
 
-describe('RoyaltyLoanFactory', () => {
+describe('RoyaltyLoan', () => {
   let deployer: SignerWithAddress;
   let borrower: SignerWithAddress;
   let lender: SignerWithAddress;
@@ -134,12 +134,6 @@ describe('RoyaltyLoanFactory', () => {
           1000001n,
         ),
       ).to.be.revertedWith('RoyaltyLoan: FeePpm exceeds 100%');
-
-      await (
-        await loanFactory.setPaymentTokenAddress(
-          await paymentToken.getAddress(),
-        )
-      ).wait();
 
       await (
         await collateralTokenA
@@ -781,6 +775,9 @@ describe('RoyaltyLoanFactory', () => {
 
       expect(loanTokensBAfter.ERC1155).to.equal(0n);
     });
+
+    // TODO
+    // it('successfully revokes expired loan', async () => {});
 
     it('throws as msg sender is not borrower', async () => {
       const loan = await createLoan.standard(borrower, [
