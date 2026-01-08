@@ -164,3 +164,52 @@ const createBeneficiaryLoanCreator =
 
     return royaltyLoan;
   };
+
+type ExpectedBalance = {
+  address: string;
+  addressLabel?: string;
+  erc20?: bigint;
+  erc1155?: bigint;
+};
+
+export const expectBalancesCreator =
+  (expect: Chai.ExpectStatic, paymentToken: ERC20TokenMock) =>
+  async (
+    collateralToken: AgreementERC1155,
+    expectations: ExpectedBalance[],
+  ) => {
+    for (const expectation of expectations) {
+      const {
+        address,
+        erc1155: expectedErc1155,
+        erc20: expectedErc20,
+        addressLabel,
+      } = expectation;
+      const gotERC1155 = expectedErc1155 !== undefined;
+      const gotERC20 = expectedErc20 !== undefined;
+
+      if (!gotERC1155 && !gotERC20) {
+        throw new Error('You forgot something');
+      }
+
+      if (gotERC1155) {
+        const actualErc1155 = await collateralToken.balanceOf(
+          address,
+          defaults.collateralTokenId,
+        );
+
+        expect(
+          actualErc1155,
+          `ERC1155 balance mismatch | address: ${addressLabel || address} | expected: ${expectedErc1155} | received: ${actualErc1155}`,
+        ).to.equal(expectedErc1155);
+      }
+
+      if (gotERC20) {
+        const actualErc20 = await paymentToken.balanceOf(address);
+        expect(
+          actualErc20,
+          `ERC20 balance mismatch | address: ${addressLabel || address} | expected: ${expectedErc20} | received: ${actualErc20}`,
+        ).to.equal(expectedErc20);
+      }
+    }
+  };

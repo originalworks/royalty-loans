@@ -22,6 +22,14 @@ export type HolderStruct = {
   balance: BigNumberish;
 };
 
+export const LoanState = {
+  Uninitialized: 0n,
+  Pending: 1n,
+  Revoked: 2n,
+  Active: 3n,
+  Repaid: 4n,
+};
+
 export const defaults = {
   collateralTokenId: 1n,
   collateralAmount: 1000n,
@@ -86,27 +94,6 @@ export const fixture = async () => {
     deployer.address,
   );
   await (await whitelist.addToWhitelist(deployer)).wait();
-
-  // TO PÓJDZIE DO POSZCZEGÓLNYCH TESTÓW
-  // const collateralTokenA = (
-  //   await deployAgreementERC1155([
-  //     {
-  //       account: borrower.address,
-  //       balance: defaults.collateralAmount,
-  //       isAdmin: true,
-  //     },
-  //   ])
-  // ).connect(deployer);
-
-  // const collateralTokenB = (
-  //   await deployAgreementERC1155([
-  //     {
-  //       account: borrower.address,
-  //       balance: defaults.collateralAmount * 3n,
-  //       isAdmin: true,
-  //     },
-  //   ])
-  // ).connect(deployer);
 
   const standardLoanTemplate = await (
     await new RoyaltyLoan__factory(deployer).deploy()
