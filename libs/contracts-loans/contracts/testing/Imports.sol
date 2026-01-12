@@ -8,4 +8,3 @@ import '@royalty-loans/contracts-agreements/contracts/AgreementRelationsRegistry
 import '@royalty-loans/contracts-agreements/contracts/FallbackVault.sol';
 import '@royalty-loans/contracts-agreements/contracts/FeeManager.sol';
 import '@royalty-loans/contracts-agreements/contracts/NamespaceRegistry.sol';
-import '@royalty-loans/contracts-agreements/contracts/SplitCurrencyListManager.sol';
