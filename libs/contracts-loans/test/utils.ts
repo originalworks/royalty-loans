@@ -1,5 +1,5 @@
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
-import { BigNumberish, ethers } from 'ethers';
+import { BigNumberish, ethers, HDNodeWallet, Wallet } from 'ethers';
 import {
   RoyaltyLoanFactory,
   ERC20TokenMock,
@@ -213,3 +213,13 @@ export const expectBalancesCreator =
       }
     }
   };
+
+export const createManyWallets = () => {
+  const wallets: HDNodeWallet[] = [];
+
+  for (let i = 0; i < 500; i++) {
+    wallets.push(Wallet.createRandom());
+  }
+
+  return wallets;
+};

@@ -3,14 +3,13 @@ import {
   AgreementERC1155,
   ERC20TokenMock,
   RoyaltyLoanFactory,
-} from '../typechain';
+} from '../../typechain';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
-import { fixture, LoanState } from './fixture';
-import { ICollateral } from '../typechain/contracts/Loans/interfaces/IBeneficiaryRoyaltyLoan';
-import { ZeroAddress } from 'ethers';
+import { fixture, LoanState } from '../fixture';
+import { ICollateral } from '../../typechain/contracts/Loans/interfaces/IBeneficiaryRoyaltyLoan';
+import { HDNodeWallet, ZeroAddress } from 'ethers';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
-import { expectBalancesCreator } from './utils';
-import { loans } from '../typechain/contracts';
+import { createManyWallets, expectBalancesCreator } from '../utils';
 
 let expect: Chai.ExpectStatic;
 
@@ -21,6 +20,8 @@ describe('BeneficiaryRoyaltyLoan', () => {
   let beneficiaryA: SignerWithAddress;
   let beneficiaryB: SignerWithAddress;
   let beneficiaryC: SignerWithAddress;
+  let beneficiaryD: SignerWithAddress;
+  let beneficiaryE: SignerWithAddress;
 
   let paymentToken: ERC20TokenMock;
   let collateralTokenA: AgreementERC1155;
@@ -30,13 +31,12 @@ describe('BeneficiaryRoyaltyLoan', () => {
   let defaults: Awaited<ReturnType<typeof fixture>>['defaults'];
   let defaultBeneficiary: ICollateral.BeneficiaryStruct;
 
-  let getCurrentBalances: Awaited<
-    ReturnType<typeof fixture>
-  >['getCurrentBalances'];
-
   let expectBalances: Awaited<ReturnType<typeof expectBalancesCreator>>;
 
   let createLoan: Awaited<ReturnType<typeof fixture>>['createLoan'];
+  let deployAgreementERC1155: Awaited<
+    ReturnType<typeof fixture>
+  >['deployAgreementERC1155'];
 
   before(async () => {
     expect = (await import('chai')).expect;
@@ -45,16 +45,29 @@ describe('BeneficiaryRoyaltyLoan', () => {
   beforeEach(async () => {
     const deployment = await fixture();
 
-    [deployer, lender, borrower, beneficiaryA, beneficiaryB, beneficiaryC] =
-      deployment.signers;
-    ({ paymentToken, loanFactory, getCurrentBalances, createLoan, defaults } =
-      deployment);
+    [
+      deployer,
+      lender,
+      borrower,
+      beneficiaryA,
+      beneficiaryB,
+      beneficiaryC,
+      beneficiaryD,
+      beneficiaryE,
+    ] = deployment.signers;
+    ({
+      paymentToken,
+      loanFactory,
+      createLoan,
+      defaults,
+      deployAgreementERC1155,
+    } = deployment);
     await (
       await paymentToken.mintTo(lender.address, defaults.loanAmount)
     ).wait();
 
     collateralTokenA = (
-      await deployment.deployAgreementERC1155([
+      await deployAgreementERC1155([
         {
           account: borrower.address,
           balance: defaults.collateralAmount,
@@ -64,7 +77,7 @@ describe('BeneficiaryRoyaltyLoan', () => {
     ).connect(deployer);
 
     collateralTokenB = (
-      await deployment.deployAgreementERC1155([
+      await deployAgreementERC1155([
         {
           account: borrower.address,
           balance: defaults.collateralAmount * 3n,
@@ -347,16 +360,20 @@ describe('BeneficiaryRoyaltyLoan', () => {
 
   describe('provide loan', () => {
     it('successfully provides a loan', async () => {
-      const [borrowerBalancesBefore, lenderBalancesBefore] =
-        await getCurrentBalances(collateralTokenA, [
-          borrower.address,
-          lender.address,
-        ]);
-      expect(borrowerBalancesBefore.ERC1155).to.equal(
-        defaults.collateralAmount,
-      );
-      expect(borrowerBalancesBefore.ERC20).to.equal(0n);
-      expect(lenderBalancesBefore.ERC20).to.equal(defaults.loanAmount);
+      await expectBalances(collateralTokenA, [
+        {
+          address: borrower.address,
+          addressLabel: 'borrower',
+          erc1155: defaults.collateralAmount,
+          erc20: 0n,
+        },
+        {
+          address: lender.address,
+          addressLabel: 'lender',
+          erc1155: 0n,
+          erc20: defaults.loanAmount,
+        },
+      ]);
 
       const loan = await createLoan.beneficiary(borrower, [
         {
@@ -1591,6 +1608,219 @@ describe('BeneficiaryRoyaltyLoan', () => {
 
       await expect(loan.reclaimExcessPaymentToken()).to.be.revertedWith(
         'BeneficiaryRoyaltyLoan: No payment token to process',
+      );
+    });
+  });
+
+  describe('_distributePaymentTokenToBeneficiaries', () => {
+    it('works with uneven collateral weights', async () => {
+      const loan = await createLoan.beneficiary(borrower, [
+        {
+          collateralToken: collateralTokenA,
+          collateralAmount: 3,
+          beneficiaries: [
+            { beneficiaryAddress: beneficiaryA, ppm: 1_000_000n },
+          ],
+        },
+        {
+          collateralToken: collateralTokenB,
+          collateralAmount: 7,
+          beneficiaries: [
+            { beneficiaryAddress: beneficiaryB, ppm: 1_000_000n },
+          ],
+        },
+      ]);
+      await (await loan.connect(lender).provideLoan()).wait();
+      await (
+        await paymentToken.mintTo(
+          await loan.getAddress(),
+          defaults.loanAmount + defaults.feeAmount + 101n,
+        )
+      ).wait();
+      await (await loan.processRepayment()).wait();
+
+      expect(await paymentToken.balanceOf(beneficiaryA.address)).to.equal(30n);
+      expect(await paymentToken.balanceOf(beneficiaryB.address)).to.equal(71n);
+      expect(await paymentToken.balanceOf(await loan.getAddress())).to.equal(
+        0n,
+      );
+    });
+
+    it('works with very small payment, many collaterals', async () => {
+      const collateralTokenC = await deployAgreementERC1155([
+        {
+          account: borrower.address,
+          balance: defaults.collateralAmount,
+          isAdmin: true,
+        },
+      ]);
+      const collateralTokenD = await deployAgreementERC1155([
+        {
+          account: borrower.address,
+          balance: defaults.collateralAmount,
+          isAdmin: true,
+        },
+      ]);
+
+      const collateralTokenE = await deployAgreementERC1155([
+        {
+          account: borrower.address,
+          balance: defaults.collateralAmount,
+          isAdmin: true,
+        },
+      ]);
+
+      const loan = await createLoan.beneficiary(borrower, [
+        {
+          collateralToken: collateralTokenA,
+          collateralAmount: 1,
+          beneficiaries: [
+            { beneficiaryAddress: beneficiaryA, ppm: 1_000_000n },
+          ],
+        },
+        {
+          collateralToken: collateralTokenB,
+          collateralAmount: 1,
+          beneficiaries: [
+            { beneficiaryAddress: beneficiaryB, ppm: 1_000_000n },
+          ],
+        },
+        {
+          collateralToken: collateralTokenC,
+          collateralAmount: 1,
+          beneficiaries: [
+            { beneficiaryAddress: beneficiaryC, ppm: 1_000_000n },
+          ],
+        },
+        {
+          collateralToken: collateralTokenD,
+          collateralAmount: 1,
+          beneficiaries: [
+            { beneficiaryAddress: beneficiaryD, ppm: 1_000_000n },
+          ],
+        },
+        {
+          collateralToken: collateralTokenE,
+          collateralAmount: 1,
+          beneficiaries: [
+            { beneficiaryAddress: beneficiaryE, ppm: 1_000_000n },
+          ],
+        },
+      ]);
+
+      await (await loan.connect(lender).provideLoan()).wait();
+      await (
+        await paymentToken.mintTo(
+          await loan.getAddress(),
+          defaults.loanAmount + defaults.feeAmount + 3n,
+        )
+      ).wait();
+      await (await loan.processRepayment()).wait();
+
+      expect(await paymentToken.balanceOf(beneficiaryA.address)).to.equal(0n);
+      expect(await paymentToken.balanceOf(beneficiaryB.address)).to.equal(0n);
+      expect(await paymentToken.balanceOf(beneficiaryC.address)).to.equal(0n);
+      expect(await paymentToken.balanceOf(beneficiaryD.address)).to.equal(0n);
+      expect(await paymentToken.balanceOf(beneficiaryE.address)).to.equal(3n);
+      expect(await paymentToken.balanceOf(await loan.getAddress())).to.equal(
+        0n,
+      );
+    });
+
+    it('works when PPM split causes dust', async () => {
+      const loan = await createLoan.beneficiary(borrower, [
+        {
+          collateralToken: collateralTokenA,
+          collateralAmount: 3,
+          beneficiaries: [
+            { beneficiaryAddress: beneficiaryA, ppm: 333_333n },
+            { beneficiaryAddress: beneficiaryB, ppm: 333_333n },
+            { beneficiaryAddress: beneficiaryC, ppm: 333_334n },
+          ],
+        },
+      ]);
+      await (await loan.connect(lender).provideLoan()).wait();
+      await (
+        await paymentToken.mintTo(
+          await loan.getAddress(),
+          defaults.loanAmount + defaults.feeAmount + 101n,
+        )
+      ).wait();
+      await (await loan.processRepayment()).wait();
+
+      expect(await paymentToken.balanceOf(beneficiaryA.address)).to.equal(33n);
+      expect(await paymentToken.balanceOf(beneficiaryB.address)).to.equal(33n);
+      expect(await paymentToken.balanceOf(beneficiaryC.address)).to.equal(35n);
+      expect(await paymentToken.balanceOf(await loan.getAddress())).to.equal(
+        0n,
+      );
+    });
+
+    it('works when payment < number of beneficiaries', async () => {
+      const loan = await createLoan.beneficiary(borrower, [
+        {
+          collateralToken: collateralTokenA,
+          collateralAmount: 3,
+          beneficiaries: [
+            { beneficiaryAddress: beneficiaryA, ppm: 333_333n },
+            { beneficiaryAddress: beneficiaryB, ppm: 333_333n },
+            { beneficiaryAddress: beneficiaryC, ppm: 333_334n },
+          ],
+        },
+      ]);
+      await (await loan.connect(lender).provideLoan()).wait();
+      await (
+        await paymentToken.mintTo(
+          await loan.getAddress(),
+          defaults.loanAmount + defaults.feeAmount + 2n,
+        )
+      ).wait();
+      await (await loan.processRepayment()).wait();
+
+      expect(await paymentToken.balanceOf(beneficiaryA.address)).to.equal(0n);
+      expect(await paymentToken.balanceOf(beneficiaryB.address)).to.equal(0n);
+      expect(await paymentToken.balanceOf(beneficiaryC.address)).to.equal(2n);
+      expect(await paymentToken.balanceOf(await loan.getAddress())).to.equal(
+        0n,
+      );
+    });
+
+    it('works with nested dust (collateral + beneficiary)', async () => {
+      const loan = await createLoan.beneficiary(borrower, [
+        {
+          collateralToken: collateralTokenA,
+          collateralAmount: 1,
+          beneficiaries: [
+            { beneficiaryAddress: beneficiaryA, ppm: 500_000n },
+            { beneficiaryAddress: beneficiaryB, ppm: 500_000n },
+          ],
+        },
+        {
+          collateralToken: collateralTokenB,
+          collateralAmount: 2,
+          beneficiaries: [
+            { beneficiaryAddress: beneficiaryC, ppm: 333_333n },
+            { beneficiaryAddress: beneficiaryD, ppm: 333_333n },
+            { beneficiaryAddress: beneficiaryE, ppm: 333_334n },
+          ],
+        },
+      ]);
+      await (await loan.connect(lender).provideLoan()).wait();
+      await (
+        await paymentToken.mintTo(
+          await loan.getAddress(),
+          defaults.loanAmount + defaults.feeAmount + 5n,
+        )
+      ).wait();
+      await (await loan.processRepayment()).wait();
+
+      expect(await paymentToken.balanceOf(beneficiaryA.address)).to.equal(0n);
+      expect(await paymentToken.balanceOf(beneficiaryB.address)).to.equal(1n);
+      expect(await paymentToken.balanceOf(beneficiaryC.address)).to.equal(1n);
+      expect(await paymentToken.balanceOf(beneficiaryD.address)).to.equal(1n);
+      expect(await paymentToken.balanceOf(beneficiaryE.address)).to.equal(2n);
+      expect(await paymentToken.balanceOf(await loan.getAddress())).to.equal(
+        0n,
       );
     });
   });
