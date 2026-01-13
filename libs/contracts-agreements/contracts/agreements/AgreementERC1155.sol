@@ -5,11 +5,10 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpgradeable.sol';
-import '../interfaces/IAgreementProxy.sol';
+import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '../interfaces/IFeeManager.sol';
-import '../interfaces/ILendingContract.sol';
 import '../interfaces/IAgreementRelationsRegistry.sol';
-import '../interfaces/ISplitCurrencyListManager.sol';
+import '../interfaces/ICurrencyManager.sol';
 import '../interfaces/IAgreementERC1155.sol';
 import '../interfaces/IFallbackVault.sol';
 import '../interfaces/INamespaceRegistry.sol';
@@ -17,13 +16,13 @@ import '../interfaces/INamespaceRegistry.sol';
 contract AgreementERC1155 is
   ERC1155Upgradeable,
   ERC1155HolderUpgradeable,
-  IAgreementERC1155
+  IAgreementERC1155,
+  UUPSUpgradeable
 {
   using SafeERC20 for IERC20;
 
-  ISplitCurrencyListManager private splitCurrencyListManager;
+  ICurrencyManager private currencyManager;
   IFeeManager private feeManager;
-  ILendingContract private lendingContract; // unused legacy parameter
   IAgreementRelationsRegistry private agreementRelationsRegistry;
   IFallbackVault private fallbackVault;
 
@@ -40,7 +39,7 @@ contract AgreementERC1155 is
   uint256 public totalSupply;
   string public contractURI;
   INamespaceRegistry private namespaceRegistry;
-  string[] public revenueStreamURIs;
+  string public rwaId;
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -56,58 +55,51 @@ contract AgreementERC1155 is
   }
 
   function initialize(
-    string memory _contractUri,
-    string memory _uri,
-    Holder[] memory holders,
-    address _splitCurrencyListManager,
-    address _feeManager,
-    address _agreementRelationsRegistry,
-    address _fallbackVault,
-    address _namespaceRegistry,
-    string[] memory _revenueStreamURIs
+    AgreementERC1155InitParams calldata params
   ) public initializer {
-    require(holders.length > 0, 'AgreementERC1155: No holders');
-    require(holders[0].isAdmin, 'AgreementERC1155: First holder must be admin');
+    require(params.holders.length > 0, 'AgreementERC1155: No holders');
+    require(
+      params.holders[0].isAdmin,
+      'AgreementERC1155: First holder must be admin'
+    );
 
-    __ERC1155_init(_uri);
+    __ERC1155_init(params.tokenUri);
     __ERC1155Holder_init();
-    splitCurrencyListManager = ISplitCurrencyListManager(
-      _splitCurrencyListManager
-    );
-    feeManager = IFeeManager(_feeManager);
+    __UUPSUpgradeable_init();
+
+    currencyManager = ICurrencyManager(params.currencyManager);
+    feeManager = IFeeManager(params.feeManager);
     agreementRelationsRegistry = IAgreementRelationsRegistry(
-      _agreementRelationsRegistry
+      params.agreementRelationsRegistry
     );
-    fallbackVault = IFallbackVault(_fallbackVault);
+    fallbackVault = IFallbackVault(params.fallbackVault);
 
-    contractURI = _contractUri;
+    contractURI = params.contractUri;
 
-    namespaceRegistry = INamespaceRegistry(_namespaceRegistry);
+    namespaceRegistry = INamespaceRegistry(params.namespaceRegistry);
 
-    revenueStreamURIs = _revenueStreamURIs;
+    rwaId = params.rwaId;
 
-    for (uint256 i = 0; i < holders.length; i++) {
-      _addHolder(holders[i]);
+    for (uint256 i = 0; i < params.holders.length; i++) {
+      _addHolder(params.holders[i]);
     }
-    emit ContractUriChanged(_contractUri);
-    emit DataHashChanged(_uri);
   }
 
-  function setContractUri(string memory newContractUri) public onlyAdmin {
+  function setContractUri(string calldata newContractUri) public onlyAdmin {
     contractURI = newContractUri;
     emit ContractUriChanged(newContractUri);
   }
 
-  function setUri(string memory newUri) public onlyAdmin {
+  function setUri(string calldata newUri) public onlyAdmin {
     _setURI(newUri);
     emit DataHashChanged(newUri);
   }
 
-  function addAdmin(address user) public onlyAdmin {
+  function addAdmin(address user) public override onlyAdmin {
     _addAdmin(user);
   }
 
-  function removeAdmin(address user) public onlyAdmin {
+  function removeAdmin(address user) public override onlyAdmin {
     require(admins[user] == true, 'AgreementERC1155: Account is not an admin');
     require(_adminCount > 1, 'AgreementERC1155: Cannot remove last admin');
     _adminCount--;
@@ -115,9 +107,9 @@ contract AgreementERC1155 is
     emit AdminRemoved(user);
   }
 
-  function claimHolderFunds(address holder, address currency) public {
+  function claimHolderFunds(address holder, address currency) public override {
     require(
-      splitCurrencyListManager.currencyMap(currency) == true,
+      currencyManager.currencyMap(currency) == true,
       'AgreementERC1155: Currency not supported'
     );
     uint256 currentFee;
@@ -155,7 +147,7 @@ contract AgreementERC1155 is
     }
   }
 
-  function collectFee(address currency) public {
+  function collectFee(address currency) public override {
     require(
       msg.sender == address(feeManager),
       'AgreementERC1155: Only FeeManager can collect fee'
@@ -181,26 +173,34 @@ contract AgreementERC1155 is
   }
 
   function transferOwnedERC20Shares(
-    IERC20 agreement,
+    address agreement,
     address recipient,
     uint256 amount
-  ) public onlyAdmin {
-    agreement.safeTransfer(recipient, amount);
+  ) public override onlyAdmin {
+    IERC20(agreement).safeTransfer(recipient, amount);
   }
 
   function transferOwnedERC1155Shares(
-    IERC1155 agreement,
+    address agreement,
     address recipient,
     uint256 amount
-  ) public onlyAdmin {
-    agreement.safeTransferFrom(address(this), recipient, 1, amount, '');
+  ) public override onlyAdmin {
+    IERC1155(agreement).safeTransferFrom(
+      address(this),
+      recipient,
+      1,
+      amount,
+      ''
+    );
   }
 
-  function isAdmin(address user) public view returns (bool) {
+  function isAdmin(address user) public view override returns (bool) {
     return admins[user];
   }
 
-  function getAvailableFee(address currency) public view returns (uint256) {
+  function getAvailableFee(
+    address currency
+  ) public view override returns (uint256) {
     (, uint256 paymentFee, uint256 paymentFeeDenominator) = feeManager
       .getFees();
     uint256 availableFee = fees[currency] - feesCollected[currency];
@@ -218,9 +218,9 @@ contract AgreementERC1155 is
   function getClaimableAmount(
     address currency,
     address holder
-  ) public view returns (uint256 claimableAmount, uint256 fee) {
+  ) public view override returns (uint256 claimableAmount, uint256 fee) {
     require(
-      splitCurrencyListManager.currencyMap(currency) == true,
+      currencyManager.currencyMap(currency) == true,
       'AgreementERC20: Currency not supported'
     );
     uint256 currentFee;
@@ -240,43 +240,7 @@ contract AgreementERC1155 is
       );
   }
 
-  function addRevenueStreamURI(string memory partialRevenueStreamURI) public {
-    string memory namespace = namespaceRegistry.getNamespaceForAddress(
-      msg.sender
-    );
-
-    require(
-      keccak256(abi.encodePacked(namespace)) !=
-        keccak256(abi.encodePacked('UNKNOWN:')),
-      'NamespaceRegistry: you are not allowed to add this URI'
-    );
-
-    string memory uriToAdd = string.concat(namespace, partialRevenueStreamURI);
-
-    revenueStreamURIs.push(uriToAdd);
-
-    emit RevenueStreamURIAdded(uriToAdd, msg.sender);
-  }
-
-  function removeRevenueStreamURI(uint256 uriAtIndex) public {
-    string memory uriToRemove = revenueStreamURIs[uriAtIndex];
-    require(
-      namespaceRegistry.canEditURI(uriToRemove, msg.sender),
-      'NamespaceRegistry: you are not allowed to remove this URI'
-    );
-
-    delete revenueStreamURIs[uriAtIndex];
-    revenueStreamURIs[uriAtIndex] = revenueStreamURIs[
-      revenueStreamURIs.length - 1
-    ];
-    revenueStreamURIs.pop();
-
-    emit RevenueStreamURIRemoved(uriToRemove, msg.sender);
-  }
-
-  function upgrade(address implementation) public onlyAdmin {
-    IAgreementProxy(address(this)).upgradeTo(implementation);
-  }
+  function _authorizeUpgrade(address) internal override onlyAdmin {}
 
   function _update(
     address from,
@@ -284,8 +248,11 @@ contract AgreementERC1155 is
     uint256[] memory ids,
     uint256[] memory amounts
   ) internal override {
+    if (to == address(this)) {
+      revert SelfTransfer();
+    }
     for (uint256 i = 0; i < amounts.length; i++) {
-      if (balanceOf(to, 1) == 0 && to.code.length > 0) {
+      if (balanceOf(to, 1) == 0 && to.code.length > 0 && from != address(0)) {
         agreementRelationsRegistry.registerChildParentRelation(to);
       }
       if (
@@ -296,8 +263,7 @@ contract AgreementERC1155 is
         agreementRelationsRegistry.removeChildParentRelation(from);
       }
       if (from != address(0)) {
-        address[] memory currencyArray = splitCurrencyListManager
-          .getCurrencyArray();
+        address[] memory currencyArray = currencyManager.getCurrencyArray();
         for (uint ii = 0; ii < currencyArray.length; ii++) {
           claimHolderFunds(from, currencyArray[ii]);
           holderFundsCounters[currencyArray[ii]][from] = receivedFunds[
@@ -306,8 +272,7 @@ contract AgreementERC1155 is
         }
       }
       if (to != address(0)) {
-        address[] memory currencyArray = splitCurrencyListManager
-          .getCurrencyArray();
+        address[] memory currencyArray = currencyManager.getCurrencyArray();
         for (uint ii = 0; ii < currencyArray.length; ii++) {
           claimHolderFunds(to, currencyArray[ii]);
           holderFundsCounters[currencyArray[ii]][to] = receivedFunds[
@@ -351,7 +316,7 @@ contract AgreementERC1155 is
     }
   }
 
-  function _addHolder(Holder memory holder) private {
+  function _addHolder(Holder calldata holder) private {
     require(
       holder.balance > 0 || holder.isAdmin,
       'AgreementERC1155: Holder balance is zero'
@@ -390,7 +355,9 @@ contract AgreementERC1155 is
     override(ERC1155Upgradeable, ERC1155HolderUpgradeable)
     returns (bool)
   {
-    return super.supportsInterface(interfaceId);
+    return
+      interfaceId == type(IAgreement).interfaceId ||
+      super.supportsInterface(interfaceId);
   }
 
   function _updateFee(address currency) private returns (uint256, uint256) {

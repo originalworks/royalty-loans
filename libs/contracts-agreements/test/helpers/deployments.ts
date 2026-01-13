@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat';
 import { AgreementERC20, AgreementERC1155 } from '../../typechain';
-import { deploySplitCurrencyListManager } from '../../scripts/actions/deploySplitCurrencyListManager';
+import { deployCurrencyManager } from '../../scripts/actions/deployCurrencyManager';
 import { deployFallbackVault } from '../../scripts/actions/deployFallbackVault';
 import { deployAgreementRelationsRegistry } from '../../scripts/actions/deployAgreementRelationsRegistry';
 import { deployAgreementFactory } from '../../scripts/actions/deployAgreementFactory';
@@ -16,40 +16,18 @@ import {
   InitialSetup,
   InitialSetupOptions,
 } from './types';
-import {
-  LENDING_TOKEN_NAME,
-  splitCurrencyDefinitions,
-} from './splitCurrenciesDefinitions';
+import { splitCurrencyDefinitions } from './splitCurrenciesDefinitions';
 import { parseEther } from 'ethers';
 
 export async function deployInitialSetup(
   options?: InitialSetupOptions,
 ): Promise<InitialSetup> {
   const accounts = await ethers.getSigners();
-  const lender = accounts[9];
   const defaultHolders = [accounts[1], accounts[2], accounts[3], accounts[4]];
 
   const namespaceRegistry = await deployNamespaceRegistry();
 
   const splitCurrencies = await deploySplitCurrencies(splitCurrencyDefinitions);
-
-  const lendingToken = splitCurrencies.find(
-    (currency) => currency.name === LENDING_TOKEN_NAME,
-  );
-
-  const nonLendingERC20SplitCurrencies = splitCurrencies.reduce<string[]>(
-    (all, current) => {
-      if (!current.lendingCurrency && !current.nativeCoin) {
-        all.push(current.address);
-      }
-      return all;
-    },
-    [],
-  );
-
-  if (!lendingToken || lendingToken.contract === undefined) {
-    throw new Error('Lending Token deployment failed');
-  }
 
   const feeManager = await deployFeeManager(
     options?.creationFee ?? parseEther('0.01'),
@@ -66,9 +44,8 @@ export async function deployInitialSetup(
 
   const fallbackVault = await deployFallbackVault();
 
-  const splitCurrencyListManager = await deploySplitCurrencyListManager(
-    nonLendingERC20SplitCurrencies,
-    lendingToken.address,
+  const currencyManager = await deployCurrencyManager(
+    splitCurrencies.map((currency) => currency.address),
   );
 
   const agreementFactory = await deployAgreementFactory({
@@ -78,24 +55,24 @@ export async function deployInitialSetup(
       await agreementERC1155Implementation.getAddress(),
     feeManager: await feeManager.getAddress(),
     agreementRelationsRegistry: await agreementRelationsRegistry.getAddress(),
-    splitCurrencyListManager: await splitCurrencyListManager.getAddress(),
+    currencyManager: await currencyManager.getAddress(),
     fallbackVault: await fallbackVault.getAddress(),
     namespaceRegistry: await namespaceRegistry.getAddress(),
   });
 
+  await agreementRelationsRegistry.setAgreementFactoryAddress(agreementFactory);
+
   return {
     feeManager,
     agreementFactory,
-    lendingToken: lendingToken.contract,
     AgreementERC20Factory,
     AgreementERC1155Factory,
     agreementERC20Implementation,
     agreementERC1155Implementation,
-    lender,
     defaultHolders,
     deployer: accounts[0],
     agreementRelationsRegistry,
-    splitCurrencyListManager,
+    currencyManager,
     fallbackVault,
     splitCurrencies,
     namespaceRegistry,
@@ -106,7 +83,6 @@ export async function deployAgreementERC20(
   input: DeployAgreementInput,
 ): Promise<AgreementDeploymentData<AgreementERC20>> {
   const [deployer] = await ethers.getSigners();
-  const dataHash = input.dataHash || `0x${'ab'.repeat(32)}`;
   const holders = buildHolders(
     input.initialSetup.defaultHolders,
     input.shares,
@@ -116,9 +92,8 @@ export async function deployAgreementERC20(
   const tx = input.initialSetup.agreementFactory
     .connect(input.txExecutorWallet || deployer)
     .createERC20(
-      dataHash,
-      holders,
-      input.partialRevenueStreamURIs || ['ABC123'],
+      { holders, unassignedRwaId: input.unassignedRwaId || 'ABC123' },
+
       {
         value: _creationFee,
       },
@@ -132,15 +107,14 @@ export async function deployAgreementERC20(
   const agreement = input.initialSetup.AgreementERC20Factory.attach(
     agreementAddress,
   ) as AgreementERC20;
-  return { agreement, holders, dataHash };
+  return { agreement, holders };
 }
 
 export async function deployAgreementERC1155(
   input: DeployAgreementInput,
 ): Promise<AgreementDeploymentData<AgreementERC1155>> {
   const [deployer] = await ethers.getSigners();
-  const dataHash = input.dataHash || `0x${'ab'.repeat(32)}`;
-  const contractUri = 'contractUri';
+
   const holders = buildHolders(
     input.initialSetup.defaultHolders,
     input.shares,
@@ -150,10 +124,15 @@ export async function deployAgreementERC1155(
   const tx = input.initialSetup.agreementFactory
     .connect(input.txExecutorWallet || deployer)
     .createERC1155(
-      dataHash,
-      holders,
-      contractUri,
-      input.partialRevenueStreamURIs || ['REVELATOR:ABC123'],
+      {
+        tokenUri: input.tokenUri || 'tokenUri',
+        contractURI: input.contractUri || 'contractURI',
+        holders,
+        unassignedRwaId:
+          input.unassignedRwaId === undefined
+            ? 'ABC123'
+            : input.unassignedRwaId,
+      },
       { value: _creationFee },
     );
   const event = await getEvent(
@@ -165,5 +144,5 @@ export async function deployAgreementERC1155(
   const agreement = input.initialSetup.AgreementERC1155Factory.attach(
     agreementAddress,
   ) as AgreementERC1155;
-  return { agreement, holders, dataHash, contractUri };
+  return { agreement, holders };
 }
