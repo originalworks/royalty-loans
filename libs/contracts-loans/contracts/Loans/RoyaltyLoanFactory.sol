@@ -65,10 +65,10 @@ contract RoyaltyLoanFactory is
 
   address public paymentTokenAddress;
   uint256 public offerDuration;
-  address public depreciated_templateAddress;
+
   mapping(LoanType => address) public templates;
 
-  uint256[49] __gap;
+  uint256[50] __gap;
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -89,11 +89,6 @@ contract RoyaltyLoanFactory is
     _setPaymentTokenAddress(_paymentTokenAddress);
     __ReentrancyGuard_init();
     __Ownable_init(msg.sender);
-  }
-
-  /// @custom:oz-upgrades-validate-as-initializer
-  function initializeV2() external reinitializer(2) onlyOwner {
-    __ReentrancyGuard_init(); // initialize the guard for old proxy
   }
 
   function setWhitelistAddress(
