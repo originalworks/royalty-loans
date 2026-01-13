@@ -7,11 +7,10 @@ import '@openzeppelin/contracts/utils/Address.sol';
 import '@openzeppelin/contracts/token/ERC1155/IERC1155.sol';
 import '@openzeppelin/contracts/utils/introspection/ERC165Checker.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpgradeable.sol';
-import '../interfaces/IAgreementProxy.sol';
+import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '../interfaces/IFeeManager.sol';
-import '../interfaces/ILendingContract.sol';
 import '../interfaces/IAgreementRelationsRegistry.sol';
-import '../interfaces/ISplitCurrencyListManager.sol';
+import '../interfaces/ICurrencyManager.sol';
 import '../interfaces/IAgreementERC20.sol';
 import '../interfaces/IFallbackVault.sol';
 import '../interfaces/INamespaceRegistry.sol';
@@ -20,13 +19,13 @@ contract AgreementERC20 is
   Initializable,
   ERC20Upgradeable,
   ERC1155HolderUpgradeable,
-  IAgreementERC20
+  IAgreementERC20,
+  UUPSUpgradeable
 {
   using SafeERC20 for IERC20;
 
-  ISplitCurrencyListManager private splitCurrencyListManager;
+  ICurrencyManager private currencyManager;
   IFeeManager private feeManager;
-  ILendingContract private lendingContract; // unused legacy parameter
   IAgreementRelationsRegistry private agreementRelationsRegistry;
   IFallbackVault private fallbackVault;
 
@@ -40,9 +39,8 @@ contract AgreementERC20 is
   mapping(address => mapping(address => uint256)) public holderFundsCounters;
   mapping(address => bool) private admins;
 
-  string public dataHash;
   INamespaceRegistry private namespaceRegistry;
-  string[] public revenueStreamURIs;
+  string public rwaId;
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -58,46 +56,38 @@ contract AgreementERC20 is
   }
 
   function initialize(
-    string memory _dataHash,
-    Holder[] memory holders,
-    address _splitCurrencyListManager,
-    address _feeManager,
-    address _agreementRelationsRegistry,
-    address _fallbackVault,
-    address _namespaceRegistry,
-    string[] memory _revenueStreamURIs
+    AgreementERC20InitParams calldata params
   ) public initializer {
-    require(holders.length > 0, 'AgreementERC20: No holders');
-    require(holders[0].isAdmin, 'AgreementERC20: First holder must be admin');
+    require(params.holders.length > 0, 'AgreementERC20: No holders');
+    require(
+      params.holders[0].isAdmin,
+      'AgreementERC20: First holder must be admin'
+    );
 
     __ERC20_init('OW Agreement', 'share');
-    _setDataHash(_dataHash);
-    splitCurrencyListManager = ISplitCurrencyListManager(
-      _splitCurrencyListManager
-    );
-    feeManager = IFeeManager(_feeManager);
+    __ERC1155Holder_init();
+    __UUPSUpgradeable_init();
+
+    currencyManager = ICurrencyManager(params.currencyManager);
+    feeManager = IFeeManager(params.feeManager);
     agreementRelationsRegistry = IAgreementRelationsRegistry(
-      _agreementRelationsRegistry
+      params.agreementRelationsRegistry
     );
-    fallbackVault = IFallbackVault(_fallbackVault);
-    namespaceRegistry = INamespaceRegistry(_namespaceRegistry);
+    fallbackVault = IFallbackVault(params.fallbackVault);
+    namespaceRegistry = INamespaceRegistry(params.namespaceRegistry);
 
-    revenueStreamURIs = _revenueStreamURIs;
+    rwaId = params.rwaId;
 
-    for (uint256 i = 0; i < holders.length; i++) {
-      _addHolder(holders[i]);
+    for (uint256 i = 0; i < params.holders.length; i++) {
+      _addHolder(params.holders[i]);
     }
   }
 
-  function setDataHash(string memory _dataHash) public onlyAdmin {
-    _setDataHash(_dataHash);
-  }
-
-  function addAdmin(address user) public onlyAdmin {
+  function addAdmin(address user) public override onlyAdmin {
     _addAdmin(user);
   }
 
-  function removeAdmin(address user) public onlyAdmin {
+  function removeAdmin(address user) public override onlyAdmin {
     require(admins[user] == true, 'AgreementERC20: Account is not an admin');
     require(_adminCount > 1, 'AgreementERC20: Cannot remove last admin');
     _adminCount--;
@@ -105,9 +95,9 @@ contract AgreementERC20 is
     emit AdminRemoved(user);
   }
 
-  function claimHolderFunds(address holder, address currency) public {
+  function claimHolderFunds(address holder, address currency) public override {
     require(
-      splitCurrencyListManager.currencyMap(currency) == true,
+      currencyManager.currencyMap(currency) == true,
       'AgreementERC20: Currency not supported'
     );
     uint256 currentFee;
@@ -144,7 +134,7 @@ contract AgreementERC20 is
     }
   }
 
-  function collectFee(address currency) public {
+  function collectFee(address currency) public override {
     require(
       msg.sender == address(feeManager),
       'AgreementERC20: Only FeeManager can collect fee'
@@ -171,26 +161,34 @@ contract AgreementERC20 is
   }
 
   function transferOwnedERC20Shares(
-    IERC20 agreement,
+    address agreement,
     address recipient,
     uint256 amount
-  ) public onlyAdmin {
-    agreement.safeTransfer(recipient, amount);
+  ) public override onlyAdmin {
+    IERC20(agreement).safeTransfer(recipient, amount);
   }
 
   function transferOwnedERC1155Shares(
-    IERC1155 agreement,
+    address agreement,
     address recipient,
     uint256 amount
-  ) public onlyAdmin {
-    agreement.safeTransferFrom(address(this), recipient, 1, amount, '');
+  ) public override onlyAdmin {
+    IERC1155(agreement).safeTransferFrom(
+      address(this),
+      recipient,
+      1,
+      amount,
+      ''
+    );
   }
 
-  function isAdmin(address user) public view returns (bool) {
+  function isAdmin(address user) public view override returns (bool) {
     return admins[user];
   }
 
-  function getAvailableFee(address currency) public view returns (uint256) {
+  function getAvailableFee(
+    address currency
+  ) public view override returns (uint256) {
     (, uint256 paymentFee, uint256 paymentFeeDenominator) = feeManager
       .getFees();
     uint256 availableFee = fees[currency] - feesCollected[currency];
@@ -208,9 +206,9 @@ contract AgreementERC20 is
   function getClaimableAmount(
     address currency,
     address holder
-  ) public view returns (uint256 claimableAmount, uint256 fee) {
+  ) public view override returns (uint256 claimableAmount, uint256 fee) {
     require(
-      splitCurrencyListManager.currencyMap(currency) == true,
+      currencyManager.currencyMap(currency) == true,
       'AgreementERC20: Currency not supported'
     );
     uint256 currentFee;
@@ -230,54 +228,28 @@ contract AgreementERC20 is
       );
   }
 
-  function addRevenueStreamURI(string memory partialRevenueStreamURI) public {
-    string memory namespace = namespaceRegistry.getNamespaceForAddress(
-      msg.sender
-    );
-
-    require(
-      keccak256(abi.encodePacked(namespace)) !=
-        keccak256(abi.encodePacked('UNKNOWN:')),
-      'NamespaceRegistry: you are not allowed to add this URI'
-    );
-
-    string memory uriToAdd = string.concat(namespace, partialRevenueStreamURI);
-
-    revenueStreamURIs.push(uriToAdd);
-
-    emit RevenueStreamURIAdded(uriToAdd, msg.sender);
+  function supportsInterface(
+    bytes4 interfaceId
+  ) public view virtual override(ERC1155HolderUpgradeable) returns (bool) {
+    return
+      interfaceId == type(IAgreement).interfaceId ||
+      super.supportsInterface(interfaceId);
   }
 
-  function removeRevenueStreamURI(uint256 uriAtIndex) public {
-    string memory uriToRemove = revenueStreamURIs[uriAtIndex];
-    require(
-      namespaceRegistry.canEditURI(uriToRemove, msg.sender),
-      'NamespaceRegistry: you are not allowed to remove this URI'
-    );
-
-    delete revenueStreamURIs[uriAtIndex];
-    revenueStreamURIs[uriAtIndex] = revenueStreamURIs[
-      revenueStreamURIs.length - 1
-    ];
-    revenueStreamURIs.pop();
-
-    emit RevenueStreamURIRemoved(uriToRemove, msg.sender);
-  }
-
-  function upgrade(address implementation) public onlyAdmin {
-    IAgreementProxy(address(this)).upgradeTo(implementation);
-  }
+  function _authorizeUpgrade(address) internal override onlyAdmin {}
 
   function _update(address from, address to, uint256 amount) internal override {
-    if (balanceOf(to) == 0 && to.code.length > 0) {
+    if (to == address(this)) {
+      revert SelfTransfer();
+    }
+    if (balanceOf(to) == 0 && to.code.length > 0 && from != address(0)) {
       agreementRelationsRegistry.registerChildParentRelation(to);
     }
     if (balanceOf(from) == amount && from.code.length > 0) {
       agreementRelationsRegistry.removeChildParentRelation(from);
     }
     if (from != address(0)) {
-      address[] memory currencyArray = splitCurrencyListManager
-        .getCurrencyArray();
+      address[] memory currencyArray = currencyManager.getCurrencyArray();
       for (uint i = 0; i < currencyArray.length; i++) {
         claimHolderFunds(from, currencyArray[i]);
         holderFundsCounters[currencyArray[i]][from] = receivedFunds[
@@ -286,8 +258,7 @@ contract AgreementERC20 is
       }
     }
     if (to != address(0)) {
-      address[] memory currencyArray = splitCurrencyListManager
-        .getCurrencyArray();
+      address[] memory currencyArray = currencyManager.getCurrencyArray();
       for (uint i = 0; i < currencyArray.length; i++) {
         claimHolderFunds(to, currencyArray[i]);
         holderFundsCounters[currencyArray[i]][to] = receivedFunds[
@@ -322,13 +293,6 @@ contract AgreementERC20 is
     }
   }
 
-  function _setDataHash(string memory _dataHash) private {
-    if (keccak256(bytes(dataHash)) != keccak256(bytes(_dataHash))) {
-      dataHash = _dataHash;
-      emit DataHashChanged(_dataHash);
-    }
-  }
-
   function _updateFee(address currency) private returns (uint256, uint256) {
     (, uint paymentFee, uint256 paymentFeeDenominator) = feeManager.getFees();
 
@@ -348,7 +312,7 @@ contract AgreementERC20 is
     return (paymentFee, paymentFeeDenominator);
   }
 
-  function _addHolder(Holder memory holder) private {
+  function _addHolder(Holder calldata holder) private {
     require(
       holder.balance > 0 || holder.isAdmin,
       'AgreementERC20: Holder balance is zero'

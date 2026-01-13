@@ -1,27 +1,68 @@
 // SPDX-License-Identifier: Unlicensed
 pragma solidity ^0.8.13;
 
+import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import './interfaces/IAgreementRelationsRegistry.sol';
+import './interfaces/IAgreementFactory.sol';
 
 contract AgreementRelationsRegistry is
   IAgreementRelationsRegistry,
-  ERC165Upgradeable
+  OwnableUpgradeable,
+  ERC165Upgradeable,
+  UUPSUpgradeable
 {
-  mapping(address => address[]) private childParentRelations;
+  error AccessDenied();
+  event AgreementFactoryAddressChanged(address previous, address current);
+  mapping(address => address[]) public parentsOf;
+
+  IAgreementFactory agreementFactory;
+
+  function initialize() public initializer {
+    __Ownable_init(msg.sender);
+    __UUPSUpgradeable_init();
+    __ERC165_init();
+  }
+
+  function setAgreementFactoryAddress(
+    IAgreementFactory _agreementFactory
+  ) external onlyOwner {
+    address previous = address(agreementFactory);
+    agreementFactory = _agreementFactory;
+    emit AgreementFactoryAddressChanged(previous, address(agreementFactory));
+  }
+
+  function registerInitialRelation(address child, address parent) external {
+    if (msg.sender != address(agreementFactory)) {
+      revert AccessDenied();
+    }
+    _checkForCircularDependency(child, parent);
+    parentsOf[child].push(parent);
+  }
 
   function registerChildParentRelation(address parent) external {
-    _checkForCircularDependency(msg.sender, parent);
-    childParentRelations[msg.sender].push(parent);
+    if (
+      agreementFactory.createdAgreements(msg.sender) &&
+      agreementFactory.createdAgreements(parent)
+    ) {
+      _checkForCircularDependency(msg.sender, parent);
+      parentsOf[msg.sender].push(parent);
+    }
   }
 
   function removeChildParentRelation(address parent) external {
-    for (uint256 i = 0; i < childParentRelations[msg.sender].length; i++) {
-      if (childParentRelations[msg.sender][i] == parent) {
-        childParentRelations[msg.sender][i] = childParentRelations[msg.sender][
-          childParentRelations[msg.sender].length - 1
-        ];
-        childParentRelations[msg.sender].pop();
+    if (
+      agreementFactory.createdAgreements(msg.sender) &&
+      agreementFactory.createdAgreements(parent)
+    ) {
+      for (uint256 i = 0; i < parentsOf[msg.sender].length; i++) {
+        if (parentsOf[msg.sender][i] == parent) {
+          parentsOf[msg.sender][i] = parentsOf[msg.sender][
+            parentsOf[msg.sender].length - 1
+          ];
+          parentsOf[msg.sender].pop();
+        }
       }
     }
   }
@@ -30,7 +71,7 @@ contract AgreementRelationsRegistry is
     address child,
     address parent
   ) private view {
-    address[] memory grandParents = childParentRelations[parent];
+    address[] memory grandParents = parentsOf[parent];
     for (uint256 i = 0; i < grandParents.length; i++) {
       if (grandParents[i] == child) {
         revert('AgreementRelationsRegistry: Circular dependency not allowed');
@@ -47,4 +88,6 @@ contract AgreementRelationsRegistry is
       interfaceId == type(IAgreementRelationsRegistry).interfaceId ||
       super.supportsInterface(interfaceId);
   }
+
+  function _authorizeUpgrade(address) internal override onlyOwner {}
 }
