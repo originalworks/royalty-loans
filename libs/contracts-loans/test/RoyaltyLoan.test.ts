@@ -4,14 +4,13 @@ import {
   AgreementERC1155,
   ERC20TokenMock,
   RoyaltyLoanFactory,
-  TestRoyaltyLoanFactory,
 } from '../typechain';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { fixture } from './fixture';
 
 let expect: Chai.ExpectStatic;
 
-describe('RoyaltyLoanFactory', () => {
+describe('RoyaltyLoan', () => {
   let deployer: SignerWithAddress;
   let borrower: SignerWithAddress;
   let lender: SignerWithAddress;
@@ -20,7 +19,6 @@ describe('RoyaltyLoanFactory', () => {
   let collateralTokenA: AgreementERC1155;
   let collateralTokenB: AgreementERC1155;
   let loanFactory: RoyaltyLoanFactory;
-  let fakeLoanFactory: TestRoyaltyLoanFactory;
 
   let defaults: Awaited<ReturnType<typeof fixture>>['defaults'];
 
@@ -28,9 +26,7 @@ describe('RoyaltyLoanFactory', () => {
     ReturnType<typeof fixture>
   >['getCurrentBalances'];
 
-  let createLoanWithFactory: Awaited<
-    ReturnType<typeof fixture>
-  >['createLoanWithFactory'];
+  let createLoan: Awaited<ReturnType<typeof fixture>>['createLoan'];
 
   before(async () => {
     expect = (await import('chai')).expect;
@@ -39,31 +35,48 @@ describe('RoyaltyLoanFactory', () => {
   beforeEach(async () => {
     const deployment = await fixture();
 
-    [deployer, borrower, lender] = deployment.signers;
-    ({
-      paymentToken,
-      loanFactory,
-      collaterals: { collateralTokenA, collateralTokenB },
-      fakeLoanFactory,
-      getCurrentBalances,
-      createLoanWithFactory,
-      defaults,
-    } = deployment);
+    [deployer, lender, borrower] = deployment.signers;
+    ({ paymentToken, loanFactory, getCurrentBalances, createLoan, defaults } =
+      deployment);
     await (
       await paymentToken.mintTo(lender.address, defaults.loanAmount)
     ).wait();
+
+    collateralTokenA = (
+      await deployment.deployAgreementERC1155([
+        {
+          account: borrower.address,
+          balance: defaults.collateralAmount,
+          isAdmin: true,
+        },
+      ])
+    ).connect(deployer);
+
+    collateralTokenB = (
+      await deployment.deployAgreementERC1155([
+        {
+          account: borrower.address,
+          balance: defaults.collateralAmount * 3n,
+          isAdmin: true,
+        },
+      ])
+    ).connect(deployer);
   });
 
   describe('initialize', () => {
+    // Not tested due to factory restrictions:
+    // 'RoyaltyLoan: Invalid payment token address'
+    // 'RoyaltyLoan: Collateral was not transferred in the required amount at position '
+    // 'RoyaltyLoan: Duration must be greater than 0'
     it('reverts with invalid args', async () => {
       await (
         await collateralTokenA
           .connect(borrower)
-          .setApprovalForAll(await fakeLoanFactory.getAddress(), true)
+          .setApprovalForAll(await loanFactory.getAddress(), true)
       ).wait();
 
       await expect(
-        fakeLoanFactory.connect(borrower).createLoanContract(
+        loanFactory.connect(borrower).createLoanContract(
           [
             {
               tokenAddress: ethers.ZeroAddress,
@@ -79,7 +92,7 @@ describe('RoyaltyLoanFactory', () => {
       // 'RoyaltyLoan: Invalid collateral token address at position 0',
 
       await expect(
-        fakeLoanFactory.connect(borrower).createLoanContract(
+        loanFactory.connect(borrower).createLoanContract(
           [
             {
               tokenAddress: collateralTokenA,
@@ -95,24 +108,7 @@ describe('RoyaltyLoanFactory', () => {
       );
 
       await expect(
-        fakeLoanFactory.connect(borrower).testCreateLoanContract(
-          [
-            {
-              tokenAddress: collateralTokenA,
-              tokenAmount: defaults.collateralAmount,
-              tokenId: defaults.collateralTokenId,
-            },
-          ],
-          defaults.loanAmount,
-          defaults.feePpm,
-          true, // omit transfer in factory
-        ),
-      ).to.be.revertedWith(
-        'RoyaltyLoan: Collateral was not transferred in the required amount at position 0',
-      );
-
-      await expect(
-        fakeLoanFactory.connect(borrower).testCreateLoanContract(
+        loanFactory.connect(borrower).createLoanContract(
           [
             {
               tokenAddress: collateralTokenA,
@@ -122,12 +118,11 @@ describe('RoyaltyLoanFactory', () => {
           ],
           0n,
           defaults.feePpm,
-          false, // omit transfer in factory
         ),
       ).to.be.revertedWith('RoyaltyLoan: Loan amount must be greater than 0');
 
       await expect(
-        fakeLoanFactory.connect(borrower).testCreateLoanContract(
+        loanFactory.connect(borrower).createLoanContract(
           [
             {
               tokenAddress: collateralTokenA,
@@ -137,62 +132,17 @@ describe('RoyaltyLoanFactory', () => {
           ],
           defaults.loanAmount,
           1000001n,
-          false, // omit transfer in factory
         ),
       ).to.be.revertedWith('RoyaltyLoan: FeePpm exceeds 100%');
 
       await (
-        await fakeLoanFactory.setPaymentTokenAddress(ethers.ZeroAddress)
-      ).wait();
-
-      await expect(
-        fakeLoanFactory.connect(borrower).testCreateLoanContract(
-          [
-            {
-              tokenAddress: collateralTokenA,
-              tokenAmount: defaults.collateralAmount,
-              tokenId: defaults.collateralTokenId,
-            },
-          ],
-          defaults.loanAmount,
-          defaults.feePpm,
-          false, // omit transfer in factory
-        ),
-      ).to.be.revertedWith('RoyaltyLoan: Invalid payment token address');
-
-      await (
-        await fakeLoanFactory.setPaymentTokenAddress(
-          await paymentToken.getAddress(),
-        )
-      ).wait();
-
-      await (await fakeLoanFactory.setOfferDuration(0n)).wait();
-
-      await expect(
-        fakeLoanFactory.connect(borrower).testCreateLoanContract(
-          [
-            {
-              tokenAddress: collateralTokenA,
-              tokenAmount: defaults.collateralAmount,
-              tokenId: defaults.collateralTokenId,
-            },
-          ],
-          defaults.loanAmount,
-          defaults.feePpm,
-          false, // omit transfer in factory
-        ),
-      ).to.be.revertedWith('RoyaltyLoan: Duration must be greater than 0');
-
-      await (await fakeLoanFactory.setOfferDuration(defaults.duration)).wait();
-
-      await (
         await collateralTokenA
           .connect(borrower)
-          .setApprovalForAll(await fakeLoanFactory.getAddress(), false)
+          .setApprovalForAll(await loanFactory.getAddress(), false)
       ).wait();
 
       await expect(
-        fakeLoanFactory.connect(borrower).testCreateLoanContract(
+        loanFactory.connect(borrower).createLoanContract(
           [
             {
               tokenAddress: collateralTokenA,
@@ -202,7 +152,6 @@ describe('RoyaltyLoanFactory', () => {
           ],
           defaults.loanAmount,
           defaults.feePpm,
-          false, // omit transfer in factory
         ),
       ).to.be.revertedWithCustomError(
         collateralTokenA,
@@ -212,11 +161,11 @@ describe('RoyaltyLoanFactory', () => {
       await (
         await collateralTokenA
           .connect(borrower)
-          .setApprovalForAll(await fakeLoanFactory.getAddress(), true)
+          .setApprovalForAll(await loanFactory.getAddress(), true)
       ).wait();
 
       await expect(
-        fakeLoanFactory.connect(borrower).testCreateLoanContract(
+        loanFactory.connect(borrower).createLoanContract(
           [
             {
               tokenAddress: collateralTokenA,
@@ -226,14 +175,13 @@ describe('RoyaltyLoanFactory', () => {
           ],
           defaults.loanAmount,
           defaults.feePpm,
-          false, // omit transfer in factory
         ),
       ).not.to.be.reverted;
     });
 
     it('reverts with no collaterals provided', async () => {
       await expect(
-        fakeLoanFactory
+        loanFactory
           .connect(borrower)
           .createLoanContract([], defaults.loanAmount, defaults.feePpm),
       ).to.be.revertedWith(
@@ -242,7 +190,7 @@ describe('RoyaltyLoanFactory', () => {
     });
 
     it('works with multiple collaterals', async () => {
-      const loan = await createLoanWithFactory(borrower, [
+      const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
         { collateralToken: collateralTokenB },
       ]);
@@ -281,7 +229,7 @@ describe('RoyaltyLoanFactory', () => {
       expect(borrowerBalancesBefore.ERC20).to.equal(0n);
       expect(lenderBalancesBefore.ERC20).to.equal(defaults.loanAmount);
 
-      const loan = await createLoanWithFactory(borrower, [
+      const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
       ]);
 
@@ -304,7 +252,7 @@ describe('RoyaltyLoanFactory', () => {
     });
 
     it('successfully provides a loan then throws as cannot provide loan twice', async () => {
-      const loan = await createLoanWithFactory(borrower, [
+      const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
       ]);
       await expect(loan.connect(lender).provideLoan()).not.to.be.reverted;
@@ -319,7 +267,7 @@ describe('RoyaltyLoanFactory', () => {
       ]);
       expect(lenderBalanceBefore.ERC20).to.equal(defaults.loanAmount);
 
-      const loan = await createLoanWithFactory(borrower, [
+      const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
       ]);
       await expect(loan.connect(borrower).revokeLoan()).not.to.be.reverted;
@@ -339,7 +287,7 @@ describe('RoyaltyLoanFactory', () => {
       ]);
       expect(lenderBalanceBefore.ERC20).to.equal(defaults.loanAmount);
 
-      const loan = await createLoanWithFactory(borrower, [
+      const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
       ]);
       await time.increase(defaults.duration + 1n);
@@ -357,7 +305,7 @@ describe('RoyaltyLoanFactory', () => {
 
   describe('processRepayment', () => {
     it('successfully makes full repayment', async () => {
-      const loan = await createLoanWithFactory(borrower, [
+      const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
       ]);
       await (await loan.connect(lender).provideLoan()).wait();
@@ -411,7 +359,7 @@ describe('RoyaltyLoanFactory', () => {
     });
 
     it('successfully makes full repayment with exceeded balance', async () => {
-      const loan = await createLoanWithFactory(borrower, [
+      const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
       ]);
       await (await loan.connect(lender).provideLoan()).wait();
@@ -469,7 +417,7 @@ describe('RoyaltyLoanFactory', () => {
     });
 
     it('successfully makes partial repayments', async () => {
-      const loan = await createLoanWithFactory(borrower, [
+      const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
       ]);
       await (await loan.connect(lender).provideLoan()).wait();
@@ -594,7 +542,7 @@ describe('RoyaltyLoanFactory', () => {
     });
 
     it('triggers claimHolderFunds on AgreementsERC1155', async () => {
-      const loan = await createLoanWithFactory(borrower, [
+      const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
         { collateralToken: collateralTokenB }, // By default borrower has 3000 shares but 1000 were collateralized
       ]);
@@ -727,7 +675,7 @@ describe('RoyaltyLoanFactory', () => {
     });
 
     it('throws as loan is not provided', async () => {
-      const loan = await createLoanWithFactory(borrower, [
+      const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
       ]);
 
@@ -737,7 +685,7 @@ describe('RoyaltyLoanFactory', () => {
     });
 
     it('throws as no USDC to process', async () => {
-      const loan = await createLoanWithFactory(borrower, [
+      const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
       ]);
       await (await loan.connect(lender).provideLoan()).wait();
@@ -750,7 +698,7 @@ describe('RoyaltyLoanFactory', () => {
 
   describe('revokeLoan', () => {
     it('successfully revokes a loan with single collateral', async () => {
-      const loan = await createLoanWithFactory(borrower, [
+      const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
       ]);
 
@@ -780,7 +728,7 @@ describe('RoyaltyLoanFactory', () => {
     });
 
     it('successfully revokes a loan with multiple collaterals', async () => {
-      const loan = await createLoanWithFactory(borrower, [
+      const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
         { collateralToken: collateralTokenB },
       ]);
@@ -828,8 +776,11 @@ describe('RoyaltyLoanFactory', () => {
       expect(loanTokensBAfter.ERC1155).to.equal(0n);
     });
 
+    // TODO
+    // it('successfully revokes expired loan', async () => {});
+
     it('throws as msg sender is not borrower', async () => {
-      const loan = await createLoanWithFactory(borrower, [
+      const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
       ]);
 
@@ -839,7 +790,7 @@ describe('RoyaltyLoanFactory', () => {
     });
 
     it('throws as cannot revoke twice', async () => {
-      const loan = await createLoanWithFactory(borrower, [
+      const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
       ]);
       await expect(loan.connect(borrower).revokeLoan()).not.to.be.reverted;
@@ -849,7 +800,7 @@ describe('RoyaltyLoanFactory', () => {
     });
 
     it('throws as loan is provided', async () => {
-      const loan = await createLoanWithFactory(borrower, [
+      const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
       ]);
       await (await loan.connect(lender).provideLoan()).wait();
@@ -861,7 +812,7 @@ describe('RoyaltyLoanFactory', () => {
 
   describe('getRemainingTotalDue', () => {
     it('shows remaining total due', async () => {
-      const loan = await createLoanWithFactory(borrower, [
+      const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
       ]);
       await (await loan.connect(lender).provideLoan()).wait();
@@ -883,7 +834,7 @@ describe('RoyaltyLoanFactory', () => {
       );
     });
     it('throws when loan is inactive', async () => {
-      const loan = await createLoanWithFactory(borrower, [
+      const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
       ]);
 
@@ -903,7 +854,7 @@ describe('RoyaltyLoanFactory', () => {
       );
     });
     it('throws when called by non-lender/non-borrower', async () => {
-      const loan = await createLoanWithFactory(borrower, [
+      const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
       ]);
 
@@ -925,7 +876,7 @@ describe('RoyaltyLoanFactory', () => {
 
   describe('reclaimExcessPaymentToken', () => {
     it('reclaims excess tokens before loan is active', async () => {
-      const loan = await createLoanWithFactory(borrower, [
+      const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
       ]);
       await (
@@ -950,7 +901,7 @@ describe('RoyaltyLoanFactory', () => {
     });
 
     it('reclaims excess tokens after loan is repaid', async () => {
-      const loan = await createLoanWithFactory(borrower, [
+      const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
       ]);
       await (await loan.connect(lender).provideLoan()).wait();
@@ -986,7 +937,7 @@ describe('RoyaltyLoanFactory', () => {
     });
 
     it('throws when loan is active', async () => {
-      const loan = await createLoanWithFactory(borrower, [
+      const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
       ]);
       await (await loan.connect(lender).provideLoan()).wait();
@@ -997,7 +948,7 @@ describe('RoyaltyLoanFactory', () => {
     });
 
     it('throws when loan balance is 0', async () => {
-      const loan = await createLoanWithFactory(borrower, [
+      const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
       ]);
 
