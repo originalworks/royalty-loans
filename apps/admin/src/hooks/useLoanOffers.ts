@@ -1,9 +1,6 @@
 import {
-  sendCalls,
   readContract,
   writeContract,
-  getCapabilities,
-  waitForCallsStatus,
   waitForTransactionReceipt,
 } from 'wagmi/actions';
 import { useState } from 'react';
@@ -79,72 +76,41 @@ export const useLoanOffers = () => {
           args: [],
         });
 
-        if (!paymentToken || !chainId) return;
+        if (!paymentToken) return;
 
-        const capabilites = await getCapabilities(config);
-        if (
-          capabilites?.[chainId]?.atomic?.status === 'supported' ||
-          capabilites?.[chainId]?.atomic?.status === 'ready'
-        ) {
-          const id = await sendCalls(config, {
-            calls: [
-              {
-                abi: erc20Abi,
-                to: paymentToken,
-                functionName: 'approve',
-                args: [loanContract, MaxUint256],
-              },
-              {
-                abi: royaltyLoanAbi,
-                to: loanContract,
-                functionName: 'provideLoan',
-                args: [],
-              },
-            ],
-            forceAtomic: true, // if user rejects to use smart wallet and value is true then everything is reverted
-          });
+        const approveHash = await writeContract(config, {
+          chainId,
+          abi: erc20Abi,
+          address: paymentToken,
+          functionName: 'approve',
+          args: [loanContract, MaxUint256],
+        });
 
-          const { status } = await waitForCallsStatus(config, id);
+        const { status: approveStatus } = await waitForTransactionReceipt(
+          config,
+          {
+            hash: approveHash,
+          },
+        );
 
-          if (status === 'success') {
-            setTimeout(() => navigate(0), 3000);
-          }
-          if (status === 'failure') console.error('Transaction reverted');
-        } else {
-          const approveHash = await writeContract(config, {
-            chainId,
-            abi: erc20Abi,
-            address: paymentToken,
-            functionName: 'approve',
-            args: [loanContract, MaxUint256],
-          });
+        if (approveStatus !== 'success') return;
 
-          const { status: approveStatus } = await waitForTransactionReceipt(
-            config,
-            {
-              hash: approveHash,
-            },
-          );
+        const hash = await writeContract(config, {
+          chainId,
+          abi: royaltyLoanAbi,
+          address: loanContract,
+          functionName: 'provideLoan',
+          args: [],
+        });
 
-          if (approveStatus !== 'success') return;
+        const { status } = await waitForTransactionReceipt(config, {
+          hash: hash,
+        });
 
-          const hash = await writeContract(config, {
-            chainId,
-            abi: royaltyLoanAbi,
-            address: loanContract,
-            functionName: 'provideLoan',
-            args: [],
-          });
-
-          const { status } = await waitForTransactionReceipt(config, {
-            hash: hash,
-          });
-
-          if (status === 'success') {
-            setTimeout(() => navigate(0), 3000);
-          }
-          if (status === 'reverted') console.error('Transaction reverted');
+        if (status === 'success') {
+          setTimeout(() => navigate(0), 3000);
         }
+        if (status === 'reverted') console.error('Transaction reverted');
       } catch (error) {
         console.error(error);
       }
