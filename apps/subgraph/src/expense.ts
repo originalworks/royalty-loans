@@ -1,4 +1,4 @@
-import { BigInt, Bytes, ethereum } from '@graphprotocol/graph-ts';
+import { BigInt, Bytes } from '@graphprotocol/graph-ts';
 
 import { Expense, LoanContract } from '../generated/schema';
 import { recordStats } from './helpers';
@@ -7,33 +7,20 @@ export function createExpense(
   txHash: Bytes,
   loanContract: Bytes,
   kind: string,
-  event: ethereum.Event,
+  timestamp: BigInt,
   value: BigInt | null = null,
   from: Bytes | null = null,
-): Expense {
+): void {
   const expenseId = txHash.concat(Bytes.fromUTF8(':expense'));
   const expense = new Expense(expenseId);
-  expense.loanContract = loanContract;
-  expense.transactionHash = txHash;
-  expense.kind = kind;
   expense.from = from;
-  expense.baseFeePerGas = event.block.baseFeePerGas;
+  expense.kind = kind;
   expense.value = value;
-
-  const transaction = event.transaction;
-  expense.gasLimit = transaction.gasLimit;
-  expense.gasPrice = transaction.gasPrice;
-  expense.totalCost = BigInt.zero();
-
-  const receipt = event.receipt;
-  if (receipt != null) {
-    expense.cumulativeGasUsed = receipt.cumulativeGasUsed;
-    expense.gasUsed = receipt.gasUsed;
-    expense.totalCost = receipt.gasUsed.times(transaction.gasPrice);
-  }
-  expense.timestamp = event.block.timestamp;
-
+  expense.loanContract = loanContract;
   expense.collaterals = [];
+  expense.transactionHash = txHash;
+  expense.timestamp = timestamp;
+
   const loan = LoanContract.load(loanContract);
   if (loan !== null) {
     const collaterals = loan.collaterals.load();
@@ -47,6 +34,4 @@ export function createExpense(
   expense.save();
 
   recordStats(false);
-
-  return expense;
 }

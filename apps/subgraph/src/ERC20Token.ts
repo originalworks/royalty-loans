@@ -13,7 +13,7 @@ export function handleERC20Transfer(event: TransferEvent): void {
       event.transaction.hash,
       loanContract.id,
       'ERC20Transfer',
-      event,
+      event.block.timestamp,
       event.params.value,
       event.params.from,
     );
@@ -33,7 +33,7 @@ export function handleERC20Approval(event: ApprovalEvent): void {
       event.transaction.hash,
       loanContract.id,
       'ERC20Approve',
-      event,
+      event.block.timestamp,
     );
   }
 }

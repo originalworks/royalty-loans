@@ -59,7 +59,12 @@ export function handleLoanContractCreatedNew(
 
   RoyaltyLoan.create(event.params.loanContract);
 
-  createExpense(event.transaction.hash, entity.id, 'LoanCreated', event);
+  createExpense(
+    event.transaction.hash,
+    entity.id,
+    'LoanCreated',
+    event.block.timestamp,
+  );
 
   recordStats(true);
 }
@@ -107,7 +112,12 @@ export function handleLoanContractCreatedOld(
 
   RoyaltyLoan.create(event.params.loanContract);
 
-  createExpense(event.transaction.hash, entity.id, 'LoanCreated', event);
+  createExpense(
+    event.transaction.hash,
+    entity.id,
+    'LoanCreated',
+    event.block.timestamp,
+  );
 
   recordStats(true);
 }

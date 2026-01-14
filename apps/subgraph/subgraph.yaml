@@ -26,10 +26,8 @@ dataSources:
           handler: handleInitialized
         - event: LoanContractCreated(address,address,(address,uint256,uint256)[],uint256,uint256,uint256,address,address)
           handler: handleLoanContractCreatedNew
-          receipt: true
         - event: LoanContractCreated(address,address,(address,uint256,uint256)[],uint256,uint256)
           handler: handleLoanContractCreatedOld
-          receipt: true
       file: ./src/royalty-loan-factory.ts
   - kind: ethereum
     name: RoyaltyLoanFactoryV1
@@ -56,7 +54,6 @@ dataSources:
           handler: handleInitialized
         - event: LoanContractCreated(address,address,address,uint256,uint256,uint256,uint256)
           handler: handleLoanContractCreated
-          receipt: true
       file: ./src/royalty-loan-factory-v1.ts
   - kind: ethereum
     name: ERC20Token
@@ -79,10 +76,8 @@ dataSources:
       eventHandlers:
         - event: Transfer(indexed address,indexed address,uint256)
           handler: handleERC20Transfer
-          receipt: true
         - event: Approval(indexed address,indexed address,uint256)
           handler: handleERC20Approval
-          receipt: true
       file: ./src/ERC20Token.ts
 templates:
   - kind: ethereum
@@ -108,14 +103,10 @@ templates:
       eventHandlers:
         - event: LoanProvided(address)
           handler: handleLoanProvided
-          receipt: true
         - event: LoanPartialyRepaid(uint256)
           handler: handleLoanPartialyRepaid
-          receipt: true
         - event: LoanRepaid(uint256)
           handler: handleLoanRepaid
-          receipt: true
         - event: LoanRevoked()
           handler: handleLoanRevoked
-          receipt: true
       file: ./src/royalty-loan.ts
