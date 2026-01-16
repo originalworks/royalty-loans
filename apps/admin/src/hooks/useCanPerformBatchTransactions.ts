@@ -23,6 +23,8 @@ export const useCanPerformBatchTransactions = () => {
           }
         });
       }
+    } else {
+      setCanPerform(false);
     }
   }, [connector]);
 
