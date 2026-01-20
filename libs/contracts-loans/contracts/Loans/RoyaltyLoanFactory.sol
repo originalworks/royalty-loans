@@ -4,22 +4,36 @@ pragma solidity ^0.8.20;
 import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
 import '@openzeppelin/contracts/interfaces/IERC1155.sol';
 import '@openzeppelin/contracts/proxy/Clones.sol';
 import './interfaces/IRoyaltyLoan.sol';
+import './interfaces/IBeneficiaryRoyaltyLoan.sol';
 import '../shared/Whitelist/WhitelistConsumer.sol';
+
+enum LoanType {
+  Standard,
+  Beneficiary
+}
 
 contract RoyaltyLoanFactory is
   WhitelistConsumer,
   Initializable,
   OwnableUpgradeable,
-  UUPSUpgradeable
+  UUPSUpgradeable,
+  ReentrancyGuardUpgradeable
 {
-  event TemplateChanged(address previousAddress, address newAddress);
+  event TemplateChanged(
+    LoanType loanType,
+    address previousAddress,
+    address newAddress
+  );
+
   event OfferDurationChanged(
     uint256 previousOfferDuration,
     uint256 newOfferDuration
   );
+
   event PaymentTokenChanged(
     address previousPaymentToken,
     address newPaymentToken
@@ -36,11 +50,23 @@ contract RoyaltyLoanFactory is
     address templateAddress
   );
 
+  event BeneficiaryLoanContractCreated(
+    address loanContract,
+    address borrower,
+    ICollateral.CollateralWithBeneficiaries[] collaterals,
+    uint256 loanAmount,
+    uint256 feePpm,
+    uint256 offerDuration,
+    address paymentTokenAddress,
+    address templateAddress
+  );
+
   bytes1 public constant OPERATIONAL_WHITELIST = 0x01;
 
   address public paymentTokenAddress;
   uint256 public offerDuration;
-  address public templateAddress;
+
+  mapping(LoanType => address) public templates;
 
   uint256[50] __gap;
 
@@ -50,15 +76,18 @@ contract RoyaltyLoanFactory is
   }
 
   function initialize(
-    address _templateAddress,
+    address _standardTemplateAddress,
+    address _beneficiaryTemplateAddress,
     address _operationalWhitelistAddress,
     address _paymentTokenAddress,
     uint256 _offerDuration
   ) public initializer {
-    _setTemplateAddress(_templateAddress);
+    _setTemplateAddress(LoanType.Standard, _standardTemplateAddress);
+    _setTemplateAddress(LoanType.Beneficiary, _beneficiaryTemplateAddress);
     _setWhitelistAddress(_operationalWhitelistAddress, OPERATIONAL_WHITELIST);
     _setOfferDuration(_offerDuration);
     _setPaymentTokenAddress(_paymentTokenAddress);
+    __ReentrancyGuard_init();
     __Ownable_init(msg.sender);
   }
 
@@ -83,20 +112,24 @@ contract RoyaltyLoanFactory is
     super._setWhitelistAddress(_whitelistAddress, _whitelistId);
   }
 
-  function _setTemplateAddress(address _templateAddress) private {
+  function _setTemplateAddress(
+    LoanType _loanType,
+    address _templateAddress
+  ) private {
     require(
       _templateAddress != address(0),
       'RoyaltyLoanFactory: _templateAddress is the zero address'
     );
-    address previousAddress = templateAddress;
-    templateAddress = _templateAddress;
-    emit TemplateChanged(previousAddress, _templateAddress);
+    address previousAddress = templates[_loanType];
+    templates[_loanType] = _templateAddress;
+    emit TemplateChanged(_loanType, previousAddress, _templateAddress);
   }
 
   function setTemplateAddress(
+    LoanType _loanType,
     address _templateAddress
   ) external isWhitelistedOn(OPERATIONAL_WHITELIST) {
-    _setTemplateAddress(_templateAddress);
+    _setTemplateAddress(_loanType, _templateAddress);
   }
 
   function _setOfferDuration(uint256 _duration) private {
@@ -136,8 +169,8 @@ contract RoyaltyLoanFactory is
     ICollateral.Collateral[] calldata collaterals,
     uint256 loanAmount,
     uint256 feePpm
-  ) external returns (address) {
-    address clone = Clones.clone(templateAddress);
+  ) external nonReentrant returns (address) {
+    address clone = Clones.clone(templates[LoanType.Standard]);
 
     for (uint i = 0; i < collaterals.length; i++) {
       IERC1155(collaterals[i].tokenAddress).safeTransferFrom(
@@ -166,7 +199,47 @@ contract RoyaltyLoanFactory is
       feePpm,
       offerDuration,
       paymentTokenAddress,
-      templateAddress
+      templates[LoanType.Standard]
+    );
+
+    return clone;
+  }
+
+  function createBeneficiaryLoanContract(
+    ICollateral.CollateralWithBeneficiaries[] calldata collaterals,
+    uint256 loanAmount,
+    uint256 feePpm
+  ) external nonReentrant returns (address) {
+    address clone = Clones.clone(templates[LoanType.Beneficiary]);
+
+    for (uint i = 0; i < collaterals.length; i++) {
+      IERC1155(collaterals[i].tokenAddress).safeTransferFrom(
+        msg.sender,
+        clone,
+        collaterals[i].tokenId,
+        collaterals[i].tokenAmount,
+        ''
+      );
+    }
+
+    IBeneficiaryRoyaltyLoan(clone).initialize(
+      collaterals,
+      paymentTokenAddress,
+      msg.sender,
+      feePpm,
+      loanAmount,
+      offerDuration
+    );
+
+    emit BeneficiaryLoanContractCreated(
+      clone,
+      msg.sender,
+      collaterals,
+      loanAmount,
+      feePpm,
+      offerDuration,
+      paymentTokenAddress,
+      templates[LoanType.Beneficiary]
     );
 
     return clone;

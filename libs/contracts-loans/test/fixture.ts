@@ -1,22 +1,34 @@
 import hre, { ethers } from 'hardhat';
 import {
   AgreementERC1155,
+  BeneficiaryRoyaltyLoan__factory,
   ERC20TokenMock,
   ERC20TokenMock__factory,
-  RoyaltyLoan,
   RoyaltyLoan__factory,
-  RoyaltyLoanFactory,
   RoyaltyLoanFactory__factory,
-  TestRoyaltyLoanFactory__factory,
   Whitelist__factory,
 } from '../typechain';
 
-import type { ICollateral } from '../typechain/contracts/Loans/RoyaltyLoan';
 import { deployAgreementsTestFixture } from '@royalty-loans/contracts-agreements';
 import { deployProxy } from '@royalty-loans/contracts-shared';
 
 import { AddressLike, BigNumberish, JsonRpcProvider, Signer } from 'ethers';
-import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
+import { ICollateral } from '../typechain/contracts/Loans/interfaces/IRoyaltyLoan';
+import { createLoanCreator } from './utils';
+
+export type HolderStruct = {
+  account: AddressLike;
+  isAdmin: boolean;
+  balance: BigNumberish;
+};
+
+export const LoanState = {
+  Uninitialized: 0n,
+  Pending: 1n,
+  Revoked: 2n,
+  Active: 3n,
+  Repaid: 4n,
+};
 
 export const defaults = {
   collateralTokenId: 1n,
@@ -36,7 +48,7 @@ export type RoyaltyLoanInitArgs = {
   duration: BigNumberish;
 };
 
-export const getCurrentBalancesCreator =
+const getCurrentBalancesCreator =
   (paymentToken: ERC20TokenMock) =>
   async (
     collateralToken: AgreementERC1155,
@@ -55,89 +67,24 @@ export const getCurrentBalancesCreator =
     return results;
   };
 
-const createLoanWithFactoryCreator =
-  ({
-    loanFactory,
-    paymentToken,
-    lender,
-  }: {
-    loanFactory: RoyaltyLoanFactory;
-    paymentToken: ERC20TokenMock;
-    lender: SignerWithAddress;
-  }) =>
-  async (
-    borrower: SignerWithAddress,
-    collateralsWithOpts: {
-      collateralToken: AgreementERC1155;
-      collateralAmount?: BigNumberish;
-      noApprove?: boolean;
-    }[],
-    overrides?: {
-      loanAmount?: BigNumberish;
-      feePpm?: BigNumberish;
-    },
-  ): Promise<RoyaltyLoan> => {
-    const collaterals: ICollateral.CollateralStruct[] = [];
-
-    for (const coll of collateralsWithOpts) {
-      if (!coll.noApprove) {
-        await (
-          await coll.collateralToken
-            .connect(borrower)
-            .setApprovalForAll(await loanFactory.getAddress(), true)
-        ).wait();
-      }
-
-      collaterals.push({
-        tokenAddress: await coll.collateralToken.getAddress(),
-        tokenAmount: coll.collateralAmount ?? defaults.collateralAmount,
-        tokenId: defaults.collateralTokenId,
-      });
-    }
-
-    const receipt = await (
-      await loanFactory
-        .connect(borrower)
-        .createLoanContract(
-          collaterals,
-          overrides?.loanAmount ?? defaults.loanAmount,
-          overrides?.feePpm ?? defaults.feePpm,
-        )
-    ).wait();
-
-    const loanContractAddress = (
-      await loanFactory.queryFilter(
-        loanFactory.getEvent('LoanContractCreated'),
-        receipt?.blockNumber,
-        receipt?.blockNumber,
-      )
-    )[0].args.loanContract;
-
-    const royaltyLoan = RoyaltyLoan__factory.connect(
-      loanContractAddress,
-      borrower,
-    );
-
-    await (
-      await paymentToken
-        .connect(lender)
-        .approve(loanContractAddress, ethers.MaxUint256)
-    ).wait();
-
-    return royaltyLoan;
-  };
-
 export const fixture = async () => {
-  const [deployer, borrower, lender] = await hre.ethers.getSigners();
+  const signers = await hre.ethers.getSigners();
+
+  const [deployer, lender] = signers;
 
   const {
     splitCurrencies: { lendingToken },
-    deployAgreementERC1155,
+    deployAgreementERC1155: deployAgreementERC1155Base,
   } = await deployAgreementsTestFixture(
     deployer as Signer,
     deployer.provider as JsonRpcProvider,
     { creationFee: 0n, paymentFee: 0n },
   );
+
+  // Because of ts issues
+  const deployAgreementERC1155: (
+    holders: HolderStruct[],
+  ) => Promise<AgreementERC1155> = deployAgreementERC1155Base;
 
   const paymentToken = ERC20TokenMock__factory.connect(
     lendingToken.address,
@@ -148,34 +95,19 @@ export const fixture = async () => {
   );
   await (await whitelist.addToWhitelist(deployer)).wait();
 
-  const collateralTokenA = (
-    await deployAgreementERC1155([
-      {
-        account: borrower.address,
-        balance: defaults.collateralAmount,
-        isAdmin: true,
-      },
-    ])
-  ).connect(deployer);
-
-  const collateralTokenB = (
-    await deployAgreementERC1155([
-      {
-        account: borrower.address,
-        balance: defaults.collateralAmount * 3n,
-        isAdmin: true,
-      },
-    ])
-  ).connect(deployer);
-
-  const loanTemplate = await (
+  const standardLoanTemplate = await (
     await new RoyaltyLoan__factory(deployer).deploy()
+  ).waitForDeployment();
+
+  const beneficiaryLoanTemplate = await (
+    await new BeneficiaryRoyaltyLoan__factory(deployer).deploy()
   ).waitForDeployment();
 
   const loanFactory = await deployProxy(
     new RoyaltyLoanFactory__factory(deployer),
     [
-      await loanTemplate.getAddress(),
+      await standardLoanTemplate.getAddress(),
+      await beneficiaryLoanTemplate.getAddress(),
       await whitelist.getAddress(),
       await paymentToken.getAddress(),
       defaults.duration,
@@ -184,33 +116,16 @@ export const fixture = async () => {
 
   await loanFactory.waitForDeployment();
 
-  const fakeLoanFactory = await deployProxy(
-    new TestRoyaltyLoanFactory__factory(deployer),
-    [
-      await loanTemplate.getAddress(),
-      await whitelist.getAddress(),
-      await paymentToken.getAddress(),
-      defaults.duration,
-    ],
-  );
-
   return {
-    signers: [deployer, borrower, lender],
+    signers,
     defaults,
     whitelist,
-    loanTemplate,
+    standardLoanTemplate,
+    beneficiaryLoanTemplate,
     loanFactory,
-    fakeLoanFactory,
-    collaterals: {
-      collateralTokenA,
-      collateralTokenB,
-    },
+    deployAgreementERC1155,
     paymentToken,
     getCurrentBalances: getCurrentBalancesCreator(paymentToken),
-    createLoanWithFactory: createLoanWithFactoryCreator({
-      loanFactory,
-      paymentToken,
-      lender,
-    }),
+    createLoan: createLoanCreator({ loanFactory, paymentToken, lender }),
   };
 };
