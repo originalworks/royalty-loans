@@ -13,8 +13,10 @@ dotenv.config();
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: '0.8.24',
-    settings: { evmVersion: 'cancun' },
+    compilers: [
+      { version: '0.8.24', settings: { evmVersion: 'cancun' } },
+      { version: '0.8.32', settings: { evmVersion: 'cancun' } },
+    ],
   },
   networks: {
     base_sepolia: {
