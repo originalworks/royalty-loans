@@ -1,4 +1,3 @@
-import { ethers } from 'hardhat';
 import { AgreementERC1155, ERC20TokenMock } from '../../typechain';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { fixture } from '../fixture';
@@ -29,7 +28,7 @@ const splitPpmEqually = (count: number): bigint[] => {
 
 type LogLevel = 'csv' | 'console' | 'none';
 
-describe('BeneficiaryRoyaltyLoan - gas usage', () => {
+describe.skip('BeneficiaryRoyaltyLoan - gas usage', () => {
   let deployer: SignerWithAddress;
   let borrower: SignerWithAddress;
   let lender: SignerWithAddress;
@@ -170,7 +169,7 @@ describe('BeneficiaryRoyaltyLoan - gas usage', () => {
     };
   });
 
-  it.only('edge parameters detection', async () => {
+  it('edge parameters detection', async () => {
     let keepRunning = true;
     let collateralsCt = 1;
     let beneficiariesCt = 1;

@@ -1,6 +1,7 @@
 import hre, { ethers } from 'hardhat';
 import {
   AgreementERC1155,
+  AgreementERC1155__factory,
   BeneficiaryRoyaltyLoan__factory,
   ERC20TokenMock,
   ERC20TokenMock__factory,
@@ -9,10 +10,13 @@ import {
   Whitelist__factory,
 } from '../typechain';
 
-import { deployAgreementsTestFixture } from '@royalty-loans/contracts-agreements';
+import {
+  deployInitialSetup,
+  getEvent,
+} from '@royalty-loans/contracts-agreements';
 import { deployProxy } from '@royalty-loans/contracts-shared';
 
-import { AddressLike, BigNumberish, JsonRpcProvider, Signer } from 'ethers';
+import { AddressLike, BigNumberish } from 'ethers';
 import { ICollateral } from '../typechain/contracts/Loans/interfaces/IRoyaltyLoan';
 import { createLoanCreator } from './utils';
 
@@ -72,22 +76,38 @@ export const fixture = async () => {
 
   const [deployer, lender] = signers;
 
-  const {
-    splitCurrencies: { lendingToken },
-    deployAgreementERC1155: deployAgreementERC1155Base,
-  } = await deployAgreementsTestFixture(
-    deployer as Signer,
-    deployer.provider as JsonRpcProvider,
-    { creationFee: 0n, paymentFee: 0n },
-  );
+  const { splitCurrencies, agreementFactory } = await deployInitialSetup({
+    creationFee: 0n,
+    paymentFee: 0n,
+  });
 
-  // Because of ts issues
-  const deployAgreementERC1155: (
-    holders: HolderStruct[],
-  ) => Promise<AgreementERC1155> = deployAgreementERC1155Base;
+  const lendingToken = splitCurrencies[0].contract;
+
+  if (!lendingToken) {
+    throw new Error('No lending token');
+  }
+
+  const deployAgreementERC1155 = async (holders: HolderStruct[]) => {
+    const tx = agreementFactory.connect(deployer).createERC1155(
+      {
+        tokenUri: 'tokenUri',
+        contractURI: 'contractURI',
+        holders,
+        unassignedRwaId: 'ABC123',
+      },
+      { value: 0n },
+    );
+    const event = await getEvent(tx, agreementFactory, 'AgreementCreated');
+    const agreementAddress = event.args[0];
+    const agreement = AgreementERC1155__factory.connect(
+      agreementAddress,
+    ) as AgreementERC1155;
+
+    return agreement;
+  };
 
   const paymentToken = ERC20TokenMock__factory.connect(
-    lendingToken.address,
+    await lendingToken.getAddress(),
     deployer,
   );
   const whitelist = await new Whitelist__factory(deployer).deploy(

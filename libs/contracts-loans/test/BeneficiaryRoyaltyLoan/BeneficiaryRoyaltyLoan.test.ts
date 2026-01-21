@@ -7,9 +7,9 @@ import {
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { fixture, LoanState } from '../fixture';
 import { ICollateral } from '../../typechain/contracts/Loans/interfaces/IBeneficiaryRoyaltyLoan';
-import { HDNodeWallet, ZeroAddress } from 'ethers';
+import { ZeroAddress } from 'ethers';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
-import { createManyWallets, expectBalancesCreator } from '../utils';
+import { expectBalancesCreator } from '../utils';
 
 let expect: Chai.ExpectStatic;
 
