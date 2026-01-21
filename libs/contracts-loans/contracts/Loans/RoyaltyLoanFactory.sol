@@ -9,7 +9,6 @@ import '@openzeppelin/contracts/interfaces/IERC1155.sol';
 import '@openzeppelin/contracts/proxy/Clones.sol';
 import './interfaces/IRoyaltyLoan.sol';
 import './interfaces/IBeneficiaryRoyaltyLoan.sol';
-import '../shared/Whitelist/WhitelistConsumer.sol';
 
 enum LoanType {
   Standard,
@@ -17,7 +16,6 @@ enum LoanType {
 }
 
 contract RoyaltyLoanFactory is
-  WhitelistConsumer,
   Initializable,
   OwnableUpgradeable,
   UUPSUpgradeable,
@@ -61,8 +59,6 @@ contract RoyaltyLoanFactory is
     address templateAddress
   );
 
-  bytes1 public constant OPERATIONAL_WHITELIST = 0x01;
-
   address public paymentTokenAddress;
   uint256 public offerDuration;
 
@@ -78,38 +74,15 @@ contract RoyaltyLoanFactory is
   function initialize(
     address _standardTemplateAddress,
     address _beneficiaryTemplateAddress,
-    address _operationalWhitelistAddress,
     address _paymentTokenAddress,
     uint256 _offerDuration
   ) public initializer {
     _setTemplateAddress(LoanType.Standard, _standardTemplateAddress);
     _setTemplateAddress(LoanType.Beneficiary, _beneficiaryTemplateAddress);
-    _setWhitelistAddress(_operationalWhitelistAddress, OPERATIONAL_WHITELIST);
     _setOfferDuration(_offerDuration);
     _setPaymentTokenAddress(_paymentTokenAddress);
     __ReentrancyGuard_init();
     __Ownable_init(msg.sender);
-  }
-
-  function setWhitelistAddress(
-    address _whitelistAddress
-  ) external isWhitelistedOn(OPERATIONAL_WHITELIST) {
-    require(
-      _whitelistAddress != address(0),
-      'RoyaltyLoanFactory: _whitelistAddress address is the zero address'
-    );
-    _setWhitelistAddress(_whitelistAddress, OPERATIONAL_WHITELIST);
-  }
-
-  function _setWhitelistAddress(
-    address _whitelistAddress,
-    bytes1 _whitelistId
-  ) internal override {
-    require(
-      _whitelistAddress != address(0),
-      'RoyaltyLoanFactory: _whitelistAddress address is the zero address'
-    );
-    super._setWhitelistAddress(_whitelistAddress, _whitelistId);
   }
 
   function _setTemplateAddress(
@@ -128,7 +101,7 @@ contract RoyaltyLoanFactory is
   function setTemplateAddress(
     LoanType _loanType,
     address _templateAddress
-  ) external isWhitelistedOn(OPERATIONAL_WHITELIST) {
+  ) external onlyOwner {
     _setTemplateAddress(_loanType, _templateAddress);
   }
 
@@ -142,9 +115,7 @@ contract RoyaltyLoanFactory is
     emit OfferDurationChanged(previousDuration, _duration);
   }
 
-  function setOfferDuration(
-    uint256 _duration
-  ) external isWhitelistedOn(OPERATIONAL_WHITELIST) {
+  function setOfferDuration(uint256 _duration) external onlyOwner {
     _setOfferDuration(_duration);
   }
 
@@ -161,7 +132,7 @@ contract RoyaltyLoanFactory is
 
   function setPaymentTokenAddress(
     address _paymentTokenAddress
-  ) external isWhitelistedOn(OPERATIONAL_WHITELIST) {
+  ) external onlyOwner {
     _setPaymentTokenAddress(_paymentTokenAddress);
   }
 

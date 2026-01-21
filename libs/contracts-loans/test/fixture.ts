@@ -7,7 +7,6 @@ import {
   ERC20TokenMock__factory,
   RoyaltyLoan__factory,
   RoyaltyLoanFactory__factory,
-  Whitelist__factory,
 } from '../typechain';
 
 import {
@@ -110,10 +109,6 @@ export const fixture = async () => {
     await lendingToken.getAddress(),
     deployer,
   );
-  const whitelist = await new Whitelist__factory(deployer).deploy(
-    deployer.address,
-  );
-  await (await whitelist.addToWhitelist(deployer)).wait();
 
   const standardLoanTemplate = await (
     await new RoyaltyLoan__factory(deployer).deploy()
@@ -128,7 +123,6 @@ export const fixture = async () => {
     [
       await standardLoanTemplate.getAddress(),
       await beneficiaryLoanTemplate.getAddress(),
-      await whitelist.getAddress(),
       await paymentToken.getAddress(),
       defaults.duration,
     ],
@@ -139,7 +133,6 @@ export const fixture = async () => {
   return {
     signers,
     defaults,
-    whitelist,
     standardLoanTemplate,
     beneficiaryLoanTemplate,
     loanFactory,
