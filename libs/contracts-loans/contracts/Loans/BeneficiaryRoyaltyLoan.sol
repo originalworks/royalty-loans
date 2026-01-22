@@ -53,13 +53,15 @@ contract BeneficiaryRoyaltyLoan is
     uint256 _loanAmount,
     uint256 _duration
   ) public initializer {
+    uint256 collateralsLength = _collaterals.length;
     require(
-      _collaterals.length > 0,
+      collateralsLength > 0,
       'BeneficiaryRoyaltyLoan: At least 1 collateral must be provided'
     );
 
-    for (uint i = 0; i < _collaterals.length; i++) {
+    for (uint i = 0; i < collateralsLength; ) {
       CollateralWithBeneficiaries calldata collateral = _collaterals[i];
+      uint256 beneficiariesLength = collateral.beneficiaries.length;
 
       require(
         collateral.tokenAddress != address(0),
@@ -72,7 +74,7 @@ contract BeneficiaryRoyaltyLoan is
       );
 
       require(
-        collateral.beneficiaries.length > 0,
+        beneficiariesLength > 0,
         'BeneficiaryRoyaltyLoan: At least 1 beneficiary must be provided'
       );
 
@@ -86,7 +88,7 @@ contract BeneficiaryRoyaltyLoan is
 
       uint256 totalPpm;
 
-      for (uint256 j = 0; j < collateral.beneficiaries.length; j++) {
+      for (uint256 j = 0; j < beneficiariesLength; ) {
         Beneficiary calldata beneficiary = collateral.beneficiaries[j];
 
         require(
@@ -98,6 +100,10 @@ contract BeneficiaryRoyaltyLoan is
           'BeneficiaryRoyaltyLoan: Beneficiary ppm must be greater than 0'
         );
         totalPpm += beneficiary.ppm;
+
+        unchecked {
+          j++;
+        }
       }
 
       require(
@@ -106,6 +112,10 @@ contract BeneficiaryRoyaltyLoan is
       );
 
       collaterals.push(collateral);
+
+      unchecked {
+        i++;
+      }
     }
 
     require(
@@ -160,38 +170,48 @@ contract BeneficiaryRoyaltyLoan is
     require(amount > 0, 'BeneficiaryRoyaltyLoan: No payment token to process');
 
     uint256 totalCollateralsAmount;
+    uint256 collateralsLength = collaterals.length;
 
-    for (uint256 i = 0; i < collaterals.length; i++) {
+    for (uint256 i = 0; i < collateralsLength; ) {
       totalCollateralsAmount += collaterals[i].tokenAmount;
+      unchecked {
+        i++;
+      }
     }
 
     uint256 remainingAmount = amount;
 
-    for (uint256 i = 0; i < collaterals.length; i++) {
+    for (uint256 i = 0; i < collateralsLength; ) {
       CollateralWithBeneficiaries memory collateral = collaterals[i];
 
       uint256 collateralShare = (amount * collateral.tokenAmount) /
         totalCollateralsAmount;
 
       // last collateral gets remainder (dust-free)
-      if (i == collaterals.length - 1) {
+      if (i == collateralsLength - 1) {
         collateralShare = remainingAmount;
       } else {
         remainingAmount -= collateralShare;
       }
 
-      if (collateralShare == 0) continue;
+      if (collateralShare == 0) {
+        unchecked {
+          i++;
+        }
+        continue;
+      }
 
       uint256 remainingCollateralShare = collateralShare;
+      uint256 beneficiariesLength = collateral.beneficiaries.length;
 
-      for (uint256 j = 0; j < collateral.beneficiaries.length; j++) {
+      for (uint256 j = 0; j < beneficiariesLength; ) {
         Beneficiary memory beneficiary = collateral.beneficiaries[j];
 
         uint256 beneficiaryShare = (collateralShare * beneficiary.ppm) /
           PPM_DENOMINATOR;
 
         // last beneficiary gets remainder (dust-free)
-        if (j == collateral.beneficiaries.length - 1) {
+        if (j == beneficiariesLength - 1) {
           beneficiaryShare = remainingCollateralShare;
         } else {
           remainingCollateralShare -= beneficiaryShare;
@@ -203,6 +223,14 @@ contract BeneficiaryRoyaltyLoan is
             beneficiaryShare
           );
         }
+
+        unchecked {
+          j++;
+        }
+      }
+
+      unchecked {
+        i++;
       }
     }
   }
@@ -222,8 +250,14 @@ contract BeneficiaryRoyaltyLoan is
       'BeneficiaryRoyaltyLoan: Loan is inactive'
     );
 
-    for (uint i = 0; i < collaterals.length; i++) {
+    uint256 collateralsLength = collaterals.length;
+
+    for (uint i = 0; i < collateralsLength; ) {
       claimCollateralBalance(collaterals[i].tokenAddress);
+
+      unchecked {
+        i++;
+      }
     }
 
     uint256 currentBalance = paymentToken.balanceOf(address(this));
@@ -234,18 +268,19 @@ contract BeneficiaryRoyaltyLoan is
 
     if (currentBalance >= totalDue) {
       // Full repayment
-      for (uint256 i = 0; i < collaterals.length; i++) {
+      for (uint256 i = 0; i < collateralsLength; ) {
         CollateralWithBeneficiaries memory collateral = collaterals[i];
         uint256 remainingShares = collateral.tokenAmount;
+        uint256 beneficiariesLength = collateral.beneficiaries.length;
 
-        for (uint256 j = 0; j < collateral.beneficiaries.length; j++) {
+        for (uint256 j = 0; j < beneficiariesLength; ) {
           Beneficiary memory beneficiary = collateral.beneficiaries[j];
 
           uint256 beneficiaryShare = (collateral.tokenAmount *
             beneficiary.ppm) / PPM_DENOMINATOR;
 
           // last beneficiary gets remainder (dust-free)
-          if (j == collateral.beneficiaries.length - 1) {
+          if (j == beneficiariesLength - 1) {
             beneficiaryShare = remainingShares;
           } else {
             remainingShares -= beneficiaryShare;
@@ -260,6 +295,14 @@ contract BeneficiaryRoyaltyLoan is
               ''
             );
           }
+
+          unchecked {
+            j++;
+          }
+        }
+
+        unchecked {
+          i++;
         }
       }
 
@@ -316,7 +359,9 @@ contract BeneficiaryRoyaltyLoan is
       'BeneficiaryRoyaltyLoan: Only borrower can revoke the loan'
     );
 
-    for (uint i = 0; i < collaterals.length; i++) {
+    uint256 collateralsLength = collaterals.length;
+
+    for (uint i = 0; i < collateralsLength; ) {
       IERC1155(collaterals[i].tokenAddress).safeTransferFrom(
         address(this),
         borrower,
@@ -324,6 +369,10 @@ contract BeneficiaryRoyaltyLoan is
         collaterals[i].tokenAmount,
         ''
       );
+
+      unchecked {
+        i++;
+      }
     }
 
     uint256 currentBalance = paymentToken.balanceOf(address(this));
