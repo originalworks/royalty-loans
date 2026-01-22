@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import '@openzeppelin/contracts/utils/Strings.sol';
+import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import '@openzeppelin/contracts/interfaces/IERC1155.sol';
 import '@openzeppelin/contracts/interfaces/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
@@ -10,7 +11,12 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import './interfaces/IRoyaltyLoan.sol';
 import './interfaces/IAgreementERC1155.sol';
 
-contract RoyaltyLoan is IRoyaltyLoan, ERC1155Holder, Initializable {
+contract RoyaltyLoan is
+  IRoyaltyLoan,
+  ERC1155Holder,
+  Initializable,
+  ReentrancyGuard
+{
   using SafeERC20 for IERC20;
   using Strings for uint256;
 
@@ -102,7 +108,7 @@ contract RoyaltyLoan is IRoyaltyLoan, ERC1155Holder, Initializable {
     loanOfferActive = true;
   }
 
-  function provideLoan() external {
+  function provideLoan() external nonReentrant {
     require(loanActive == false, 'RoyaltyLoan: Loan is already active');
     require(loanOfferActive == true, 'RoyaltyLoan: Loan offer is revoked');
     require(
@@ -128,7 +134,7 @@ contract RoyaltyLoan is IRoyaltyLoan, ERC1155Holder, Initializable {
     }
   }
 
-  function processRepayment() external {
+  function processRepayment() external nonReentrant {
     require(loanActive == true, 'RoyaltyLoan: Loan is inactive');
 
     for (uint i = 0; i < collaterals.length; i++) {
@@ -189,7 +195,7 @@ contract RoyaltyLoan is IRoyaltyLoan, ERC1155Holder, Initializable {
     return _totalDue;
   }
 
-  function reclaimExcessPaymentToken() external {
+  function reclaimExcessPaymentToken() external nonReentrant {
     require(loanActive == false, 'RoyaltyLoan: Loan is active');
     uint256 currentBalance = paymentToken.balanceOf(address(this));
     require(currentBalance > 0, 'RoyaltyLoan: No payment token to process');
@@ -199,7 +205,7 @@ contract RoyaltyLoan is IRoyaltyLoan, ERC1155Holder, Initializable {
     );
   }
 
-  function revokeLoan() external {
+  function revokeLoan() external nonReentrant {
     require(loanActive == false, 'RoyaltyLoan: Loan is already active');
     require(loanOfferActive == true, 'RoyaltyLoan: Loan offer is revoked');
     require(
