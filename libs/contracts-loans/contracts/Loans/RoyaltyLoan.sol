@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import '@openzeppelin/contracts/utils/Strings.sol';
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import '@openzeppelin/contracts/interfaces/IERC1155.sol';
 import '@openzeppelin/contracts/interfaces/IERC20.sol';
@@ -26,7 +25,6 @@ contract RoyaltyLoan is
   ReentrancyGuard
 {
   using SafeERC20 for IERC20;
-  using Strings for uint256;
 
   Collateral[] public collaterals;
   IERC1155[] public collateralTokens;
@@ -68,22 +66,12 @@ contract RoyaltyLoan is
 
       require(
         collateral.tokenAddress != address(0),
-        string(
-          abi.encodePacked(
-            'RoyaltyLoan: Invalid collateral token address at position ',
-            i.toString()
-          )
-        )
+        'RoyaltyLoan: Invalid collateral token address'
       );
 
       require(
         collateral.tokenAmount > 0,
-        string(
-          abi.encodePacked(
-            'RoyaltyLoan: Collateral amount must be greater than 0 at position ',
-            i.toString()
-          )
-        )
+        'RoyaltyLoan: Collateral amount must be greater than 0'
       );
 
       require(
@@ -91,12 +79,7 @@ contract RoyaltyLoan is
           address(this),
           collateral.tokenId
         ) == collateral.tokenAmount,
-        string(
-          abi.encodePacked(
-            'RoyaltyLoan: Collateral was not transferred in the required amount at position ',
-            i.toString()
-          )
-        )
+        'RoyaltyLoan: Collateral was not transferred in the required amount'
       );
 
       collaterals.push(collateral);
