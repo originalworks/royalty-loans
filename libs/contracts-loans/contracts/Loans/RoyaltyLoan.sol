@@ -11,6 +11,14 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import './interfaces/IRoyaltyLoan.sol';
 import './interfaces/IAgreementERC1155.sol';
 
+enum LoanState {
+  Uninitialized,
+  Pending,
+  Revoked,
+  Active,
+  Repaid
+}
+
 contract RoyaltyLoan is
   IRoyaltyLoan,
   ERC1155Holder,
@@ -30,10 +38,10 @@ contract RoyaltyLoan is
   uint256 public feePpm;
   uint256 public loanAmount;
   uint256 public expirationDate;
-  bool public loanActive = false;
-  bool public loanOfferActive = false;
 
-  uint256 private _totalDue;
+  LoanState public loanState;
+
+  uint256 public totalDue;
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -103,24 +111,29 @@ contract RoyaltyLoan is
     borrower = _borrowerAddress;
     feePpm = _feePpm;
     loanAmount = _loanAmount;
-    _totalDue = loanAmount + ((loanAmount * feePpm) / 1_000_000);
+    totalDue = loanAmount + ((loanAmount * feePpm) / 1_000_000);
     expirationDate = block.timestamp + _duration;
-    loanOfferActive = true;
+    loanState = LoanState.Pending;
   }
 
   function provideLoan() external nonReentrant {
-    require(loanActive == false, 'RoyaltyLoan: Loan is already active');
-    require(loanOfferActive == true, 'RoyaltyLoan: Loan offer is revoked');
+    require(
+      loanState != LoanState.Active,
+      'RoyaltyLoan: Loan is already active'
+    );
     require(
       block.timestamp <= expirationDate,
       'RoyaltyLoan: Loan offer expired'
+    );
+    require(
+      loanState != LoanState.Revoked,
+      'RoyaltyLoan: Loan offer is revoked'
     );
 
     lender = msg.sender;
     paymentToken.safeTransferFrom(msg.sender, borrower, loanAmount);
 
-    loanActive = true;
-    loanOfferActive = false;
+    loanState = LoanState.Active;
 
     emit LoanProvided(lender);
   }
@@ -135,7 +148,7 @@ contract RoyaltyLoan is
   }
 
   function processRepayment() external nonReentrant {
-    require(loanActive == true, 'RoyaltyLoan: Loan is inactive');
+    require(loanState == LoanState.Active, 'RoyaltyLoan: Loan is inactive');
 
     for (uint i = 0; i < collaterals.length; i++) {
       claimCollateralBalance(collaterals[i].tokenAddress);
@@ -144,7 +157,7 @@ contract RoyaltyLoan is
     uint256 currentBalance = paymentToken.balanceOf(address(this));
     require(currentBalance > 0, 'RoyaltyLoan: No payment token to process');
 
-    if (currentBalance >= _totalDue) {
+    if (currentBalance >= totalDue) {
       // Full repayment
       for (uint i = 0; i < collaterals.length; i++) {
         IERC1155(collaterals[i].tokenAddress).safeTransferFrom(
@@ -157,25 +170,25 @@ contract RoyaltyLoan is
       }
 
       require(
-        paymentToken.transfer(lender, _totalDue),
+        paymentToken.transfer(lender, totalDue),
         'RoyaltyLoan: Due USDC transfer failed'
       );
 
-      if (currentBalance > _totalDue) {
-        uint256 excess = currentBalance - _totalDue;
+      if (currentBalance > totalDue) {
+        uint256 excess = currentBalance - totalDue;
         require(
           paymentToken.transfer(borrower, excess),
           'RoyaltyLoan: Excess USDC transfer failed'
         );
       }
 
-      emit LoanRepaid(_totalDue);
+      emit LoanRepaid(totalDue);
 
-      _totalDue = 0;
-      loanActive = false;
+      totalDue = 0;
+      loanState = LoanState.Repaid;
     } else {
       // Partial repayment
-      _totalDue = _totalDue - currentBalance;
+      totalDue = totalDue - currentBalance;
       require(
         paymentToken.transfer(lender, currentBalance),
         'RoyaltyLoan: Partial USDC transfer failed'
@@ -185,18 +198,8 @@ contract RoyaltyLoan is
     }
   }
 
-  function getRemainingTotalDue() external view returns (uint256) {
-    require(loanActive == true, 'RoyaltyLoan: Loan is inactive');
-    require(
-      msg.sender == borrower || msg.sender == lender,
-      'RoyaltyLoan: Only borrower and lender can see remaining total due'
-    );
-
-    return _totalDue;
-  }
-
   function reclaimExcessPaymentToken() external nonReentrant {
-    require(loanActive == false, 'RoyaltyLoan: Loan is active');
+    require(loanState != LoanState.Active, 'RoyaltyLoan: Loan is active');
     uint256 currentBalance = paymentToken.balanceOf(address(this));
     require(currentBalance > 0, 'RoyaltyLoan: No payment token to process');
     require(
@@ -206,8 +209,14 @@ contract RoyaltyLoan is
   }
 
   function revokeLoan() external nonReentrant {
-    require(loanActive == false, 'RoyaltyLoan: Loan is already active');
-    require(loanOfferActive == true, 'RoyaltyLoan: Loan offer is revoked');
+    require(
+      loanState != LoanState.Active,
+      'RoyaltyLoan: Loan is already active'
+    );
+    require(
+      loanState != LoanState.Revoked,
+      'RoyaltyLoan: Loan offer is revoked'
+    );
     require(
       msg.sender == borrower,
       'RoyaltyLoan: Only borrower can revoke the loan'
@@ -231,7 +240,7 @@ contract RoyaltyLoan is
       );
     }
 
-    loanOfferActive = false;
+    loanState = LoanState.Revoked;
     emit LoanRevoked();
   }
 }

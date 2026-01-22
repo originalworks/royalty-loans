@@ -6,7 +6,7 @@ import {
   RoyaltyLoanFactory,
 } from '../typechain';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
-import { fixture } from './fixture';
+import { fixture, LoanState } from './fixture';
 
 let expect: Chai.ExpectStatic;
 
@@ -233,7 +233,11 @@ describe('RoyaltyLoan', () => {
         { collateralToken: collateralTokenA },
       ]);
 
+      expect(await loan.loanState()).to.equal(LoanState.Pending);
+
       await expect(loan.connect(lender).provideLoan()).not.to.be.reverted;
+
+      expect(await loan.loanState()).to.equal(LoanState.Active);
 
       const [borrowerBalancesAfter, lenderBalancesAfter, loanBalancesAfter] =
         await getCurrentBalances(collateralTokenA, [
@@ -246,9 +250,6 @@ describe('RoyaltyLoan', () => {
       expect(borrowerBalancesAfter.ERC20).to.equal(defaults.loanAmount);
       expect(lenderBalancesAfter.ERC20).to.equal(0n);
       expect(loanBalancesAfter.ERC1155).to.equal(defaults.collateralAmount);
-
-      expect(await loan.loanOfferActive()).to.equal(false);
-      expect(await loan.loanActive()).to.equal(true);
     });
 
     it('successfully provides a loan then throws as cannot provide loan twice', async () => {
@@ -291,6 +292,8 @@ describe('RoyaltyLoan', () => {
         { collateralToken: collateralTokenA },
       ]);
       await time.increase(defaults.duration + 1n);
+
+      expect(await loan.loanState()).to.equal(LoanState.Pending);
 
       await expect(loan.connect(lender).provideLoan()).to.be.revertedWith(
         'RoyaltyLoan: Loan offer expired',
@@ -354,8 +357,7 @@ describe('RoyaltyLoan', () => {
       expect(loanBalancesAfter.ERC1155).to.equal(0n);
       expect(loanBalancesAfter.ERC20).to.equal(0n);
 
-      expect(await loan.loanOfferActive()).to.equal(false);
-      expect(await loan.loanActive()).to.equal(false);
+      expect(await loan.loanState()).to.equal(LoanState.Repaid);
     });
 
     it('successfully makes full repayment with exceeded balance', async () => {
@@ -412,8 +414,7 @@ describe('RoyaltyLoan', () => {
       expect(loanBalancesAfter.ERC1155).to.equal(0n);
       expect(loanBalancesAfter.ERC20).to.equal(0n);
 
-      expect(await loan.loanOfferActive()).to.equal(false);
-      expect(await loan.loanActive()).to.equal(false);
+      expect(await loan.loanState()).to.equal(LoanState.Repaid);
     });
 
     it('successfully makes partial repayments', async () => {
@@ -447,9 +448,7 @@ describe('RoyaltyLoan', () => {
       ).wait();
 
       // First round
-      expect(await loan.connect(lender).getRemainingTotalDue()).to.equal(
-        totalDue,
-      );
+      expect(await loan.connect(lender).totalDue()).to.equal(totalDue);
       await (
         await paymentToken
           .connect(borrower)
@@ -475,10 +474,10 @@ describe('RoyaltyLoan', () => {
       expect(lenderBalancesAfterFirst.ERC20).to.equal(firstInstallment);
       expect(loanBalancesAfterFirst.ERC20).to.equal(0n);
 
-      expect(await loan.loanActive()).to.equal(true);
+      expect(await loan.loanState()).to.equal(LoanState.Active);
 
       // Second round
-      expect(await loan.connect(lender).getRemainingTotalDue()).to.equal(
+      expect(await loan.connect(lender).totalDue()).to.equal(
         totalDue - firstInstallment,
       );
 
@@ -509,10 +508,10 @@ describe('RoyaltyLoan', () => {
       );
       expect(loanBalancesAfterSecond.ERC20).to.equal(0n);
 
-      expect(await loan.loanActive()).to.equal(true);
+      expect(await loan.loanState()).to.equal(LoanState.Active);
 
       // Final round
-      expect(await loan.connect(lender).getRemainingTotalDue()).to.equal(
+      expect(await loan.connect(lender).totalDue()).to.equal(
         totalDue - firstInstallment - secondInstallment,
       );
       await (
@@ -538,7 +537,7 @@ describe('RoyaltyLoan', () => {
       expect(lenderBalancesAfterFinal.ERC20).to.equal(totalDue);
       expect(loanBalancesAfterFinal.ERC20).to.equal(0n);
 
-      expect(await loan.loanActive()).to.equal(false);
+      expect(await loan.loanState()).to.equal(LoanState.Repaid);
     });
 
     it('triggers claimHolderFunds on AgreementsERC1155', async () => {
@@ -707,13 +706,11 @@ describe('RoyaltyLoan', () => {
         [borrower.address, await loan.getAddress()],
       );
 
-      const isLoanActive = await loan.loanOfferActive();
-      expect(isLoanActive).to.equal(true);
+      expect(await loan.loanState()).to.equal(LoanState.Pending);
 
       await expect(loan.connect(borrower).revokeLoan()).not.to.be.reverted;
 
-      const isLoanActiveAfterTx = await loan.loanOfferActive();
-      expect(isLoanActiveAfterTx).to.equal(false);
+      expect(await loan.loanState()).to.equal(LoanState.Revoked);
 
       const [borrowerTokensAfter, loanTokensAfter] = await getCurrentBalances(
         collateralTokenA,
@@ -745,13 +742,11 @@ describe('RoyaltyLoan', () => {
           await loan.getAddress(),
         ]);
 
-      const isLoanActive = await loan.loanOfferActive();
-      expect(isLoanActive).to.equal(true);
+      expect(await loan.loanState()).to.equal(LoanState.Pending);
 
       await expect(loan.connect(borrower).revokeLoan()).not.to.be.reverted;
 
-      const isLoanActiveAfterTx = await loan.loanOfferActive();
-      expect(isLoanActiveAfterTx).to.equal(false);
+      expect(await loan.loanState()).to.equal(LoanState.Revoked);
 
       const [borrowerTokensAAfter, loanTokensAAfter] = await getCurrentBalances(
         collateralTokenA,
@@ -776,8 +771,49 @@ describe('RoyaltyLoan', () => {
       expect(loanTokensBAfter.ERC1155).to.equal(0n);
     });
 
-    // TODO
-    // it('successfully revokes expired loan', async () => {});
+    it('successfully revokes expired loan', async () => {
+      const loan = await createLoan.standard(borrower, [
+        { collateralToken: collateralTokenA },
+      ]);
+
+      const excessBalance = ethers.parseUnits('1', 6);
+
+      await (
+        await paymentToken.mintTo(await loan.getAddress(), excessBalance)
+      ).wait();
+
+      const [borrowerTokensBefore, loanTokensBefore] = await getCurrentBalances(
+        collateralTokenA,
+        [borrower.address, await loan.getAddress()],
+      );
+
+      expect(borrowerTokensBefore.ERC1155).to.equal(0n);
+      expect(borrowerTokensBefore.ERC20).to.equal(0n);
+      expect(loanTokensBefore.ERC1155).to.equal(defaults.collateralAmount);
+      expect(loanTokensBefore.ERC20).to.equal(excessBalance);
+
+      await time.increase(defaults.duration + 1n);
+
+      expect(await loan.loanState()).to.equal(LoanState.Pending);
+
+      await expect(loan.connect(lender).provideLoan()).to.be.revertedWith(
+        'RoyaltyLoan: Loan offer expired',
+      );
+
+      await expect(loan.connect(borrower).revokeLoan()).not.to.be.reverted;
+
+      const [borrowerTokensAfter, loanTokensAfter] = await getCurrentBalances(
+        collateralTokenA,
+        [borrower.address, await loan.getAddress()],
+      );
+
+      expect(borrowerTokensAfter.ERC1155).to.equal(defaults.collateralAmount);
+      expect(borrowerTokensAfter.ERC20).to.equal(excessBalance);
+      expect(loanTokensAfter.ERC1155).to.equal(0n);
+      expect(loanTokensAfter.ERC20).to.equal(0n);
+
+      expect(await loan.loanState()).to.equal(LoanState.Revoked);
+    });
 
     it('throws as msg sender is not borrower', async () => {
       const loan = await createLoan.standard(borrower, [
@@ -810,70 +846,6 @@ describe('RoyaltyLoan', () => {
     });
   });
 
-  describe('getRemainingTotalDue', () => {
-    it('shows remaining total due', async () => {
-      const loan = await createLoan.standard(borrower, [
-        { collateralToken: collateralTokenA },
-      ]);
-      await (await loan.connect(lender).provideLoan()).wait();
-
-      await (
-        await paymentToken
-          .connect(borrower)
-          .transfer(await loan.getAddress(), defaults.feeAmount)
-      ).wait();
-
-      expect(await loan.connect(borrower).getRemainingTotalDue()).to.equal(
-        defaults.loanAmount + defaults.feeAmount,
-      );
-
-      await (await loan.processRepayment()).wait();
-
-      expect(await loan.connect(borrower).getRemainingTotalDue()).to.equal(
-        defaults.loanAmount,
-      );
-    });
-    it('throws when loan is inactive', async () => {
-      const loan = await createLoan.standard(borrower, [
-        { collateralToken: collateralTokenA },
-      ]);
-
-      await expect(
-        loan.connect(borrower).getRemainingTotalDue(),
-      ).to.be.revertedWith('RoyaltyLoan: Loan is inactive');
-
-      await (await loan.connect(lender).provideLoan()).wait();
-
-      await expect(loan.connect(lender).getRemainingTotalDue()).not.to.be
-        .reverted;
-
-      await expect(
-        loan.connect(deployer).getRemainingTotalDue(),
-      ).to.be.revertedWith(
-        'RoyaltyLoan: Only borrower and lender can see remaining total due',
-      );
-    });
-    it('throws when called by non-lender/non-borrower', async () => {
-      const loan = await createLoan.standard(borrower, [
-        { collateralToken: collateralTokenA },
-      ]);
-
-      await (await loan.connect(lender).provideLoan()).wait();
-
-      await expect(loan.connect(lender).getRemainingTotalDue()).not.to.be
-        .reverted;
-
-      await expect(loan.connect(borrower).getRemainingTotalDue()).not.to.be
-        .reverted;
-
-      await expect(
-        loan.connect(deployer).getRemainingTotalDue(),
-      ).to.be.revertedWith(
-        'RoyaltyLoan: Only borrower and lender can see remaining total due',
-      );
-    });
-  });
-
   describe('reclaimExcessPaymentToken', () => {
     it('reclaims excess tokens before loan is active', async () => {
       const loan = await createLoan.standard(borrower, [
@@ -890,6 +862,8 @@ describe('RoyaltyLoan', () => {
       expect(borrowerBalanceBefore.ERC20).to.equal(0n);
       expect(loanBalanceBefore.ERC20).to.equal(defaults.loanAmount);
 
+      expect(await loan.loanState()).to.equal(LoanState.Pending);
+
       await expect(loan.reclaimExcessPaymentToken()).not.to.be.reverted;
 
       const [borrowerBalanceAfter, loanBalanceAfter] = await getCurrentBalances(
@@ -898,6 +872,8 @@ describe('RoyaltyLoan', () => {
       );
       expect(borrowerBalanceAfter.ERC20).to.equal(defaults.loanAmount);
       expect(loanBalanceAfter.ERC20).to.equal(0n);
+
+      expect(await loan.loanState()).to.equal(LoanState.Pending);
     });
 
     it('reclaims excess tokens after loan is repaid', async () => {
@@ -913,6 +889,8 @@ describe('RoyaltyLoan', () => {
       ).wait();
 
       await (await loan.processRepayment()).wait();
+
+      expect(await loan.loanState()).to.equal(LoanState.Repaid);
 
       const [borrowerBalanceBefore, loanBalanceBefore] =
         await getCurrentBalances(collateralTokenA, [
@@ -934,6 +912,8 @@ describe('RoyaltyLoan', () => {
       );
       expect(borrowerBalanceAfter.ERC20).to.equal(defaults.loanAmount * 2n);
       expect(loanBalanceAfter.ERC20).to.equal(0n);
+
+      expect(await loan.loanState()).to.equal(LoanState.Repaid);
     });
 
     it('throws when loan is active', async () => {
@@ -941,6 +921,8 @@ describe('RoyaltyLoan', () => {
         { collateralToken: collateralTokenA },
       ]);
       await (await loan.connect(lender).provideLoan()).wait();
+
+      expect(await loan.loanState()).to.equal(LoanState.Active);
 
       await expect(loan.reclaimExcessPaymentToken()).to.be.revertedWith(
         'RoyaltyLoan: Loan is active',
@@ -951,6 +933,25 @@ describe('RoyaltyLoan', () => {
       const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
       ]);
+
+      expect(await loan.loanState()).to.equal(LoanState.Pending);
+
+      await expect(loan.reclaimExcessPaymentToken()).to.be.revertedWith(
+        'RoyaltyLoan: No payment token to process',
+      );
+
+      await (await loan.connect(lender).provideLoan()).wait();
+
+      await (
+        await paymentToken.mintTo(
+          await loan.getAddress(),
+          defaults.loanAmount + defaults.feeAmount,
+        )
+      ).wait();
+
+      await (await loan.connect(borrower).processRepayment()).wait();
+
+      expect(await loan.loanState()).to.equal(LoanState.Repaid);
 
       await expect(loan.reclaimExcessPaymentToken()).to.be.revertedWith(
         'RoyaltyLoan: No payment token to process',
