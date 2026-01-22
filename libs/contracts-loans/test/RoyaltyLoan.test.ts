@@ -771,7 +771,6 @@ describe('RoyaltyLoan', () => {
       expect(loanTokensBAfter.ERC1155).to.equal(0n);
     });
 
-    // TODO
     it('successfully revokes expired loan', async () => {
       const loan = await createLoan.standard(borrower, [
         { collateralToken: collateralTokenA },
