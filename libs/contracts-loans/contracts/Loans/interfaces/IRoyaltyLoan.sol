@@ -24,7 +24,5 @@ interface IRoyaltyLoan is ICollateral {
 
   function revokeLoan() external;
 
-  function getRemainingTotalDue() external view returns (uint256);
-
   function reclaimExcessPaymentToken() external;
 }
