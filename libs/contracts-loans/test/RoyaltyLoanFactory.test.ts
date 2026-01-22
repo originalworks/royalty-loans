@@ -98,9 +98,7 @@ describe('RoyaltyLoanFactory', () => {
           await paymentToken.getAddress(),
           defaults.duration,
         ]),
-      ).to.be.revertedWith(
-        'RoyaltyLoanFactory: _templateAddress is the zero address',
-      );
+      ).to.be.revertedWithCustomError(loanFactory, 'ZeroTemplateAddress');
 
       await expect(
         deployProxy(new RoyaltyLoanFactory__factory(deployer), [
@@ -109,9 +107,7 @@ describe('RoyaltyLoanFactory', () => {
           await paymentToken.getAddress(),
           defaults.duration,
         ]),
-      ).to.be.revertedWith(
-        'RoyaltyLoanFactory: _templateAddress is the zero address',
-      );
+      ).to.be.revertedWithCustomError(loanFactory, 'ZeroTemplateAddress');
 
       await expect(
         deployProxy(new RoyaltyLoanFactory__factory(deployer), [
@@ -120,9 +116,7 @@ describe('RoyaltyLoanFactory', () => {
           ethers.ZeroAddress,
           defaults.duration,
         ]),
-      ).to.be.revertedWith(
-        'RoyaltyLoanFactory: _paymentTokenAddress is the zero address',
-      );
+      ).to.be.revertedWithCustomError(loanFactory, 'ZeroPaymentTokenAddress');
 
       await expect(
         deployProxy(new RoyaltyLoanFactory__factory(deployer), [
@@ -131,9 +125,7 @@ describe('RoyaltyLoanFactory', () => {
           await paymentToken.getAddress(),
           0n,
         ]),
-      ).to.be.revertedWith(
-        'RoyaltyLoanFactory: _duration must be greater than 0',
-      );
+      ).to.be.revertedWithCustomError(loanFactory, 'InvalidOfferDuration');
 
       await expect(
         deployProxy(new RoyaltyLoanFactory__factory(deployer), [

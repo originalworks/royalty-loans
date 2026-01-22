@@ -21,6 +21,10 @@ contract RoyaltyLoanFactory is
   UUPSUpgradeable,
   ReentrancyGuardUpgradeable
 {
+  error ZeroTemplateAddress();
+  error InvalidOfferDuration();
+  error ZeroPaymentTokenAddress();
+
   event TemplateChanged(
     LoanType loanType,
     address previousAddress,
@@ -89,10 +93,9 @@ contract RoyaltyLoanFactory is
     LoanType _loanType,
     address _templateAddress
   ) private {
-    require(
-      _templateAddress != address(0),
-      'RoyaltyLoanFactory: _templateAddress is the zero address'
-    );
+    if (_templateAddress == address(0)) {
+      revert ZeroTemplateAddress();
+    }
     address previousAddress = templates[_loanType];
     templates[_loanType] = _templateAddress;
     emit TemplateChanged(_loanType, previousAddress, _templateAddress);
@@ -106,10 +109,9 @@ contract RoyaltyLoanFactory is
   }
 
   function _setOfferDuration(uint256 _duration) private {
-    require(
-      _duration > 0,
-      'RoyaltyLoanFactory: _duration must be greater than 0'
-    );
+    if (_duration == 0) {
+      revert InvalidOfferDuration();
+    }
     uint256 previousDuration = offerDuration;
     offerDuration = _duration;
     emit OfferDurationChanged(previousDuration, _duration);
@@ -120,10 +122,9 @@ contract RoyaltyLoanFactory is
   }
 
   function _setPaymentTokenAddress(address _paymentTokenAddress) private {
-    require(
-      _paymentTokenAddress != address(0),
-      'RoyaltyLoanFactory: _paymentTokenAddress is the zero address'
-    );
+    if (_paymentTokenAddress == address(0)) {
+      revert ZeroPaymentTokenAddress();
+    }
     address previousPaymentTokenAddress = paymentTokenAddress;
     paymentTokenAddress = _paymentTokenAddress;
 
