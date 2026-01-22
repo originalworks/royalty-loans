@@ -56,12 +56,14 @@ contract RoyaltyLoan is
     uint256 _loanAmount,
     uint256 _duration
   ) public initializer {
+    uint256 collateralsLength = _collaterals.length;
+
     require(
-      _collaterals.length > 0,
+      collateralsLength > 0,
       'RoyaltyLoan: At least 1 collateral must be provided'
     );
 
-    for (uint i = 0; i < _collaterals.length; i++) {
+    for (uint i = 0; i < collateralsLength; ) {
       Collateral calldata collateral = _collaterals[i];
 
       require(
@@ -98,6 +100,10 @@ contract RoyaltyLoan is
       );
 
       collaterals.push(collateral);
+
+      unchecked {
+        i++;
+      }
     }
     require(_loanAmount > 0, 'RoyaltyLoan: Loan amount must be greater than 0');
     require(_feePpm <= 1_000_000, 'RoyaltyLoan: FeePpm exceeds 100%');
@@ -150,8 +156,14 @@ contract RoyaltyLoan is
   function processRepayment() external nonReentrant {
     require(loanState == LoanState.Active, 'RoyaltyLoan: Loan is inactive');
 
-    for (uint i = 0; i < collaterals.length; i++) {
+    uint256 collateralsLength = collaterals.length;
+
+    for (uint i = 0; i < collateralsLength; ) {
       claimCollateralBalance(collaterals[i].tokenAddress);
+
+      unchecked {
+        i++;
+      }
     }
 
     uint256 currentBalance = paymentToken.balanceOf(address(this));
@@ -159,7 +171,7 @@ contract RoyaltyLoan is
 
     if (currentBalance >= totalDue) {
       // Full repayment
-      for (uint i = 0; i < collaterals.length; i++) {
+      for (uint i = 0; i < collateralsLength; ) {
         IERC1155(collaterals[i].tokenAddress).safeTransferFrom(
           address(this),
           borrower,
@@ -167,6 +179,10 @@ contract RoyaltyLoan is
           collaterals[i].tokenAmount,
           ''
         );
+
+        unchecked {
+          i++;
+        }
       }
 
       require(
@@ -222,7 +238,9 @@ contract RoyaltyLoan is
       'RoyaltyLoan: Only borrower can revoke the loan'
     );
 
-    for (uint i = 0; i < collaterals.length; i++) {
+    uint256 collateralsLength = collaterals.length;
+
+    for (uint i = 0; i < collateralsLength; ) {
       IERC1155(collaterals[i].tokenAddress).safeTransferFrom(
         address(this),
         borrower,
@@ -230,6 +248,10 @@ contract RoyaltyLoan is
         collaterals[i].tokenAmount,
         ''
       );
+
+      unchecked {
+        i++;
+      }
     }
 
     uint256 currentBalance = paymentToken.balanceOf(address(this));
