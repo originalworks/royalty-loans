@@ -4,12 +4,26 @@ import { getImplementationAddressFromProxy } from '@openzeppelin/upgrades-core';
 
 export const deployRoyaltyLoanFactory = async (
   deployer: Signer,
-  whitelistAddress: string,
   paymentTokenAddress: string,
 ) => {
-  const RoyaltyLoan = await ethers.getContractFactory('RoyaltyLoan', deployer);
-  const royaltyLoan = await (await RoyaltyLoan.deploy()).waitForDeployment();
-  const royaltyLoanTemplate = await royaltyLoan.getAddress();
+  const StandardRoyaltyLoan = await ethers.getContractFactory(
+    'RoyaltyLoan',
+    deployer,
+  );
+  const standardRoyaltyLoan = await (
+    await StandardRoyaltyLoan.deploy()
+  ).waitForDeployment();
+  const standardRoyaltyLoanTemplate = await standardRoyaltyLoan.getAddress();
+
+  const BeneficiaryRoyaltyLoan = await ethers.getContractFactory(
+    'BeneficiaryRoyaltyLoan',
+    deployer,
+  );
+  const beneficiaryRoyaltyLoan = await (
+    await BeneficiaryRoyaltyLoan.deploy()
+  ).waitForDeployment();
+  const beneficiaryRoyaltyLoanTemplate =
+    await beneficiaryRoyaltyLoan.getAddress();
 
   const RoyaltyLoanFactory = await ethers.getContractFactory(
     'RoyaltyLoanFactory',
@@ -18,7 +32,12 @@ export const deployRoyaltyLoanFactory = async (
 
   const royaltyLoanFactory = await upgrades.deployProxy(
     RoyaltyLoanFactory,
-    [royaltyLoanTemplate, whitelistAddress, paymentTokenAddress, '432000'],
+    [
+      standardRoyaltyLoanTemplate,
+      beneficiaryRoyaltyLoanTemplate,
+      paymentTokenAddress,
+      '432000',
+    ],
     {
       kind: 'uups',
     },
@@ -36,7 +55,8 @@ export const deployRoyaltyLoanFactory = async (
   }
 
   return {
-    royaltyLoanTemplate: royaltyLoanTemplate,
+    standardRoyaltyLoanTemplate,
+    beneficiaryRoyaltyLoanTemplate,
     royaltyLoanFactory: await royaltyLoanFactory.getAddress(),
   };
 };
