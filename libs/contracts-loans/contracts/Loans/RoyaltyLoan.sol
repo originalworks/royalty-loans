@@ -41,7 +41,7 @@ contract RoyaltyLoan is
 
   LoanState public loanState;
 
-  uint256 private _totalDue;
+  uint256 public totalDue;
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -111,7 +111,7 @@ contract RoyaltyLoan is
     borrower = _borrowerAddress;
     feePpm = _feePpm;
     loanAmount = _loanAmount;
-    _totalDue = loanAmount + ((loanAmount * feePpm) / 1_000_000);
+    totalDue = loanAmount + ((loanAmount * feePpm) / 1_000_000);
     expirationDate = block.timestamp + _duration;
     loanState = LoanState.Pending;
   }
@@ -157,7 +157,7 @@ contract RoyaltyLoan is
     uint256 currentBalance = paymentToken.balanceOf(address(this));
     require(currentBalance > 0, 'RoyaltyLoan: No payment token to process');
 
-    if (currentBalance >= _totalDue) {
+    if (currentBalance >= totalDue) {
       // Full repayment
       for (uint i = 0; i < collaterals.length; i++) {
         IERC1155(collaterals[i].tokenAddress).safeTransferFrom(
@@ -170,25 +170,25 @@ contract RoyaltyLoan is
       }
 
       require(
-        paymentToken.transfer(lender, _totalDue),
+        paymentToken.transfer(lender, totalDue),
         'RoyaltyLoan: Due USDC transfer failed'
       );
 
-      if (currentBalance > _totalDue) {
-        uint256 excess = currentBalance - _totalDue;
+      if (currentBalance > totalDue) {
+        uint256 excess = currentBalance - totalDue;
         require(
           paymentToken.transfer(borrower, excess),
           'RoyaltyLoan: Excess USDC transfer failed'
         );
       }
 
-      emit LoanRepaid(_totalDue);
+      emit LoanRepaid(totalDue);
 
-      _totalDue = 0;
+      totalDue = 0;
       loanState = LoanState.Repaid;
     } else {
       // Partial repayment
-      _totalDue = _totalDue - currentBalance;
+      totalDue = totalDue - currentBalance;
       require(
         paymentToken.transfer(lender, currentBalance),
         'RoyaltyLoan: Partial USDC transfer failed'
@@ -196,16 +196,6 @@ contract RoyaltyLoan is
 
       emit LoanPartialyRepaid(currentBalance);
     }
-  }
-
-  function getRemainingTotalDue() external view returns (uint256) {
-    require(loanState == LoanState.Active, 'RoyaltyLoan: Loan is inactive');
-    require(
-      msg.sender == borrower || msg.sender == lender,
-      'RoyaltyLoan: Only borrower and lender can see remaining total due'
-    );
-
-    return _totalDue;
   }
 
   function reclaimExcessPaymentToken() external nonReentrant {
