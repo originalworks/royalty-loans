@@ -36,6 +36,27 @@ export enum RoyaltyLoanError {
   OnlyBorrowerAllowed = 'OnlyBorrowerAllowed',
 }
 
+export enum BeneficiaryRoyaltyLoanError {
+  NoCollateralsProvided = 'NoCollateralsProvided',
+  ZeroCollateralTokenAddress = 'ZeroCollateralTokenAddress',
+  ZeroCollateralAmount = 'ZeroCollateralAmount',
+  CollateralNotTransferred = 'CollateralNotTransferred',
+  ZeroBeneficiaries = 'ZeroBeneficiaries',
+  ZeroBeneficiaryAddress = 'ZeroBeneficiaryAddress',
+  ZeroBeneficiaryPpm = 'ZeroBeneficiaryPpm',
+  BeneficiariesPpmSumMismatch = 'BeneficiariesPpmSumMismatch',
+  ZeroPaymentTokenAddress = 'ZeroPaymentTokenAddress',
+  ZeroDuration = 'ZeroDuration',
+  ZeroLoanAmount = 'ZeroLoanAmount',
+  FeePpmTooHigh = 'FeePpmTooHigh',
+  LoanAlreadyActive = 'LoanAlreadyActive',
+  LoanOfferExpired = 'LoanOfferExpired',
+  LoanOfferRevoked = 'LoanOfferRevoked',
+  LoanNotActive = 'LoanNotActive',
+  NoPaymentTokenToProcess = 'NoPaymentTokenToProcess',
+  OnlyBorrowerAllowed = 'OnlyBorrowerAllowed',
+}
+
 export type HolderStruct = {
   account: AddressLike;
   isAdmin: boolean;
