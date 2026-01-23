@@ -3,12 +3,17 @@ import { time } from '@nomicfoundation/hardhat-network-helpers';
 import {
   AgreementERC1155,
   ERC20TokenMock,
+  RoyaltyLoan__factory,
   RoyaltyLoanFactory,
 } from '../typechain';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
-import { fixture, LoanState } from './fixture';
+import { fixture, LoanState, RoyaltyLoanError } from './fixture';
 
 let expect: Chai.ExpectStatic;
+
+const loanIFace = {
+  interface: RoyaltyLoan__factory.createInterface(),
+};
 
 describe('RoyaltyLoan', () => {
   let deployer: SignerWithAddress;
@@ -103,8 +108,9 @@ describe('RoyaltyLoan', () => {
           defaults.loanAmount,
           defaults.feePpm,
         ),
-      ).to.be.revertedWith(
-        'RoyaltyLoan: Collateral amount must be greater than 0 at position 0',
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        RoyaltyLoanError.ZeroCollateralAmount,
       );
 
       await expect(
@@ -119,7 +125,10 @@ describe('RoyaltyLoan', () => {
           0n,
           defaults.feePpm,
         ),
-      ).to.be.revertedWith('RoyaltyLoan: Loan amount must be greater than 0');
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        RoyaltyLoanError.ZeroLoanAmount,
+      );
 
       await expect(
         loanFactory.connect(borrower).createLoanContract(
@@ -133,7 +142,10 @@ describe('RoyaltyLoan', () => {
           defaults.loanAmount,
           1000001n,
         ),
-      ).to.be.revertedWith('RoyaltyLoan: FeePpm exceeds 100%');
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        RoyaltyLoanError.FeePpmTooHigh,
+      );
 
       await (
         await collateralTokenA
@@ -184,8 +196,9 @@ describe('RoyaltyLoan', () => {
         loanFactory
           .connect(borrower)
           .createLoanContract([], defaults.loanAmount, defaults.feePpm),
-      ).to.be.revertedWith(
-        'RoyaltyLoan: At least 1 collateral must be provided',
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        RoyaltyLoanError.NoCollateralsProvided,
       );
     });
 
@@ -257,8 +270,11 @@ describe('RoyaltyLoan', () => {
         { collateralToken: collateralTokenA },
       ]);
       await expect(loan.connect(lender).provideLoan()).not.to.be.reverted;
-      await expect(loan.connect(lender).provideLoan()).to.be.revertedWith(
-        'RoyaltyLoan: Loan is already active',
+      await expect(
+        loan.connect(lender).provideLoan(),
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        RoyaltyLoanError.LoanAlreadyActive,
       );
     });
 
@@ -272,8 +288,11 @@ describe('RoyaltyLoan', () => {
         { collateralToken: collateralTokenA },
       ]);
       await expect(loan.connect(borrower).revokeLoan()).not.to.be.reverted;
-      await expect(loan.connect(lender).provideLoan()).to.be.revertedWith(
-        'RoyaltyLoan: Loan offer is revoked',
+      await expect(
+        loan.connect(lender).provideLoan(),
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        RoyaltyLoanError.LoanOfferRevoked,
       );
 
       const [lenderBalanceAfter] = await getCurrentBalances(collateralTokenA, [
@@ -295,8 +314,11 @@ describe('RoyaltyLoan', () => {
 
       expect(await loan.loanState()).to.equal(LoanState.Pending);
 
-      await expect(loan.connect(lender).provideLoan()).to.be.revertedWith(
-        'RoyaltyLoan: Loan offer expired',
+      await expect(
+        loan.connect(lender).provideLoan(),
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        RoyaltyLoanError.LoanOfferExpired,
       );
 
       const [lenderBalanceAfter] = await getCurrentBalances(collateralTokenA, [
@@ -680,7 +702,10 @@ describe('RoyaltyLoan', () => {
 
       await expect(
         loan.connect(borrower).processRepayment(),
-      ).to.be.revertedWith('RoyaltyLoan: Loan is inactive');
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        RoyaltyLoanError.LoanNotActive,
+      );
     });
 
     it('throws as no USDC to process', async () => {
@@ -691,7 +716,10 @@ describe('RoyaltyLoan', () => {
 
       await expect(
         loan.connect(borrower).processRepayment(),
-      ).to.be.revertedWith('RoyaltyLoan: No payment token to process');
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        RoyaltyLoanError.NoPaymentTokenToProcess,
+      );
     });
   });
 
@@ -796,8 +824,11 @@ describe('RoyaltyLoan', () => {
 
       expect(await loan.loanState()).to.equal(LoanState.Pending);
 
-      await expect(loan.connect(lender).provideLoan()).to.be.revertedWith(
-        'RoyaltyLoan: Loan offer expired',
+      await expect(
+        loan.connect(lender).provideLoan(),
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        RoyaltyLoanError.LoanOfferExpired,
       );
 
       await expect(loan.connect(borrower).revokeLoan()).not.to.be.reverted;
@@ -820,8 +851,11 @@ describe('RoyaltyLoan', () => {
         { collateralToken: collateralTokenA },
       ]);
 
-      await expect(loan.connect(lender).revokeLoan()).to.be.revertedWith(
-        'RoyaltyLoan: Only borrower can revoke the loan',
+      await expect(
+        loan.connect(lender).revokeLoan(),
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        RoyaltyLoanError.OnlyBorrowerAllowed,
       );
     });
 
@@ -830,8 +864,11 @@ describe('RoyaltyLoan', () => {
         { collateralToken: collateralTokenA },
       ]);
       await expect(loan.connect(borrower).revokeLoan()).not.to.be.reverted;
-      await expect(loan.connect(borrower).revokeLoan()).to.be.revertedWith(
-        'RoyaltyLoan: Loan offer is revoked',
+      await expect(
+        loan.connect(borrower).revokeLoan(),
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        RoyaltyLoanError.LoanOfferRevoked,
       );
     });
 
@@ -840,8 +877,11 @@ describe('RoyaltyLoan', () => {
         { collateralToken: collateralTokenA },
       ]);
       await (await loan.connect(lender).provideLoan()).wait();
-      await expect(loan.connect(borrower).revokeLoan()).to.be.revertedWith(
-        'RoyaltyLoan: Loan is already active',
+      await expect(
+        loan.connect(borrower).revokeLoan(),
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        RoyaltyLoanError.LoanAlreadyActive,
       );
     });
   });
@@ -924,8 +964,11 @@ describe('RoyaltyLoan', () => {
 
       expect(await loan.loanState()).to.equal(LoanState.Active);
 
-      await expect(loan.reclaimExcessPaymentToken()).to.be.revertedWith(
-        'RoyaltyLoan: Loan is active',
+      await expect(
+        loan.reclaimExcessPaymentToken(),
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        RoyaltyLoanError.LoanAlreadyActive,
       );
     });
 
@@ -936,8 +979,11 @@ describe('RoyaltyLoan', () => {
 
       expect(await loan.loanState()).to.equal(LoanState.Pending);
 
-      await expect(loan.reclaimExcessPaymentToken()).to.be.revertedWith(
-        'RoyaltyLoan: No payment token to process',
+      await expect(
+        loan.reclaimExcessPaymentToken(),
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        RoyaltyLoanError.NoPaymentTokenToProcess,
       );
 
       await (await loan.connect(lender).provideLoan()).wait();
@@ -953,8 +999,11 @@ describe('RoyaltyLoan', () => {
 
       expect(await loan.loanState()).to.equal(LoanState.Repaid);
 
-      await expect(loan.reclaimExcessPaymentToken()).to.be.revertedWith(
-        'RoyaltyLoan: No payment token to process',
+      await expect(
+        loan.reclaimExcessPaymentToken(),
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        RoyaltyLoanError.NoPaymentTokenToProcess,
       );
     });
   });
