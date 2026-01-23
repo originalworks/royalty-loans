@@ -125,7 +125,7 @@ describe('RoyaltyLoanFactory', () => {
           await paymentToken.getAddress(),
           0n,
         ]),
-      ).to.be.revertedWithCustomError(loanFactory, 'InvalidOfferDuration');
+      ).to.be.revertedWithCustomError(loanFactory, 'ZeroDuration');
 
       await expect(
         deployProxy(new RoyaltyLoanFactory__factory(deployer), [
