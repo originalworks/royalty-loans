@@ -26,6 +26,7 @@ contract RoyaltyLoan is
 {
   using SafeERC20 for IERC20;
 
+  // TODO: After renaming create common interface with shared errors!!
   error NoCollateralsProvided();
   error CollateralNotTransferred(uint256 collateralIndex);
   error ZeroCollateralTokenAddress(uint256 collateralIndex);

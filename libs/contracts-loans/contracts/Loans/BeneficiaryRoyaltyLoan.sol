@@ -26,6 +26,7 @@ contract BeneficiaryRoyaltyLoan is
 {
   using SafeERC20 for IERC20;
 
+  // TODO: After renaming create common interface with shared errors!!
   error NoCollateralsProvided();
   error ZeroCollateralTokenAddress(uint256 collateralIndex);
   error ZeroCollateralAmount(uint256 collateralIndex);
