@@ -22,7 +22,7 @@ contract RoyaltyLoanFactory is
   ReentrancyGuardUpgradeable
 {
   error ZeroTemplateAddress();
-  error InvalidOfferDuration();
+  error ZeroDuration();
   error ZeroPaymentTokenAddress();
 
   event TemplateChanged(
@@ -110,7 +110,7 @@ contract RoyaltyLoanFactory is
 
   function _setOfferDuration(uint256 _duration) private {
     if (_duration == 0) {
-      revert InvalidOfferDuration();
+      revert ZeroDuration();
     }
     uint256 previousDuration = offerDuration;
     offerDuration = _duration;
