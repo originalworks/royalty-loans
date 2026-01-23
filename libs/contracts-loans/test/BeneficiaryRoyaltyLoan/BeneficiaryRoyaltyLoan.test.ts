@@ -1,17 +1,22 @@
 import { ethers } from 'hardhat';
 import {
   AgreementERC1155,
+  BeneficiaryRoyaltyLoan__factory,
   ERC20TokenMock,
   RoyaltyLoanFactory,
 } from '../../typechain';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
-import { fixture, LoanState } from '../fixture';
+import { BeneficiaryRoyaltyLoanError, fixture, LoanState } from '../fixture';
 import { ICollateral } from '../../typechain/contracts/Loans/interfaces/IBeneficiaryRoyaltyLoan';
 import { ZeroAddress } from 'ethers';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { expectBalancesCreator } from '../utils';
 
 let expect: Chai.ExpectStatic;
+
+const loanIFace = {
+  interface: BeneficiaryRoyaltyLoan__factory.createInterface(),
+};
 
 describe('BeneficiaryRoyaltyLoan', () => {
   let deployer: SignerWithAddress;
@@ -114,8 +119,9 @@ describe('BeneficiaryRoyaltyLoan', () => {
             defaults.loanAmount,
             defaults.feePpm,
           ),
-      ).to.be.revertedWith(
-        'BeneficiaryRoyaltyLoan: At least 1 collateral must be provided',
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        BeneficiaryRoyaltyLoanError.NoCollateralsProvided,
       );
 
       await expect(
@@ -148,8 +154,9 @@ describe('BeneficiaryRoyaltyLoan', () => {
           defaults.loanAmount,
           defaults.feePpm,
         ),
-      ).to.be.revertedWith(
-        'BeneficiaryRoyaltyLoan: Collateral amount must be greater than 0',
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        BeneficiaryRoyaltyLoanError.ZeroCollateralAmount,
       );
 
       await expect(
@@ -165,8 +172,9 @@ describe('BeneficiaryRoyaltyLoan', () => {
           defaults.loanAmount,
           defaults.feePpm,
         ),
-      ).to.be.revertedWith(
-        'BeneficiaryRoyaltyLoan: At least 1 beneficiary must be provided',
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        BeneficiaryRoyaltyLoanError.ZeroBeneficiaries,
       );
 
       await expect(
@@ -184,8 +192,9 @@ describe('BeneficiaryRoyaltyLoan', () => {
           defaults.loanAmount,
           defaults.feePpm,
         ),
-      ).to.be.revertedWith(
-        'BeneficiaryRoyaltyLoan: Invalid beneficiary address',
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        BeneficiaryRoyaltyLoanError.ZeroBeneficiaryAddress,
       );
 
       await expect(
@@ -203,8 +212,9 @@ describe('BeneficiaryRoyaltyLoan', () => {
           defaults.loanAmount,
           defaults.feePpm,
         ),
-      ).to.be.revertedWith(
-        'BeneficiaryRoyaltyLoan: Beneficiary ppm must be greater than 0',
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        BeneficiaryRoyaltyLoanError.ZeroBeneficiaryPpm,
       );
 
       await expect(
@@ -223,8 +233,9 @@ describe('BeneficiaryRoyaltyLoan', () => {
           defaults.loanAmount,
           defaults.feePpm,
         ),
-      ).to.be.revertedWith(
-        'BeneficiaryRoyaltyLoan: Beneficiaries ppm must sum to 1000000',
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        BeneficiaryRoyaltyLoanError.BeneficiariesPpmSumMismatch,
       );
 
       await expect(
@@ -243,8 +254,9 @@ describe('BeneficiaryRoyaltyLoan', () => {
           defaults.loanAmount,
           defaults.feePpm,
         ),
-      ).to.be.revertedWith(
-        'BeneficiaryRoyaltyLoan: Beneficiaries ppm must sum to 1000000',
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        BeneficiaryRoyaltyLoanError.BeneficiariesPpmSumMismatch,
       );
 
       await expect(
@@ -260,8 +272,9 @@ describe('BeneficiaryRoyaltyLoan', () => {
           0n,
           defaults.feePpm,
         ),
-      ).to.be.revertedWith(
-        'BeneficiaryRoyaltyLoan: Loan amount must be greater than 0',
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        BeneficiaryRoyaltyLoanError.ZeroLoanAmount,
       );
 
       await expect(
@@ -277,7 +290,10 @@ describe('BeneficiaryRoyaltyLoan', () => {
           defaults.loanAmount,
           1000001n,
         ),
-      ).to.be.revertedWith('BeneficiaryRoyaltyLoan: FeePpm exceeds 100%');
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        BeneficiaryRoyaltyLoanError.FeePpmTooHigh,
+      );
 
       await (
         await collateralTokenA
@@ -416,8 +432,11 @@ describe('BeneficiaryRoyaltyLoan', () => {
         },
       ]);
       await expect(loan.connect(lender).provideLoan()).not.to.be.reverted;
-      await expect(loan.connect(lender).provideLoan()).to.be.revertedWith(
-        'BeneficiaryRoyaltyLoan: Loan is already active',
+      await expect(
+        loan.connect(lender).provideLoan(),
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        BeneficiaryRoyaltyLoanError.LoanAlreadyActive,
       );
     });
 
@@ -437,8 +456,11 @@ describe('BeneficiaryRoyaltyLoan', () => {
         },
       ]);
       await expect(loan.connect(borrower).revokeLoan()).not.to.be.reverted;
-      await expect(loan.connect(lender).provideLoan()).to.be.revertedWith(
-        'BeneficiaryRoyaltyLoan: Loan offer is revoked',
+      await expect(
+        loan.connect(lender).provideLoan(),
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        BeneficiaryRoyaltyLoanError.LoanOfferRevoked,
       );
 
       expectBalances(collateralTokenA, [
@@ -469,8 +491,11 @@ describe('BeneficiaryRoyaltyLoan', () => {
 
       expect(await loan.loanState()).to.equal(LoanState.Pending);
 
-      await expect(loan.connect(lender).provideLoan()).to.be.revertedWith(
-        'BeneficiaryRoyaltyLoan: Loan offer expired',
+      await expect(
+        loan.connect(lender).provideLoan(),
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        BeneficiaryRoyaltyLoanError.LoanOfferExpired,
       );
 
       expectBalances(collateralTokenA, [
@@ -1186,7 +1211,10 @@ describe('BeneficiaryRoyaltyLoan', () => {
 
       await expect(
         loan.connect(borrower).processRepayment(),
-      ).to.be.revertedWith('BeneficiaryRoyaltyLoan: Loan is inactive');
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        BeneficiaryRoyaltyLoanError.LoanNotActive,
+      );
     });
 
     it('throws as no USDC to process', async () => {
@@ -1200,8 +1228,9 @@ describe('BeneficiaryRoyaltyLoan', () => {
 
       await expect(
         loan.connect(borrower).processRepayment(),
-      ).to.be.revertedWith(
-        'BeneficiaryRoyaltyLoan: No payment token to process',
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        BeneficiaryRoyaltyLoanError.NoPaymentTokenToProcess,
       );
     });
   });
@@ -1363,8 +1392,11 @@ describe('BeneficiaryRoyaltyLoan', () => {
 
       expect(await loan.loanState()).to.equal(LoanState.Pending);
 
-      await expect(loan.connect(lender).provideLoan()).to.be.revertedWith(
-        'BeneficiaryRoyaltyLoan: Loan offer expired',
+      await expect(
+        loan.connect(lender).provideLoan(),
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        BeneficiaryRoyaltyLoanError.LoanOfferExpired,
       );
 
       await expect(loan.connect(borrower).revokeLoan()).not.to.be.reverted;
@@ -1395,8 +1427,11 @@ describe('BeneficiaryRoyaltyLoan', () => {
         },
       ]);
 
-      await expect(loan.connect(lender).revokeLoan()).to.be.revertedWith(
-        'BeneficiaryRoyaltyLoan: Only borrower can revoke the loan',
+      await expect(
+        loan.connect(lender).revokeLoan(),
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        BeneficiaryRoyaltyLoanError.OnlyBorrowerAllowed,
       );
     });
 
@@ -1408,8 +1443,11 @@ describe('BeneficiaryRoyaltyLoan', () => {
         },
       ]);
       await expect(loan.connect(borrower).revokeLoan()).not.to.be.reverted;
-      await expect(loan.connect(borrower).revokeLoan()).to.be.revertedWith(
-        'BeneficiaryRoyaltyLoan: Loan offer is revoked',
+      await expect(
+        loan.connect(borrower).revokeLoan(),
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        BeneficiaryRoyaltyLoanError.LoanOfferRevoked,
       );
     });
 
@@ -1421,8 +1459,11 @@ describe('BeneficiaryRoyaltyLoan', () => {
         },
       ]);
       await (await loan.connect(lender).provideLoan()).wait();
-      await expect(loan.connect(borrower).revokeLoan()).to.be.revertedWith(
-        'BeneficiaryRoyaltyLoan: Loan is already active',
+      await expect(
+        loan.connect(borrower).revokeLoan(),
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        BeneficiaryRoyaltyLoanError.LoanAlreadyActive,
       );
     });
   });
@@ -1574,8 +1615,11 @@ describe('BeneficiaryRoyaltyLoan', () => {
 
       expect(await loan.loanState()).to.equal(LoanState.Active);
 
-      await expect(loan.reclaimExcessPaymentToken()).to.be.revertedWith(
-        'BeneficiaryRoyaltyLoan: Loan is active',
+      await expect(
+        loan.reclaimExcessPaymentToken(),
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        BeneficiaryRoyaltyLoanError.LoanAlreadyActive,
       );
     });
 
@@ -1589,8 +1633,11 @@ describe('BeneficiaryRoyaltyLoan', () => {
 
       expect(await loan.loanState()).to.equal(LoanState.Pending);
 
-      await expect(loan.reclaimExcessPaymentToken()).to.be.revertedWith(
-        'BeneficiaryRoyaltyLoan: No payment token to process',
+      await expect(
+        loan.reclaimExcessPaymentToken(),
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        BeneficiaryRoyaltyLoanError.NoPaymentTokenToProcess,
       );
 
       await (await loan.connect(lender).provideLoan()).wait();
@@ -1606,8 +1653,11 @@ describe('BeneficiaryRoyaltyLoan', () => {
 
       expect(await loan.loanState()).to.equal(LoanState.Repaid);
 
-      await expect(loan.reclaimExcessPaymentToken()).to.be.revertedWith(
-        'BeneficiaryRoyaltyLoan: No payment token to process',
+      await expect(
+        loan.reclaimExcessPaymentToken(),
+      ).to.be.revertedWithCustomError(
+        loanIFace,
+        BeneficiaryRoyaltyLoanError.NoPaymentTokenToProcess,
       );
     });
   });

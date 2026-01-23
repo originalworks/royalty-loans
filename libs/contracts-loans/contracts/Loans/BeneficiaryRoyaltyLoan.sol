@@ -26,6 +26,29 @@ contract BeneficiaryRoyaltyLoan is
 {
   using SafeERC20 for IERC20;
 
+  // TODO: After renaming create common interface with shared errors!!
+  error NoCollateralsProvided();
+  error ZeroCollateralTokenAddress(uint256 collateralIndex);
+  error ZeroCollateralAmount(uint256 collateralIndex);
+  error CollateralNotTransferred(uint256 collateralIndex);
+  error ZeroBeneficiaries(uint256 collateralIndex);
+  error ZeroBeneficiaryAddress(
+    uint256 collateralIndex,
+    uint256 beneficiaryIndex
+  );
+  error ZeroBeneficiaryPpm(uint256 collateralIndex, uint256 beneficiaryIndex);
+  error BeneficiariesPpmSumMismatch(uint256 collateralIndex);
+  error ZeroPaymentTokenAddress();
+  error ZeroDuration();
+  error ZeroLoanAmount();
+  error FeePpmTooHigh();
+  error LoanAlreadyActive();
+  error LoanOfferExpired();
+  error LoanOfferRevoked();
+  error LoanNotActive();
+  error NoPaymentTokenToProcess();
+  error OnlyBorrowerAllowed();
+
   uint256 public constant PPM_DENOMINATOR = 1_000_000;
 
   CollateralWithBeneficiaries[] public collaterals;
@@ -54,51 +77,36 @@ contract BeneficiaryRoyaltyLoan is
     uint256 _duration
   ) public initializer {
     uint256 collateralsLength = _collaterals.length;
-    require(
-      collateralsLength > 0,
-      'BeneficiaryRoyaltyLoan: At least 1 collateral must be provided'
-    );
+    if (collateralsLength == 0) revert NoCollateralsProvided();
 
     for (uint i = 0; i < collateralsLength; ) {
       CollateralWithBeneficiaries calldata collateral = _collaterals[i];
       uint256 beneficiariesLength = collateral.beneficiaries.length;
 
-      require(
-        collateral.tokenAddress != address(0),
-        'BeneficiaryRoyaltyLoan: Invalid collateral token address'
-      );
+      if (collateral.tokenAddress == address(0))
+        revert ZeroCollateralTokenAddress(i);
 
-      require(
-        collateral.tokenAmount > 0,
-        'BeneficiaryRoyaltyLoan: Collateral amount must be greater than 0'
-      );
+      if (collateral.tokenAmount == 0) revert ZeroCollateralAmount(i);
 
-      require(
-        beneficiariesLength > 0,
-        'BeneficiaryRoyaltyLoan: At least 1 beneficiary must be provided'
-      );
+      if (beneficiariesLength == 0) revert ZeroBeneficiaries(i);
 
-      require(
+      if (
         IERC1155(collateral.tokenAddress).balanceOf(
           address(this),
           collateral.tokenId
-        ) == collateral.tokenAmount,
-        'BeneficiaryRoyaltyLoan: Collateral was not transferred in the required amount'
-      );
+        ) != collateral.tokenAmount
+      ) revert CollateralNotTransferred(i);
 
       uint256 totalPpm;
 
       for (uint256 j = 0; j < beneficiariesLength; ) {
         Beneficiary calldata beneficiary = collateral.beneficiaries[j];
 
-        require(
-          beneficiary.beneficiaryAddress != address(0),
-          'BeneficiaryRoyaltyLoan: Invalid beneficiary address'
-        );
-        require(
-          beneficiary.ppm > 0,
-          'BeneficiaryRoyaltyLoan: Beneficiary ppm must be greater than 0'
-        );
+        if (beneficiary.beneficiaryAddress == address(0))
+          revert ZeroBeneficiaryAddress(i, j);
+
+        if (beneficiary.ppm == 0) revert ZeroBeneficiaryPpm(i, j);
+
         totalPpm += beneficiary.ppm;
 
         unchecked {
@@ -106,10 +114,7 @@ contract BeneficiaryRoyaltyLoan is
         }
       }
 
-      require(
-        totalPpm == PPM_DENOMINATOR,
-        'BeneficiaryRoyaltyLoan: Beneficiaries ppm must sum to 1000000'
-      );
+      if (totalPpm != PPM_DENOMINATOR) revert BeneficiariesPpmSumMismatch(i);
 
       collaterals.push(collateral);
 
@@ -118,22 +123,10 @@ contract BeneficiaryRoyaltyLoan is
       }
     }
 
-    require(
-      _loanAmount > 0,
-      'BeneficiaryRoyaltyLoan: Loan amount must be greater than 0'
-    );
-    require(
-      _feePpm <= PPM_DENOMINATOR,
-      'BeneficiaryRoyaltyLoan: FeePpm exceeds 100%'
-    );
-    require(
-      _paymentTokenAddress != address(0),
-      'BeneficiaryRoyaltyLoan: Invalid payment token address'
-    );
-    require(
-      _duration > 0,
-      'BeneficiaryRoyaltyLoan: Duration must be greater than 0'
-    );
+    if (_loanAmount == 0) revert ZeroLoanAmount();
+    if (_feePpm > PPM_DENOMINATOR) revert FeePpmTooHigh();
+    if (_paymentTokenAddress == address(0)) revert ZeroPaymentTokenAddress();
+    if (_duration == 0) revert ZeroDuration();
 
     paymentToken = IERC20(_paymentTokenAddress);
     borrower = _borrowerAddress;
@@ -145,18 +138,9 @@ contract BeneficiaryRoyaltyLoan is
   }
 
   function provideLoan() external nonReentrant {
-    require(
-      loanState != LoanState.Active,
-      'BeneficiaryRoyaltyLoan: Loan is already active'
-    );
-    require(
-      block.timestamp <= expirationDate,
-      'BeneficiaryRoyaltyLoan: Loan offer expired'
-    );
-    require(
-      loanState != LoanState.Revoked,
-      'BeneficiaryRoyaltyLoan: Loan offer is revoked'
-    );
+    if (loanState == LoanState.Active) revert LoanAlreadyActive();
+    if (block.timestamp > expirationDate) revert LoanOfferExpired();
+    if (loanState == LoanState.Revoked) revert LoanOfferRevoked();
 
     lender = msg.sender;
     paymentToken.safeTransferFrom(msg.sender, borrower, loanAmount);
@@ -167,7 +151,7 @@ contract BeneficiaryRoyaltyLoan is
   }
 
   function _distributePaymentTokenToBeneficiaries(uint256 amount) internal {
-    require(amount > 0, 'BeneficiaryRoyaltyLoan: No payment token to process');
+    if (amount == 0) revert NoPaymentTokenToProcess();
 
     uint256 totalCollateralsAmount;
     uint256 collateralsLength = collaterals.length;
@@ -245,10 +229,7 @@ contract BeneficiaryRoyaltyLoan is
   }
 
   function processRepayment() external nonReentrant {
-    require(
-      loanState == LoanState.Active,
-      'BeneficiaryRoyaltyLoan: Loan is inactive'
-    );
+    if (loanState != LoanState.Active) revert LoanNotActive();
 
     uint256 collateralsLength = collaterals.length;
 
@@ -261,10 +242,7 @@ contract BeneficiaryRoyaltyLoan is
     }
 
     uint256 currentBalance = paymentToken.balanceOf(address(this));
-    require(
-      currentBalance > 0,
-      'BeneficiaryRoyaltyLoan: No payment token to process'
-    );
+    if (currentBalance == 0) revert NoPaymentTokenToProcess();
 
     if (currentBalance >= totalDue) {
       // Full repayment
@@ -326,17 +304,11 @@ contract BeneficiaryRoyaltyLoan is
   }
 
   function reclaimExcessPaymentToken() external nonReentrant {
-    require(
-      loanState != LoanState.Active,
-      'BeneficiaryRoyaltyLoan: Loan is active'
-    );
+    if (loanState == LoanState.Active) revert LoanAlreadyActive();
 
     uint256 currentBalance = paymentToken.balanceOf(address(this));
 
-    require(
-      currentBalance > 0,
-      'BeneficiaryRoyaltyLoan: No payment token to process'
-    );
+    if (currentBalance == 0) revert NoPaymentTokenToProcess();
 
     if (loanState == LoanState.Repaid) {
       _distributePaymentTokenToBeneficiaries(currentBalance);
@@ -346,18 +318,9 @@ contract BeneficiaryRoyaltyLoan is
   }
 
   function revokeLoan() external nonReentrant {
-    require(
-      loanState != LoanState.Active,
-      'BeneficiaryRoyaltyLoan: Loan is already active'
-    );
-    require(
-      loanState != LoanState.Revoked,
-      'BeneficiaryRoyaltyLoan: Loan offer is revoked'
-    );
-    require(
-      msg.sender == borrower,
-      'BeneficiaryRoyaltyLoan: Only borrower can revoke the loan'
-    );
+    if (loanState == LoanState.Active) revert LoanAlreadyActive();
+    if (loanState == LoanState.Revoked) revert LoanOfferRevoked();
+    if (msg.sender != borrower) revert OnlyBorrowerAllowed();
 
     uint256 collateralsLength = collaterals.length;
 
