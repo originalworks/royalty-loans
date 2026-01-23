@@ -19,6 +19,23 @@ import { AddressLike, BigNumberish } from 'ethers';
 import { ICollateral } from '../typechain/contracts/Loans/interfaces/IRoyaltyLoan';
 import { createLoanCreator } from './utils';
 
+export enum RoyaltyLoanError {
+  NoCollateralsProvided = 'NoCollateralsProvided',
+  ZeroCollateralTokenAddress = 'ZeroCollateralTokenAddress',
+  ZeroCollateralAmount = 'ZeroCollateralAmount',
+  CollateralNotTransferred = 'CollateralNotTransferred',
+  ZeroLoanAmount = 'ZeroLoanAmount',
+  FeePpmTooHigh = 'FeePpmTooHigh',
+  ZeroPaymentTokenAddress = 'ZeroPaymentTokenAddress',
+  ZeroDuration = 'ZeroDuration',
+  LoanAlreadyActive = 'LoanAlreadyActive',
+  LoanOfferExpired = 'LoanOfferExpired',
+  LoanOfferRevoked = 'LoanOfferRevoked',
+  LoanNotActive = 'LoanNotActive',
+  NoPaymentTokenToProcess = 'NoPaymentTokenToProcess',
+  OnlyBorrowerAllowed = 'OnlyBorrowerAllowed',
+}
+
 export type HolderStruct = {
   account: AddressLike;
   isAdmin: boolean;
