@@ -7,6 +7,7 @@ export interface IDeployment {
   beneficiaryRoyaltyLoanTemplate: string;
   royaltyLoanFactory: string;
   paymentToken: string;
+  agreementFactory: string;
 }
 
 export const deploymentsDir = path.resolve(__dirname, '../deployments');
