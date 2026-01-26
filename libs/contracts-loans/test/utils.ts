@@ -7,13 +7,16 @@ import {
   RoyaltyLoan,
   RoyaltyLoan__factory,
   BeneficiaryRoyaltyLoan__factory,
+  AgreementFactory__factory,
+  AgreementERC1155__factory,
 } from '../typechain';
 import { ICollateral } from '../typechain/contracts/Loans/RoyaltyLoan';
 import {
   BeneficiaryRoyaltyLoan,
   ICollateral as ICollateralWithBeneficiaries,
 } from '../typechain/contracts/Loans/BeneficiaryRoyaltyLoan';
-import { defaults } from './fixture';
+import { defaults, HolderStruct } from './fixture';
+import { getEvent } from '@royalty-loans/contracts-agreements';
 
 export const createLoanCreator = (args: {
   loanFactory: RoyaltyLoanFactory;
@@ -213,6 +216,34 @@ export const expectBalancesCreator =
       }
     }
   };
+
+export const deployAgreementERC1155Creator = (
+  deployer: SignerWithAddress,
+  factoryAddress: string,
+) => {
+  return async (holders: HolderStruct[]) => {
+    const agreementFactory = AgreementFactory__factory.connect(
+      factoryAddress,
+      deployer,
+    );
+    const tx = agreementFactory.connect(deployer).createERC1155(
+      {
+        tokenUri: 'tokenUri',
+        contractURI: 'contractURI',
+        holders,
+        unassignedRwaId: 'ABC123',
+      },
+      { value: 0n },
+    );
+    const event = await getEvent(tx, agreementFactory, 'AgreementCreated');
+    const agreementAddress = event.args[0];
+    const agreement = AgreementERC1155__factory.connect(
+      agreementAddress,
+    ) as AgreementERC1155;
+
+    return agreement;
+  };
+};
 
 export const createManyWallets = () => {
   const wallets: HDNodeWallet[] = [];
