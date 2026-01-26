@@ -1,7 +1,8 @@
 import hre, { ethers } from 'hardhat';
 import {
   AgreementERC1155,
-  AgreementERC1155__factory,
+  AgreementERC20,
+  AgreementERC20__factory,
   BeneficiaryRoyaltyLoan__factory,
   ERC20TokenMock,
   ERC20TokenMock__factory,
@@ -17,7 +18,7 @@ import { deployProxy } from '@royalty-loans/contracts-shared';
 
 import { AddressLike, BigNumberish } from 'ethers';
 import { ICollateral } from '../typechain/contracts/Loans/interfaces/IRoyaltyLoan';
-import { createLoanCreator } from './utils';
+import { createLoanCreator, deployAgreementERC1155Creator } from './utils';
 
 export enum RoyaltyLoanError {
   NoCollateralsProvided = 'NoCollateralsProvided',
@@ -55,6 +56,16 @@ export enum BeneficiaryRoyaltyLoanError {
   LoanNotActive = 'LoanNotActive',
   NoPaymentTokenToProcess = 'NoPaymentTokenToProcess',
   OnlyBorrowerAllowed = 'OnlyBorrowerAllowed',
+}
+
+export enum RoyaltyLoanFactoryError {
+  ZeroTemplateAddress = 'ZeroTemplateAddress',
+  ZeroDuration = 'ZeroDuration',
+  ZeroPaymentTokenAddress = 'ZeroPaymentTokenAddress',
+  NotAgreementFactory = 'NotAgreementFactory',
+  ZeroCollateralTokenAddress = 'ZeroCollateralTokenAddress',
+  CollateralNotERC1155 = 'CollateralNotERC1155',
+  CollateralNotRegistered = 'CollateralNotRegistered',
 }
 
 export type HolderStruct = {
@@ -124,11 +135,14 @@ export const fixture = async () => {
     throw new Error('No lending token');
   }
 
-  const deployAgreementERC1155 = async (holders: HolderStruct[]) => {
-    const tx = agreementFactory.connect(deployer).createERC1155(
+  const deployAgreementERC1155 = deployAgreementERC1155Creator(
+    deployer,
+    await agreementFactory.getAddress(),
+  );
+
+  const deployAgreementERC20 = async (holders: HolderStruct[]) => {
+    const tx = agreementFactory.connect(deployer).createERC20(
       {
-        tokenUri: 'tokenUri',
-        contractURI: 'contractURI',
         holders,
         unassignedRwaId: 'ABC123',
       },
@@ -136,9 +150,9 @@ export const fixture = async () => {
     );
     const event = await getEvent(tx, agreementFactory, 'AgreementCreated');
     const agreementAddress = event.args[0];
-    const agreement = AgreementERC1155__factory.connect(
+    const agreement = AgreementERC20__factory.connect(
       agreementAddress,
-    ) as AgreementERC1155;
+    ) as AgreementERC20;
 
     return agreement;
   };
@@ -162,6 +176,7 @@ export const fixture = async () => {
       await standardLoanTemplate.getAddress(),
       await beneficiaryLoanTemplate.getAddress(),
       await paymentToken.getAddress(),
+      await agreementFactory.getAddress(),
       defaults.duration,
     ],
   );
@@ -174,7 +189,9 @@ export const fixture = async () => {
     standardLoanTemplate,
     beneficiaryLoanTemplate,
     loanFactory,
+    agreementFactory,
     deployAgreementERC1155,
+    deployAgreementERC20,
     paymentToken,
     getCurrentBalances: getCurrentBalancesCreator(paymentToken),
     createLoan: createLoanCreator({ loanFactory, paymentToken, lender }),

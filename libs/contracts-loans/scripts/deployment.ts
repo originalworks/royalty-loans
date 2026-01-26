@@ -2,6 +2,8 @@ import hre from 'hardhat';
 import { deployRoyaltyLoanFactory } from './RoyaltyLoanFactory';
 import { saveNewDeployment } from './deploymentUtils';
 
+const AGREEMENT_FACTORY_ADDRESS = '0x';
+
 const main = async () => {
   const [deployer] = await hre.ethers.getSigners();
   const paymentTokenAddress = hre.network.config.USDCAddress;
@@ -13,6 +15,7 @@ const main = async () => {
   const factoryDeployment = await deployRoyaltyLoanFactory(
     deployer,
     paymentTokenAddress,
+    AGREEMENT_FACTORY_ADDRESS,
   );
   console.log('Done!');
 
@@ -22,6 +25,7 @@ const main = async () => {
     beneficiaryRoyaltyLoanTemplate:
       factoryDeployment.beneficiaryRoyaltyLoanTemplate,
     royaltyLoanFactory: factoryDeployment.royaltyLoanFactory,
+    agreementFactory: AGREEMENT_FACTORY_ADDRESS,
     paymentToken: paymentTokenAddress,
   };
 
