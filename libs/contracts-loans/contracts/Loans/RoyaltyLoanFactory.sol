@@ -6,7 +6,6 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
 import '@openzeppelin/contracts/utils/introspection/ERC165Checker.sol';
-import '@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol';
 import '@openzeppelin/contracts/interfaces/IERC1155.sol';
 import '@openzeppelin/contracts/proxy/Clones.sol';
 import '@royalty-loans/contracts-agreements/contracts/interfaces/IAgreementFactory.sol';
@@ -30,7 +29,9 @@ contract RoyaltyLoanFactory is
   error ZeroDuration();
   error ZeroPaymentTokenAddress();
   error NotAgreementFactory();
-  error CollateralNotAgreementERC1155(address collateralAddress);
+  error ZeroCollateralTokenAddress();
+  error CollateralNotERC1155(address collateralAddress);
+  error CollateralNotRegistered(address collateralAddress);
 
   event TemplateChanged(
     LoanType loanType,
@@ -179,14 +180,20 @@ contract RoyaltyLoanFactory is
   }
 
   function _validateCollateral(address collateralAddress) private view {
-    bool isERC1155Receiver = collateralAddress.supportsInterface(
-      type(IERC1155Receiver).interfaceId
-    );
-    bool isRegisteredAgreement = IAgreementFactory(agreementFactoryAddress)
-      .createdAgreements(collateralAddress);
+    if (collateralAddress == address(0)) {
+      revert ZeroCollateralTokenAddress();
+    }
 
-    if (!isERC1155Receiver || !isRegisteredAgreement) {
-      revert CollateralNotAgreementERC1155(collateralAddress);
+    if (!collateralAddress.supportsInterface(type(IERC1155).interfaceId)) {
+      revert CollateralNotERC1155(collateralAddress);
+    }
+
+    if (
+      !IAgreementFactory(agreementFactoryAddress).createdAgreements(
+        collateralAddress
+      )
+    ) {
+      revert CollateralNotRegistered(collateralAddress);
     }
   }
 
