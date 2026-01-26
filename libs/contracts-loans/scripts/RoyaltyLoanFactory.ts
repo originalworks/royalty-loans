@@ -5,6 +5,7 @@ import { getImplementationAddressFromProxy } from '@openzeppelin/upgrades-core';
 export const deployRoyaltyLoanFactory = async (
   deployer: Signer,
   paymentTokenAddress: string,
+  agreementFactoryAddress: string,
 ) => {
   const StandardRoyaltyLoan = await ethers.getContractFactory(
     'RoyaltyLoan',
@@ -36,6 +37,7 @@ export const deployRoyaltyLoanFactory = async (
       standardRoyaltyLoanTemplate,
       beneficiaryRoyaltyLoanTemplate,
       paymentTokenAddress,
+      agreementFactoryAddress,
       '432000',
     ],
     {
