@@ -5,8 +5,11 @@ import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
+import '@openzeppelin/contracts/utils/introspection/ERC165Checker.sol';
+import '@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol';
 import '@openzeppelin/contracts/interfaces/IERC1155.sol';
 import '@openzeppelin/contracts/proxy/Clones.sol';
+import '@royalty-loans/contracts-agreements/contracts/interfaces/IAgreementFactory.sol';
 import './interfaces/IRoyaltyLoan.sol';
 import './interfaces/IBeneficiaryRoyaltyLoan.sol';
 
@@ -21,9 +24,13 @@ contract RoyaltyLoanFactory is
   UUPSUpgradeable,
   ReentrancyGuardUpgradeable
 {
+  using ERC165Checker for address;
+
   error ZeroTemplateAddress();
   error ZeroDuration();
   error ZeroPaymentTokenAddress();
+  error NotAgreementFactory();
+  error CollateralNotAgreementERC1155(address collateralAddress);
 
   event TemplateChanged(
     LoanType loanType,
@@ -39,6 +46,11 @@ contract RoyaltyLoanFactory is
   event PaymentTokenChanged(
     address previousPaymentToken,
     address newPaymentToken
+  );
+
+  event AgreementFactoryChanged(
+    address previousAgreementFactory,
+    address newAgreementFactory
   );
 
   event LoanContractCreated(
@@ -64,6 +76,7 @@ contract RoyaltyLoanFactory is
   );
 
   address public paymentTokenAddress;
+  address public agreementFactoryAddress;
   uint256 public offerDuration;
 
   mapping(LoanType => address) public templates;
@@ -79,12 +92,14 @@ contract RoyaltyLoanFactory is
     address _standardTemplateAddress,
     address _beneficiaryTemplateAddress,
     address _paymentTokenAddress,
+    address _agreementFactoryAddress,
     uint256 _offerDuration
   ) public initializer {
     _setTemplateAddress(LoanType.Standard, _standardTemplateAddress);
     _setTemplateAddress(LoanType.Beneficiary, _beneficiaryTemplateAddress);
     _setOfferDuration(_offerDuration);
     _setPaymentTokenAddress(_paymentTokenAddress);
+    _setAgreementFactoryAddress(_agreementFactoryAddress);
     __ReentrancyGuard_init();
     __Ownable_init(msg.sender);
   }
@@ -137,21 +152,76 @@ contract RoyaltyLoanFactory is
     _setPaymentTokenAddress(_paymentTokenAddress);
   }
 
+  function _setAgreementFactoryAddress(
+    address _agreementFactoryAddress
+  ) private {
+    if (
+      _agreementFactoryAddress.supportsInterface(
+        type(IAgreementFactory).interfaceId
+      ) == false
+    ) {
+      revert NotAgreementFactory();
+    }
+
+    address previousAgreementFactoryAddress = agreementFactoryAddress;
+    agreementFactoryAddress = _agreementFactoryAddress;
+
+    emit AgreementFactoryChanged(
+      previousAgreementFactoryAddress,
+      _agreementFactoryAddress
+    );
+  }
+
+  function setAgreementFactoryAddress(
+    address _agreementFactoryAddress
+  ) external onlyOwner {
+    _setAgreementFactoryAddress(_agreementFactoryAddress);
+  }
+
+  function _validateCollateral(address collateralAddress) private view {
+    bool isERC1155Receiver = collateralAddress.supportsInterface(
+      type(IERC1155Receiver).interfaceId
+    );
+    bool isRegisteredAgreement = IAgreementFactory(agreementFactoryAddress)
+      .createdAgreements(collateralAddress);
+
+    if (!isERC1155Receiver || !isRegisteredAgreement) {
+      revert CollateralNotAgreementERC1155(collateralAddress);
+    }
+  }
+
   function createLoanContract(
     ICollateral.Collateral[] calldata collaterals,
     uint256 loanAmount,
     uint256 feePpm
   ) external nonReentrant returns (address) {
-    address clone = Clones.clone(templates[LoanType.Standard]);
+    uint256 collateralsLength = collaterals.length;
 
-    for (uint i = 0; i < collaterals.length; i++) {
-      IERC1155(collaterals[i].tokenAddress).safeTransferFrom(
+    for (uint i = 0; i < collateralsLength; ) {
+      _validateCollateral(collaterals[i].tokenAddress);
+
+      unchecked {
+        i++;
+      }
+    }
+
+    address template = templates[LoanType.Standard];
+    address clone = Clones.clone(template);
+
+    for (uint i = 0; i < collateralsLength; ) {
+      ICollateral.Collateral calldata collateral = collaterals[i];
+
+      IERC1155(collateral.tokenAddress).safeTransferFrom(
         msg.sender,
         clone,
-        collaterals[i].tokenId,
-        collaterals[i].tokenAmount,
+        collateral.tokenId,
+        collateral.tokenAmount,
         ''
       );
+
+      unchecked {
+        i++;
+      }
     }
 
     IRoyaltyLoan(clone).initialize(
@@ -171,7 +241,7 @@ contract RoyaltyLoanFactory is
       feePpm,
       offerDuration,
       paymentTokenAddress,
-      templates[LoanType.Standard]
+      template
     );
 
     return clone;
@@ -182,9 +252,20 @@ contract RoyaltyLoanFactory is
     uint256 loanAmount,
     uint256 feePpm
   ) external nonReentrant returns (address) {
-    address clone = Clones.clone(templates[LoanType.Beneficiary]);
+    uint256 collateralsLength = collaterals.length;
 
-    for (uint i = 0; i < collaterals.length; i++) {
+    for (uint i = 0; i < collateralsLength; ) {
+      _validateCollateral(collaterals[i].tokenAddress);
+
+      unchecked {
+        i++;
+      }
+    }
+
+    address template = templates[LoanType.Beneficiary];
+    address clone = Clones.clone(template);
+
+    for (uint i = 0; i < collateralsLength; ) {
       IERC1155(collaterals[i].tokenAddress).safeTransferFrom(
         msg.sender,
         clone,
@@ -192,6 +273,10 @@ contract RoyaltyLoanFactory is
         collaterals[i].tokenAmount,
         ''
       );
+
+      unchecked {
+        i++;
+      }
     }
 
     IBeneficiaryRoyaltyLoan(clone).initialize(
@@ -211,7 +296,7 @@ contract RoyaltyLoanFactory is
       feePpm,
       offerDuration,
       paymentTokenAddress,
-      templates[LoanType.Beneficiary]
+      template
     );
 
     return clone;
