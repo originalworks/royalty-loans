@@ -2,8 +2,6 @@ import { ethers } from 'hardhat';
 import {
   AgreementERC1155,
   AgreementFactory,
-  BeneficiaryRoyaltyLoan,
-  BeneficiaryRoyaltyLoan__factory,
   ERC20TokenMock,
   ERC20TokenMock__factory,
   RoyaltyLoan,
@@ -28,8 +26,7 @@ describe('RoyaltyLoanFactory', () => {
   let lender: SignerWithAddress;
 
   let loanFactory: RoyaltyLoanFactory;
-  let standardLoanTemplate: RoyaltyLoan;
-  let beneficiaryLoanTemplate: BeneficiaryRoyaltyLoan;
+  let loanTemplate: RoyaltyLoan;
   let agreementFactory: AgreementFactory;
   let paymentToken: ERC20TokenMock;
   let collateralToken: AgreementERC1155;
@@ -49,8 +46,7 @@ describe('RoyaltyLoanFactory', () => {
     [deployer, lender, borrower, operator] = deployment.signers;
 
     ({
-      standardLoanTemplate,
-      beneficiaryLoanTemplate,
+      loanTemplate,
       loanFactory,
       paymentToken,
       defaults,
@@ -74,8 +70,7 @@ describe('RoyaltyLoanFactory', () => {
     it('initializes correctly', async () => {
       await expect(
         deployProxy(new RoyaltyLoanFactory__factory(deployer), [
-          await standardLoanTemplate.getAddress(),
-          await beneficiaryLoanTemplate.getAddress(),
+          await loanTemplate.getAddress(),
           await paymentToken.getAddress(),
           await agreementFactory.getAddress(),
           defaults.duration,
@@ -87,8 +82,7 @@ describe('RoyaltyLoanFactory', () => {
       loanFactory = await deployProxy(
         new RoyaltyLoanFactory__factory(deployer),
         [
-          await standardLoanTemplate.getAddress(),
-          await beneficiaryLoanTemplate.getAddress(),
+          await loanTemplate.getAddress(),
           await paymentToken.getAddress(),
           await agreementFactory.getAddress(),
           defaults.duration,
@@ -96,8 +90,7 @@ describe('RoyaltyLoanFactory', () => {
       );
       await expect(
         loanFactory.initialize(
-          await standardLoanTemplate.getAddress(),
-          await beneficiaryLoanTemplate.getAddress(),
+          await loanTemplate.getAddress(),
           await paymentToken.getAddress(),
           await agreementFactory.getAddress(),
           defaults.duration,
@@ -109,7 +102,6 @@ describe('RoyaltyLoanFactory', () => {
       await expect(
         deployProxy(new RoyaltyLoanFactory__factory(deployer), [
           ethers.ZeroAddress,
-          await beneficiaryLoanTemplate.getAddress(),
           await paymentToken.getAddress(),
           await agreementFactory.getAddress(),
           defaults.duration,
@@ -121,21 +113,7 @@ describe('RoyaltyLoanFactory', () => {
 
       await expect(
         deployProxy(new RoyaltyLoanFactory__factory(deployer), [
-          await standardLoanTemplate.getAddress(),
-          ethers.ZeroAddress,
-          await paymentToken.getAddress(),
-          await agreementFactory.getAddress(),
-          defaults.duration,
-        ]),
-      ).to.be.revertedWithCustomError(
-        loanFactory,
-        RoyaltyLoanFactoryError.ZeroTemplateAddress,
-      );
-
-      await expect(
-        deployProxy(new RoyaltyLoanFactory__factory(deployer), [
-          await standardLoanTemplate.getAddress(),
-          await beneficiaryLoanTemplate.getAddress(),
+          await loanTemplate.getAddress(),
           ethers.ZeroAddress,
           await agreementFactory.getAddress(),
           defaults.duration,
@@ -147,8 +125,7 @@ describe('RoyaltyLoanFactory', () => {
 
       await expect(
         deployProxy(new RoyaltyLoanFactory__factory(deployer), [
-          await standardLoanTemplate.getAddress(),
-          await beneficiaryLoanTemplate.getAddress(),
+          await loanTemplate.getAddress(),
           await paymentToken.getAddress(),
           ethers.ZeroAddress,
           defaults.duration,
@@ -160,8 +137,7 @@ describe('RoyaltyLoanFactory', () => {
 
       await expect(
         deployProxy(new RoyaltyLoanFactory__factory(deployer), [
-          await standardLoanTemplate.getAddress(),
-          await beneficiaryLoanTemplate.getAddress(),
+          await loanTemplate.getAddress(),
           await agreementFactory.getAddress(),
           await paymentToken.getAddress(),
           0n,
@@ -173,8 +149,7 @@ describe('RoyaltyLoanFactory', () => {
 
       await expect(
         deployProxy(new RoyaltyLoanFactory__factory(deployer), [
-          await standardLoanTemplate.getAddress(),
-          await beneficiaryLoanTemplate.getAddress(),
+          await loanTemplate.getAddress(),
           await paymentToken.getAddress(),
           await agreementFactory.getAddress(),
           defaults.duration,
@@ -194,62 +169,22 @@ describe('RoyaltyLoanFactory', () => {
       await expect(
         loanFactory
           .connect(operator)
-          .setTemplateAddress(0n, await newTemplate.getAddress()),
+          .setTemplateAddress(await newTemplate.getAddress()),
       ).to.be.reverted;
 
       await expect(
         loanFactory
           .connect(deployer)
-          .setTemplateAddress(0n, await newTemplate.getAddress()),
+          .setTemplateAddress(await newTemplate.getAddress()),
       ).not.to.be.reverted;
     });
 
     it('throws on zero address', async () => {
       await expect(
-        loanFactory.setTemplateAddress(0n, ethers.ZeroAddress),
+        loanFactory.setTemplateAddress(ethers.ZeroAddress),
       ).to.be.revertedWithCustomError(
         loanFactory,
         RoyaltyLoanFactoryError.ZeroTemplateAddress,
-      );
-    });
-
-    it('can modify different templates', async () => {
-      const newStandardTemplate = await new RoyaltyLoan__factory(
-        deployer,
-      ).deploy();
-
-      expect(await loanFactory.templates(0n)).not.to.equal(
-        await newStandardTemplate.getAddress(),
-      );
-
-      await expect(
-        loanFactory.setTemplateAddress(
-          0n,
-          await newStandardTemplate.getAddress(),
-        ),
-      ).not.to.be.reverted;
-
-      expect(await loanFactory.templates(0n)).to.equal(
-        await newStandardTemplate.getAddress(),
-      );
-
-      const newBeneficiaryTemplate = await new BeneficiaryRoyaltyLoan__factory(
-        deployer,
-      ).deploy();
-
-      expect(await loanFactory.templates(1n)).not.to.equal(
-        await newBeneficiaryTemplate.getAddress(),
-      );
-
-      await expect(
-        loanFactory.setTemplateAddress(
-          1n,
-          await newBeneficiaryTemplate.getAddress(),
-        ),
-      ).not.to.be.reverted;
-
-      expect(await loanFactory.templates(1n)).to.equal(
-        await newBeneficiaryTemplate.getAddress(),
       );
     });
   });
@@ -455,152 +390,6 @@ describe('RoyaltyLoanFactory', () => {
           {
             collateralAmount: defaults.collateralAmount,
             collateralToken: collateralToken,
-          },
-        ],
-        {
-          feePpm: 100n,
-          loanAmount: 1n,
-        },
-      );
-
-      const [borrowerBalanceAfter, loanContractBalanceAfter] =
-        await collateralToken.balanceOfBatch(
-          [borrower.address, await loan.getAddress()],
-          [defaults.collateralTokenId, defaults.collateralTokenId],
-        );
-
-      expect(borrowerBalanceAfter).to.equal(0n);
-      expect(loanContractBalanceAfter).to.equal(defaults.collateralAmount);
-    });
-  });
-
-  describe('createBeneficiaryLoanContract', async () => {
-    it('validates collaterals', async () => {
-      await expect(
-        loanFactory.createBeneficiaryLoanContract(
-          [
-            {
-              tokenAddress: ZeroAddress,
-              tokenAmount: 1n,
-              tokenId: 1,
-              beneficiaries: [
-                { beneficiaryAddress: borrower.address, ppm: 1_000_000 },
-              ],
-            },
-          ],
-          1n,
-          1n,
-        ),
-      ).to.be.revertedWithCustomError(
-        loanFactory,
-        RoyaltyLoanFactoryError.ZeroCollateralTokenAddress,
-      );
-
-      const agreementERC20 = await deployAgreementERC20([
-        { account: borrower.address, balance: 100n, isAdmin: true },
-      ]);
-
-      await expect(
-        loanFactory.createBeneficiaryLoanContract(
-          [
-            {
-              tokenAddress: await agreementERC20.getAddress(),
-              tokenAmount: 1n,
-              tokenId: 1,
-              beneficiaries: [
-                { beneficiaryAddress: borrower.address, ppm: 1_000_000 },
-              ],
-            },
-          ],
-          1n,
-          1n,
-        ),
-      ).to.be.revertedWithCustomError(
-        loanFactory,
-        RoyaltyLoanFactoryError.CollateralNotERC1155,
-      );
-
-      const testERC1155 = await (
-        await new TestERC1155__factory(deployer).deploy()
-      ).waitForDeployment();
-
-      await expect(
-        loanFactory.createBeneficiaryLoanContract(
-          [
-            {
-              tokenAddress: await testERC1155.getAddress(),
-              tokenAmount: 1n,
-              tokenId: 1,
-              beneficiaries: [
-                { beneficiaryAddress: borrower.address, ppm: 1_000_000 },
-              ],
-            },
-          ],
-          1n,
-          1n,
-        ),
-      ).to.be.revertedWithCustomError(
-        loanFactory,
-        RoyaltyLoanFactoryError.CollateralNotRegistered,
-      );
-
-      const { agreementFactory: altAgreementFactory } =
-        await deployInitialSetup({
-          creationFee: 0n,
-          paymentFee: 0n,
-          relayerFee: 0n,
-        });
-
-      const deployAltAgreementERC1155 = deployAgreementERC1155Creator(
-        deployer,
-        await altAgreementFactory.getAddress(),
-      );
-
-      const altAgreementERC1155 = await deployAltAgreementERC1155([
-        { account: borrower.address, balance: 100n, isAdmin: true },
-      ]);
-
-      await expect(
-        loanFactory.createBeneficiaryLoanContract(
-          [
-            {
-              tokenAddress: await altAgreementERC1155.getAddress(),
-              tokenAmount: 1n,
-              tokenId: 1,
-              beneficiaries: [
-                { beneficiaryAddress: borrower.address, ppm: 1_000_000 },
-              ],
-            },
-          ],
-          1n,
-          1n,
-        ),
-      ).to.be.revertedWithCustomError(
-        loanFactory,
-        RoyaltyLoanFactoryError.CollateralNotRegistered,
-      );
-    });
-
-    it('creates beneficiary loan contract and sends shares', async () => {
-      const borrowerBalanceBefore = await collateralToken.balanceOf(
-        borrower.address,
-        defaults.collateralTokenId,
-      );
-
-      expect(borrowerBalanceBefore).to.equal(defaults.collateralAmount);
-
-      const loan = await createLoan.beneficiary(
-        borrower,
-        [
-          {
-            collateralAmount: defaults.collateralAmount,
-            collateralToken: collateralToken,
-            beneficiaries: [
-              {
-                beneficiaryAddress: borrower.address,
-                ppm: 1000000n,
-              },
-            ],
           },
         ],
         {
