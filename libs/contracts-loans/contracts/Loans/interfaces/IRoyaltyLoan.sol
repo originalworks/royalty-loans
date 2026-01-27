@@ -13,6 +13,7 @@ interface IRoyaltyLoan is ICollateral {
     Collateral[] calldata _collaterals,
     address _paymentTokenAddress,
     address _borrowerAddress,
+    address _receiverAddress,
     uint256 _feePpm,
     uint256 _loanAmount,
     uint256 _duration
