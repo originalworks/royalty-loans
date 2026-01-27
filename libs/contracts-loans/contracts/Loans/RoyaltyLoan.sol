@@ -44,9 +44,6 @@ contract RoyaltyLoan is
   error OnlyBorrowerAllowed();
 
   Collateral[] public collaterals;
-  IERC1155[] public collateralTokens;
-  uint256[] public collateralTokenIds;
-  uint256[] public collateralAmounts;
   IERC20 public paymentToken;
   address public borrower;
   address public lender;
@@ -190,7 +187,7 @@ contract RoyaltyLoan is
 
       paymentToken.safeTransfer(lender, currentBalance);
 
-      emit LoanPartialyRepaid(currentBalance);
+      emit LoanPartiallyRepaid(currentBalance);
     }
   }
 
