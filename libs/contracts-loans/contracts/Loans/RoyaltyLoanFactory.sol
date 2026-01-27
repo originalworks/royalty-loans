@@ -57,6 +57,7 @@ contract RoyaltyLoanFactory is
   event LoanContractCreated(
     address loanContract,
     address borrower,
+    address receiver,
     ICollateral.Collateral[] collaterals,
     uint256 loanAmount,
     uint256 feePpm,
@@ -199,6 +200,7 @@ contract RoyaltyLoanFactory is
 
   function createLoanContract(
     ICollateral.Collateral[] calldata collaterals,
+    address receiver,
     uint256 loanAmount,
     uint256 feePpm
   ) external nonReentrant returns (address) {
@@ -235,6 +237,7 @@ contract RoyaltyLoanFactory is
       collaterals,
       paymentTokenAddress,
       msg.sender,
+      receiver,
       feePpm,
       loanAmount,
       offerDuration
@@ -243,6 +246,7 @@ contract RoyaltyLoanFactory is
     emit LoanContractCreated(
       clone,
       msg.sender,
+      receiver,
       collaterals,
       loanAmount,
       feePpm,

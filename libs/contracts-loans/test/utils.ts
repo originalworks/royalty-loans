@@ -46,6 +46,7 @@ const createStandardLoanCreator =
     overrides?: {
       loanAmount?: BigNumberish;
       feePpm?: BigNumberish;
+      receiver?: string;
     },
   ): Promise<RoyaltyLoan> => {
     const collaterals: ICollateral.CollateralStruct[] = [];
@@ -64,11 +65,17 @@ const createStandardLoanCreator =
       });
     }
 
+    const receiver =
+      overrides?.receiver !== undefined
+        ? overrides?.receiver
+        : borrower.address;
+
     const receipt = await (
       await loanFactory
         .connect(borrower)
         .createLoanContract(
           collaterals,
+          receiver,
           overrides?.loanAmount ?? defaults.loanAmount,
           overrides?.feePpm ?? defaults.feePpm,
         )
