@@ -3,7 +3,6 @@ import {
   AgreementERC1155,
   AgreementERC20,
   AgreementERC20__factory,
-  BeneficiaryRoyaltyLoan__factory,
   ERC20TokenMock,
   ERC20TokenMock__factory,
   RoyaltyLoan__factory,
@@ -37,27 +36,6 @@ export enum RoyaltyLoanError {
   OnlyBorrowerAllowed = 'OnlyBorrowerAllowed',
   ZeroBeneficiaryAddress = 'ZeroBeneficiaryAddress',
   ZeroReceiverAddress = 'ZeroReceiverAddress',
-}
-
-export enum BeneficiaryRoyaltyLoanError {
-  NoCollateralsProvided = 'NoCollateralsProvided',
-  ZeroCollateralTokenAddress = 'ZeroCollateralTokenAddress',
-  ZeroCollateralAmount = 'ZeroCollateralAmount',
-  CollateralNotTransferred = 'CollateralNotTransferred',
-  ZeroBeneficiaries = 'ZeroBeneficiaries',
-  ZeroBeneficiaryAddress = 'ZeroBeneficiaryAddress',
-  ZeroBeneficiaryPpm = 'ZeroBeneficiaryPpm',
-  BeneficiariesPpmSumMismatch = 'BeneficiariesPpmSumMismatch',
-  ZeroPaymentTokenAddress = 'ZeroPaymentTokenAddress',
-  ZeroDuration = 'ZeroDuration',
-  ZeroLoanAmount = 'ZeroLoanAmount',
-  FeePpmTooHigh = 'FeePpmTooHigh',
-  LoanAlreadyActive = 'LoanAlreadyActive',
-  LoanOfferExpired = 'LoanOfferExpired',
-  LoanOfferRevoked = 'LoanOfferRevoked',
-  LoanNotActive = 'LoanNotActive',
-  NoPaymentTokenToProcess = 'NoPaymentTokenToProcess',
-  OnlyBorrowerAllowed = 'OnlyBorrowerAllowed',
 }
 
 export enum RoyaltyLoanFactoryError {
@@ -164,19 +142,14 @@ export const fixture = async () => {
     deployer,
   );
 
-  const standardLoanTemplate = await (
+  const loanTemplate = await (
     await new RoyaltyLoan__factory(deployer).deploy()
-  ).waitForDeployment();
-
-  const beneficiaryLoanTemplate = await (
-    await new BeneficiaryRoyaltyLoan__factory(deployer).deploy()
   ).waitForDeployment();
 
   const loanFactory = await deployProxy(
     new RoyaltyLoanFactory__factory(deployer),
     [
-      await standardLoanTemplate.getAddress(),
-      await beneficiaryLoanTemplate.getAddress(),
+      await loanTemplate.getAddress(),
       await paymentToken.getAddress(),
       await agreementFactory.getAddress(),
       defaults.duration,
@@ -188,8 +161,7 @@ export const fixture = async () => {
   return {
     signers,
     defaults,
-    standardLoanTemplate,
-    beneficiaryLoanTemplate,
+    loanTemplate,
     loanFactory,
     agreementFactory,
     deployAgreementERC1155,

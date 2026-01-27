@@ -10,12 +10,6 @@ import '@openzeppelin/contracts/interfaces/IERC1155.sol';
 import '@openzeppelin/contracts/proxy/Clones.sol';
 import '@royalty-loans/contracts-agreements/contracts/interfaces/IAgreementFactory.sol';
 import './interfaces/IRoyaltyLoan.sol';
-import './interfaces/IBeneficiaryRoyaltyLoan.sol';
-
-enum LoanType {
-  Standard,
-  Beneficiary
-}
 
 contract RoyaltyLoanFactory is
   Initializable,
@@ -33,11 +27,7 @@ contract RoyaltyLoanFactory is
   error CollateralNotERC1155(address collateralAddress);
   error CollateralNotRegistered(address collateralAddress);
 
-  event TemplateChanged(
-    LoanType loanType,
-    address previousAddress,
-    address newAddress
-  );
+  event TemplateChanged(address previousAddress, address newAddress);
 
   event OfferDurationChanged(
     uint256 previousOfferDuration,
@@ -66,22 +56,10 @@ contract RoyaltyLoanFactory is
     address templateAddress
   );
 
-  event BeneficiaryLoanContractCreated(
-    address loanContract,
-    address borrower,
-    ICollateral.CollateralWithBeneficiaries[] collaterals,
-    uint256 loanAmount,
-    uint256 feePpm,
-    uint256 offerDuration,
-    address paymentTokenAddress,
-    address templateAddress
-  );
-
   address public paymentTokenAddress;
   address public agreementFactoryAddress;
   uint256 public offerDuration;
-
-  mapping(LoanType => address) public templates;
+  address public templateAddress;
 
   uint256[50] __gap;
 
@@ -91,14 +69,12 @@ contract RoyaltyLoanFactory is
   }
 
   function initialize(
-    address _standardTemplateAddress,
-    address _beneficiaryTemplateAddress,
+    address _templateAddress,
     address _paymentTokenAddress,
     address _agreementFactoryAddress,
     uint256 _offerDuration
   ) public initializer {
-    _setTemplateAddress(LoanType.Standard, _standardTemplateAddress);
-    _setTemplateAddress(LoanType.Beneficiary, _beneficiaryTemplateAddress);
+    _setTemplateAddress(_templateAddress);
     _setOfferDuration(_offerDuration);
     _setPaymentTokenAddress(_paymentTokenAddress);
     _setAgreementFactoryAddress(_agreementFactoryAddress);
@@ -106,23 +82,17 @@ contract RoyaltyLoanFactory is
     __Ownable_init(msg.sender);
   }
 
-  function _setTemplateAddress(
-    LoanType _loanType,
-    address _templateAddress
-  ) private {
+  function _setTemplateAddress(address _templateAddress) private {
     if (_templateAddress == address(0)) {
       revert ZeroTemplateAddress();
     }
-    address previousAddress = templates[_loanType];
-    templates[_loanType] = _templateAddress;
-    emit TemplateChanged(_loanType, previousAddress, _templateAddress);
+    address previousAddress = templateAddress;
+    templateAddress = _templateAddress;
+    emit TemplateChanged(previousAddress, _templateAddress);
   }
 
-  function setTemplateAddress(
-    LoanType _loanType,
-    address _templateAddress
-  ) external onlyOwner {
-    _setTemplateAddress(_loanType, _templateAddress);
+  function setTemplateAddress(address _templateAddress) external onlyOwner {
+    _setTemplateAddress(_templateAddress);
   }
 
   function _setOfferDuration(uint256 _duration) private {
@@ -214,8 +184,7 @@ contract RoyaltyLoanFactory is
       }
     }
 
-    address template = templates[LoanType.Standard];
-    address clone = Clones.clone(template);
+    address clone = Clones.clone(templateAddress);
 
     for (uint i = 0; i < collateralsLength; ) {
       ICollateral.Collateral calldata collateral = collaterals[i];
@@ -252,62 +221,7 @@ contract RoyaltyLoanFactory is
       feePpm,
       offerDuration,
       paymentTokenAddress,
-      template
-    );
-
-    return clone;
-  }
-
-  function createBeneficiaryLoanContract(
-    ICollateral.CollateralWithBeneficiaries[] calldata collaterals,
-    uint256 loanAmount,
-    uint256 feePpm
-  ) external nonReentrant returns (address) {
-    uint256 collateralsLength = collaterals.length;
-
-    for (uint i = 0; i < collateralsLength; ) {
-      _validateCollateral(collaterals[i].tokenAddress);
-
-      unchecked {
-        i++;
-      }
-    }
-
-    address template = templates[LoanType.Beneficiary];
-    address clone = Clones.clone(template);
-
-    for (uint i = 0; i < collateralsLength; ) {
-      IERC1155(collaterals[i].tokenAddress).safeTransferFrom(
-        msg.sender,
-        clone,
-        collaterals[i].tokenId,
-        collaterals[i].tokenAmount,
-        ''
-      );
-
-      unchecked {
-        i++;
-      }
-    }
-
-    IBeneficiaryRoyaltyLoan(clone).initialize(
-      collaterals,
-      paymentTokenAddress,
-      msg.sender,
-      feePpm,
-      loanAmount,
-      offerDuration
-    );
-
-    emit BeneficiaryLoanContractCreated(
-      clone,
-      msg.sender,
-      collaterals,
-      loanAmount,
-      feePpm,
-      offerDuration,
-      paymentTokenAddress,
-      template
+      templateAddress
     );
 
     return clone;
