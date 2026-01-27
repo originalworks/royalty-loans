@@ -5,7 +5,7 @@ import './ICollateral.sol';
 
 interface IRoyaltyLoan is ICollateral {
   event LoanProvided(address lender);
-  event LoanPartialyRepaid(uint256 repaymentAmount);
+  event LoanPartiallyRepaid(uint256 repaymentAmount);
   event LoanRepaid(uint256 repaymentAmount);
   event LoanRevoked();
 
