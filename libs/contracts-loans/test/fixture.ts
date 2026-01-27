@@ -42,10 +42,12 @@ export enum RoyaltyLoanFactoryError {
   ZeroTemplateAddress = 'ZeroTemplateAddress',
   ZeroDuration = 'ZeroDuration',
   ZeroPaymentTokenAddress = 'ZeroPaymentTokenAddress',
+  ZeroMaxCollateralsPerLoan = 'ZeroMaxCollateralsPerLoan',
   NotAgreementFactory = 'NotAgreementFactory',
   ZeroCollateralTokenAddress = 'ZeroCollateralTokenAddress',
   CollateralNotERC1155 = 'CollateralNotERC1155',
   CollateralNotRegistered = 'CollateralNotRegistered',
+  TooManyCollaterals = 'TooManyCollaterals',
 }
 
 export type HolderStruct = {
@@ -153,6 +155,7 @@ export const fixture = async () => {
       await paymentToken.getAddress(),
       await agreementFactory.getAddress(),
       defaults.duration,
+      200n,
     ],
   );
 
