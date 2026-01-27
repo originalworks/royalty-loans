@@ -26,11 +26,12 @@ contract RoyaltyLoan is
 {
   using SafeERC20 for IERC20;
 
-  // TODO: After renaming create common interface with shared errors!!
   error NoCollateralsProvided();
   error CollateralNotTransferred(uint256 collateralIndex);
   error ZeroCollateralTokenAddress(uint256 collateralIndex);
   error ZeroCollateralAmount(uint256 collateralIndex);
+  error ZeroBorrowerAddress();
+  error ZeroReceiverAddress();
   error ZeroPaymentTokenAddress();
   error ZeroDuration();
   error ZeroLoanAmount();
@@ -49,6 +50,7 @@ contract RoyaltyLoan is
   IERC20 public paymentToken;
   address public borrower;
   address public lender;
+  address public receiver;
   uint256 public feePpm;
   uint256 public loanAmount;
   uint256 public expirationDate;
@@ -66,6 +68,7 @@ contract RoyaltyLoan is
     Collateral[] calldata _collaterals,
     address _paymentTokenAddress,
     address _borrowerAddress,
+    address _receiverAddress,
     uint256 _feePpm,
     uint256 _loanAmount,
     uint256 _duration
@@ -96,7 +99,8 @@ contract RoyaltyLoan is
         i++;
       }
     }
-
+    if (_borrowerAddress == address(0)) revert ZeroBorrowerAddress();
+    if (_receiverAddress == address(0)) revert ZeroReceiverAddress();
     if (_loanAmount == 0) revert ZeroLoanAmount();
     if (_feePpm > 1_000_000) revert FeePpmTooHigh();
     if (_paymentTokenAddress == address(0)) revert ZeroPaymentTokenAddress();
@@ -104,6 +108,7 @@ contract RoyaltyLoan is
 
     paymentToken = IERC20(_paymentTokenAddress);
     borrower = _borrowerAddress;
+    receiver = _receiverAddress;
     feePpm = _feePpm;
     loanAmount = _loanAmount;
     totalDue = loanAmount + ((loanAmount * feePpm) / 1_000_000);
@@ -156,7 +161,7 @@ contract RoyaltyLoan is
       for (uint i = 0; i < collateralsLength; ) {
         IERC1155(collaterals[i].tokenAddress).safeTransferFrom(
           address(this),
-          borrower,
+          receiver,
           collaterals[i].tokenId,
           collaterals[i].tokenAmount,
           ''
@@ -172,7 +177,7 @@ contract RoyaltyLoan is
       if (currentBalance > totalDue) {
         uint256 excess = currentBalance - totalDue;
 
-        paymentToken.safeTransfer(borrower, excess);
+        paymentToken.safeTransfer(receiver, excess);
       }
 
       emit LoanRepaid(totalDue);
@@ -190,13 +195,19 @@ contract RoyaltyLoan is
   }
 
   function reclaimExcessPaymentToken() external nonReentrant {
-    if (loanState == LoanState.Active) revert LoanAlreadyActive();
+    LoanState state = loanState;
+
+    if (state == LoanState.Active) revert LoanAlreadyActive();
 
     uint256 currentBalance = paymentToken.balanceOf(address(this));
 
     if (currentBalance == 0) revert NoPaymentTokenToProcess();
 
-    paymentToken.safeTransfer(borrower, currentBalance);
+    if (state == LoanState.Repaid) {
+      paymentToken.safeTransfer(receiver, currentBalance);
+    } else {
+      paymentToken.safeTransfer(borrower, currentBalance);
+    }
   }
 
   function revokeLoan() external nonReentrant {

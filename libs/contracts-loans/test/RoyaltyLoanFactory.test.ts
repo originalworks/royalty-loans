@@ -353,6 +353,7 @@ describe('RoyaltyLoanFactory', () => {
       await expect(
         loanFactory.createLoanContract(
           [{ tokenAddress: ZeroAddress, tokenAmount: 1n, tokenId: 1 }],
+          borrower.address,
           1n,
           1n,
         ),
@@ -374,6 +375,7 @@ describe('RoyaltyLoanFactory', () => {
               tokenId: 1,
             },
           ],
+          borrower.address,
           1n,
           1n,
         ),
@@ -395,6 +397,7 @@ describe('RoyaltyLoanFactory', () => {
               tokenId: 1,
             },
           ],
+          borrower.address,
           1n,
           1n,
         ),
@@ -428,6 +431,7 @@ describe('RoyaltyLoanFactory', () => {
               tokenId: 1,
             },
           ],
+          borrower.address,
           1n,
           1n,
         ),

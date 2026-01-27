@@ -35,6 +35,8 @@ export enum RoyaltyLoanError {
   LoanNotActive = 'LoanNotActive',
   NoPaymentTokenToProcess = 'NoPaymentTokenToProcess',
   OnlyBorrowerAllowed = 'OnlyBorrowerAllowed',
+  ZeroBeneficiaryAddress = 'ZeroBeneficiaryAddress',
+  ZeroReceiverAddress = 'ZeroReceiverAddress',
 }
 
 export enum BeneficiaryRoyaltyLoanError {
