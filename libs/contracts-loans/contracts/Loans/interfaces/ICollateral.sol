@@ -7,16 +7,4 @@ interface ICollateral {
     uint256 tokenId;
     uint256 tokenAmount;
   }
-
-  struct Beneficiary {
-    address beneficiaryAddress;
-    uint32 ppm;
-  }
-
-  struct CollateralWithBeneficiaries {
-    address tokenAddress;
-    uint256 tokenId;
-    uint256 tokenAmount;
-    Beneficiary[] beneficiaries;
-  }
 }

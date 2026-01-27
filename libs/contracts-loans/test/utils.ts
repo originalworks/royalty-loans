@@ -6,15 +6,10 @@ import {
   AgreementERC1155,
   RoyaltyLoan,
   RoyaltyLoan__factory,
-  BeneficiaryRoyaltyLoan__factory,
   AgreementFactory__factory,
   AgreementERC1155__factory,
 } from '../typechain';
 import { ICollateral } from '../typechain/contracts/Loans/RoyaltyLoan';
-import {
-  BeneficiaryRoyaltyLoan,
-  ICollateral as ICollateralWithBeneficiaries,
-} from '../typechain/contracts/Loans/BeneficiaryRoyaltyLoan';
 import { defaults, HolderStruct } from './fixture';
 import { getEvent } from '@royalty-loans/contracts-agreements';
 
@@ -24,7 +19,6 @@ export const createLoanCreator = (args: {
   lender: SignerWithAddress;
 }) => ({
   standard: createStandardLoanCreator(args),
-  beneficiary: createBeneficiaryLoanCreator(args),
 });
 
 const createStandardLoanCreator =
@@ -90,78 +84,6 @@ const createStandardLoanCreator =
     )[0].args.loanContract;
 
     const royaltyLoan = RoyaltyLoan__factory.connect(
-      loanContractAddress,
-      borrower,
-    );
-
-    await (
-      await paymentToken
-        .connect(lender)
-        .approve(loanContractAddress, ethers.MaxUint256)
-    ).wait();
-
-    return royaltyLoan;
-  };
-
-const createBeneficiaryLoanCreator =
-  ({
-    loanFactory,
-    paymentToken,
-    lender,
-  }: {
-    loanFactory: RoyaltyLoanFactory;
-    paymentToken: ERC20TokenMock;
-    lender: SignerWithAddress;
-  }) =>
-  async (
-    borrower: SignerWithAddress,
-    collateralsWithOpts: {
-      collateralToken: AgreementERC1155;
-      collateralAmount?: BigNumberish;
-      beneficiaries: ICollateralWithBeneficiaries.BeneficiaryStruct[];
-    }[],
-    overrides?: {
-      loanAmount?: BigNumberish;
-      feePpm?: BigNumberish;
-    },
-  ): Promise<BeneficiaryRoyaltyLoan> => {
-    const collaterals: ICollateralWithBeneficiaries.CollateralWithBeneficiariesStruct[] =
-      [];
-
-    for (const coll of collateralsWithOpts) {
-      await (
-        await coll.collateralToken
-          .connect(borrower)
-          .setApprovalForAll(await loanFactory.getAddress(), true)
-      ).wait();
-
-      collaterals.push({
-        tokenAddress: await coll.collateralToken.getAddress(),
-        tokenAmount: coll.collateralAmount ?? defaults.collateralAmount,
-        tokenId: defaults.collateralTokenId,
-        beneficiaries: coll.beneficiaries,
-      });
-    }
-
-    const receipt = await (
-      await loanFactory
-        .connect(borrower)
-        .createBeneficiaryLoanContract(
-          collaterals,
-          overrides?.loanAmount ?? defaults.loanAmount,
-          overrides?.feePpm ?? defaults.feePpm,
-        )
-    ).wait();
-
-    const loanContractAddress = (
-      await loanFactory.queryFilter(
-        loanFactory.getEvent('BeneficiaryLoanContractCreated'),
-        receipt?.blockNumber,
-        receipt?.blockNumber,
-      )
-    )[0].args.loanContract;
-
-    const royaltyLoan = BeneficiaryRoyaltyLoan__factory.connect(
       loanContractAddress,
       borrower,
     );
