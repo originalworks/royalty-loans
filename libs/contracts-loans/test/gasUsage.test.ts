@@ -7,8 +7,6 @@ import {
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { fixture } from './fixture';
 
-let expect: Chai.ExpectStatic;
-
 const log = true;
 interface RunSimulationParams {
   unclaimedExcessOnAgreement?: boolean;
@@ -42,10 +40,6 @@ describe.skip('RoyaltyLoan - gas usage', () => {
     collateralsCt: number,
     params?: RunSimulationParams,
   ) => Promise<RunSimulationResult>;
-
-  before(async () => {
-    expect = (await import('chai')).expect;
-  });
 
   beforeEach(async () => {
     const deployment = await fixture();
