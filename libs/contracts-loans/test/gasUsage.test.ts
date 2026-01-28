@@ -1,6 +1,28 @@
-import { AgreementERC1155, ERC20TokenMock } from '../typechain';
+import {
+  AgreementERC1155,
+  ERC20TokenMock,
+  RoyaltyLoan,
+  RoyaltyLoanFactory,
+} from '../typechain';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { fixture } from './fixture';
+
+let expect: Chai.ExpectStatic;
+
+const log = true;
+interface RunSimulationParams {
+  unclaimedExcessOnAgreement?: boolean;
+  unclaimedExcessOnAgreementBeforeInit?: boolean;
+  excessOnLoan?: boolean;
+  log?: boolean;
+}
+
+type RunSimulationFailReason = 'createLoan' | 'processRepayment';
+
+interface RunSimulationResult {
+  success: boolean;
+  reason?: RunSimulationFailReason;
+}
 
 describe.skip('RoyaltyLoan - gas usage', () => {
   let deployer: SignerWithAddress;
@@ -8,6 +30,7 @@ describe.skip('RoyaltyLoan - gas usage', () => {
   let lender: SignerWithAddress;
 
   let paymentToken: ERC20TokenMock;
+  let loanFactory: RoyaltyLoanFactory;
   let defaults: Awaited<ReturnType<typeof fixture>>['defaults'];
   let createLoan: Awaited<ReturnType<typeof fixture>>['createLoan'];
 
@@ -17,27 +40,45 @@ describe.skip('RoyaltyLoan - gas usage', () => {
 
   let runSimulation: (
     collateralsCt: number,
-    unclaimedExcessOnAgreement?: bigint,
-    log?: boolean,
-  ) => Promise<void>;
+    params?: RunSimulationParams,
+  ) => Promise<RunSimulationResult>;
+
+  before(async () => {
+    expect = (await import('chai')).expect;
+  });
 
   beforeEach(async () => {
     const deployment = await fixture();
 
     [deployer, lender, borrower] = deployment.signers;
-    ({ paymentToken, createLoan, deployAgreementERC1155, defaults } =
-      deployment);
+    ({
+      paymentToken,
+      createLoan,
+      deployAgreementERC1155,
+      defaults,
+      loanFactory,
+    } = deployment);
     await (
       await paymentToken.mintTo(lender.address, deployment.defaults.loanAmount)
     ).wait();
 
     runSimulation = async (
       collateralsCt: number,
-      unclaimedExcessOnAgreement = 0n,
-      log = true,
+      params?: RunSimulationParams,
     ) => {
+      const excessOnLoan = !!params?.excessOnLoan;
+      const unclaimedExcessOnAgreement = !!params?.unclaimedExcessOnAgreement;
+      const unclaimedExcessOnAgreementBeforeInit =
+        !!params?.unclaimedExcessOnAgreementBeforeInit;
+      const log = !!params?.log;
+
       const collaterals: AgreementERC1155[] = [];
       const collateralAmount = 10_000n;
+      const excess = 10_000n;
+
+      if (log) {
+        console.log(`** Collaterals:   ${collateralsCt}`);
+      }
 
       for (let i = 0; i < collateralsCt; i++) {
         const collateral = await deployAgreementERC1155([
@@ -48,6 +89,12 @@ describe.skip('RoyaltyLoan - gas usage', () => {
           },
         ]);
 
+        if (unclaimedExcessOnAgreementBeforeInit) {
+          await (
+            await paymentToken.mintTo(await collateral.getAddress(), excess)
+          ).wait();
+        }
+
         collaterals.push(collateral);
       }
 
@@ -56,24 +103,58 @@ describe.skip('RoyaltyLoan - gas usage', () => {
         collateralAmount,
       }));
 
-      const loan = await createLoan.standard(borrower, mappedColalterals);
+      let loan: RoyaltyLoan | undefined;
+
+      try {
+        const blockNumber = await deployer.provider.getBlockNumber();
+
+        loan = await createLoan.standard(borrower, mappedColalterals);
+
+        if (log) {
+          const events = await loanFactory.queryFilter(
+            loanFactory.getEvent('LoanContractCreated'),
+            blockNumber,
+          );
+          const loanAddress = (await loan!.getAddress()).toLowerCase();
+          const event = events.find(
+            (e) => e.args.loanContract.toLowerCase() === loanAddress,
+          );
+          const receipt = await event?.getTransactionReceipt();
+          const gasUsed = receipt!.gasUsed;
+
+          console.log(
+            `CreateLoan:       ${gasUsed.toLocaleString()}/30,000,000 (${Number((gasUsed * 100n) / 30000000n).toFixed(2)}%)`,
+          );
+        }
+      } catch {
+        if (log) {
+          console.log('** Revert on createLoan **');
+        }
+        return {
+          success: false,
+          reason: 'createLoan',
+        };
+      }
+
+      if (!loan) {
+        throw new Error('Loan not created');
+      }
 
       await (await loan.connect(lender).provideLoan()).wait();
 
       await (
         await paymentToken.mintTo(
           await loan.getAddress(),
-          defaults.loanAmount + defaults.feeAmount,
+          defaults.loanAmount +
+            defaults.feeAmount +
+            (excessOnLoan ? excess : 0n),
         )
       ).wait();
 
-      for (const coll of collaterals) {
-        if (unclaimedExcessOnAgreement > 0n) {
+      if (unclaimedExcessOnAgreement) {
+        for (const coll of collaterals) {
           await (
-            await paymentToken.mintTo(
-              await coll.getAddress(),
-              unclaimedExcessOnAgreement,
-            )
+            await paymentToken.mintTo(await coll.getAddress(), excess)
           ).wait();
         }
       }
@@ -82,38 +163,40 @@ describe.skip('RoyaltyLoan - gas usage', () => {
         const receipt = await (await loan.processRepayment()).wait();
         const gasUsed = receipt!.gasUsed;
         if (log) {
-          console.log('Collaterals: ', collateralsCt);
-          console.log('Total gas used: ', gasUsed.toLocaleString());
           console.log(
-            'Gas per collateral: ',
-            (gasUsed / BigInt(collateralsCt)).toLocaleString(),
+            `ProcessRepayment: ${gasUsed.toLocaleString()}/30,000,000 (${Number((gasUsed * 100n) / 30000000n).toFixed(2)}%)`,
           );
-
-          console.log(
-            `Consumed ${gasUsed.toLocaleString()}/30,000,000 (${Number((gasUsed * 100n) / 30000000n).toFixed(2)}%)`,
-          );
-          console.log('------------------------------------');
+          console.log('===============================================');
         }
       } catch (err) {
-        console.log('siemka');
         if (log) {
-          console.log('OUT OF GAS');
-          console.log(`PARAMS: collaterals: ${collateralsCt}`);
-          console.log(err);
+          console.log('** Revert on processRepayment **');
         }
-        throw new Error(err as any);
+        return {
+          success: false,
+          reason: 'processRepayment',
+        };
       }
+
+      return {
+        success: true,
+      };
     };
   });
 
-  it('edge parameters detection', async () => {
+  it.only('edge parameters detection playground', async () => {
     let keepRunning = true;
     let collateralsCt = 1;
-    const log = true;
 
     while (keepRunning) {
       try {
-        await runSimulation(collateralsCt, 500n * 10n ** 6n, log);
+        const { success, reason } = await runSimulation(collateralsCt, {
+          log,
+          excessOnLoan: true,
+        });
+        if (!success) {
+          throw new Error(reason);
+        }
         collateralsCt++;
       } catch (e) {
         console.log(e);
@@ -122,3 +205,36 @@ describe.skip('RoyaltyLoan - gas usage', () => {
     }
   }).timeout(10000000000000000);
 });
+
+// (no params)
+// ** Collaterals:   109
+// CreateLoan:       26,360,391/30,000,000 (87.00%)
+// ProcessRepayment: 18,139,239/30,000,000 (60.00%)
+// ===============================================
+// ** Collaterals:   110
+// ** Revert on createLoan **
+
+// (unclaimedExcessOnAgreementBeforeInit: true)
+// ** Collaterals:   79
+// CreateLoan:       26,791,377/30,000,000 (89.00%)
+// ProcessRepayment: 13,185,177/30,000,000 (43.00%)
+// ===============================================
+// ** Collaterals:   80
+// ** Revert on createLoan **
+
+// (unclaimedExcessOnAgreement: true)
+// ** Collaterals:   96
+// CreateLoan:       23,263,923/30,000,000 (77.00%)
+// ProcessRepayment: 26,028,902/30,000,000 (86.00%)
+// ===============================================
+// ** Collaterals:   97
+// CreateLoan:       23,502,189/30,000,000 (78.00%)
+// ** Revert on processRepayment **
+
+// (excessOnLoan: true)
+// ** Collaterals:   109
+// CreateLoan:       26,360,391/30,000,000 (87.00%)
+// ProcessRepayment: 18,148,655/30,000,000 (60.00%)
+// ===============================================
+// ** Collaterals:   110
+// ** Revert on createLoan **
