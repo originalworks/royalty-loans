@@ -22,8 +22,10 @@ contract RoyaltyLoanFactory is
   error ZeroTemplateAddress();
   error ZeroDuration();
   error ZeroPaymentTokenAddress();
+  error ZeroMaxCollateralsPerLoan();
   error NotAgreementFactory();
   error ZeroCollateralTokenAddress();
+  error TooManyCollaterals();
   error CollateralNotERC1155(address collateralAddress);
   error CollateralNotRegistered(address collateralAddress);
 
@@ -44,6 +46,11 @@ contract RoyaltyLoanFactory is
     address newAgreementFactory
   );
 
+  event MaxCollateralsPerLoanChanged(
+    uint256 previousMaxCollateralsPerLoan,
+    uint256 newMaxCollateralsPerLoan
+  );
+
   event LoanContractCreated(
     address loanContract,
     address borrower,
@@ -60,6 +67,7 @@ contract RoyaltyLoanFactory is
   address public agreementFactoryAddress;
   uint256 public offerDuration;
   address public templateAddress;
+  uint256 public maxCollateralsPerLoan;
 
   uint256[50] __gap;
 
@@ -72,12 +80,14 @@ contract RoyaltyLoanFactory is
     address _templateAddress,
     address _paymentTokenAddress,
     address _agreementFactoryAddress,
-    uint256 _offerDuration
+    uint256 _offerDuration,
+    uint256 _maxCollateralsPerLoan
   ) public initializer {
     _setTemplateAddress(_templateAddress);
     _setOfferDuration(_offerDuration);
     _setPaymentTokenAddress(_paymentTokenAddress);
     _setAgreementFactoryAddress(_agreementFactoryAddress);
+    _setMaxCollateralsPerLoan(_maxCollateralsPerLoan);
     __ReentrancyGuard_init();
     __Ownable_init(msg.sender);
   }
@@ -150,6 +160,26 @@ contract RoyaltyLoanFactory is
     _setAgreementFactoryAddress(_agreementFactoryAddress);
   }
 
+  function _setMaxCollateralsPerLoan(uint256 _maxCollateralsPerLoan) private {
+    if (_maxCollateralsPerLoan == 0) {
+      revert ZeroMaxCollateralsPerLoan();
+    }
+    uint256 previousMaxCollateralsPerLoan = maxCollateralsPerLoan;
+
+    maxCollateralsPerLoan = _maxCollateralsPerLoan;
+
+    emit MaxCollateralsPerLoanChanged(
+      previousMaxCollateralsPerLoan,
+      maxCollateralsPerLoan
+    );
+  }
+
+  function setMaxCollateralsPerLoan(
+    uint256 _maxCollateralsPerLoan
+  ) external onlyOwner {
+    _setMaxCollateralsPerLoan(_maxCollateralsPerLoan);
+  }
+
   function _validateCollateral(address collateralAddress) private view {
     if (collateralAddress == address(0)) {
       revert ZeroCollateralTokenAddress();
@@ -175,6 +205,10 @@ contract RoyaltyLoanFactory is
     uint256 feePpm
   ) external nonReentrant returns (address) {
     uint256 collateralsLength = collaterals.length;
+
+    if (collateralsLength > maxCollateralsPerLoan) {
+      revert TooManyCollaterals();
+    }
 
     for (uint i = 0; i < collateralsLength; ) {
       _validateCollateral(collaterals[i].tokenAddress);
