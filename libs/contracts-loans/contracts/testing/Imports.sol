@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.32;
 import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import '@royalty-loans/contracts-agreements/contracts/agreements/AgreementFactory.sol';
 import '@royalty-loans/contracts-agreements/contracts/agreements/AgreementERC1155.sol';
