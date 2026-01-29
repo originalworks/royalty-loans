@@ -7,24 +7,9 @@ export const deployRoyaltyLoanFactory = async (
   paymentTokenAddress: string,
   agreementFactoryAddress: string,
 ) => {
-  const StandardRoyaltyLoan = await ethers.getContractFactory(
-    'RoyaltyLoan',
-    deployer,
-  );
-  const standardRoyaltyLoan = await (
-    await StandardRoyaltyLoan.deploy()
-  ).waitForDeployment();
-  const standardRoyaltyLoanTemplate = await standardRoyaltyLoan.getAddress();
-
-  const BeneficiaryRoyaltyLoan = await ethers.getContractFactory(
-    'BeneficiaryRoyaltyLoan',
-    deployer,
-  );
-  const beneficiaryRoyaltyLoan = await (
-    await BeneficiaryRoyaltyLoan.deploy()
-  ).waitForDeployment();
-  const beneficiaryRoyaltyLoanTemplate =
-    await beneficiaryRoyaltyLoan.getAddress();
+  const RoyaltyLoan = await ethers.getContractFactory('RoyaltyLoan', deployer);
+  const royaltyLoan = await (await RoyaltyLoan.deploy()).waitForDeployment();
+  const royaltyLoanTemplate = await royaltyLoan.getAddress();
 
   const RoyaltyLoanFactory = await ethers.getContractFactory(
     'RoyaltyLoanFactory',
@@ -34,11 +19,11 @@ export const deployRoyaltyLoanFactory = async (
   const royaltyLoanFactory = await upgrades.deployProxy(
     RoyaltyLoanFactory,
     [
-      standardRoyaltyLoanTemplate,
-      beneficiaryRoyaltyLoanTemplate,
+      royaltyLoanTemplate,
       paymentTokenAddress,
       agreementFactoryAddress,
       '432000',
+      100n,
     ],
     {
       kind: 'uups',
@@ -57,8 +42,7 @@ export const deployRoyaltyLoanFactory = async (
   }
 
   return {
-    standardRoyaltyLoanTemplate,
-    beneficiaryRoyaltyLoanTemplate,
+    royaltyLoanTemplate,
     royaltyLoanFactory: await royaltyLoanFactory.getAddress(),
   };
 };

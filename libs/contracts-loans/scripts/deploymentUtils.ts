@@ -3,8 +3,7 @@ import { readdir, readFile, writeFile } from 'fs/promises';
 
 export interface IDeployment {
   deployer: string;
-  standardRoyaltyLoanTemplate: string;
-  beneficiaryRoyaltyLoanTemplate: string;
+  royaltyLoanTemplate: string;
   royaltyLoanFactory: string;
   paymentToken: string;
   agreementFactory: string;
