@@ -178,7 +178,7 @@ describe.skip('RoyaltyLoan - gas usage', () => {
     };
   });
 
-  it.only('edge parameters detection playground', async () => {
+  it('edge parameters detection playground', async () => {
     let keepRunning = true;
     let collateralsCt = 1;
 
