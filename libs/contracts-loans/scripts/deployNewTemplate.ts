@@ -1,24 +1,14 @@
 import hre from 'hardhat';
 import { getLatestDeployment, saveNewDeployment } from './deploymentUtils';
 
-type TemplateType = 'Standard' | 'Beneficiary';
-
-const deployNewTemplate = async (type: TemplateType) => {
+const deployNewTemplate = async () => {
   const [deployer] = await hre.ethers.getSigners();
 
-  console.log(`Deploying ${type}RoyaltyLoanTemplate...`);
+  console.log(`Deploying royaltyLoanTemplate...`);
 
-  let template;
-
-  if (type === 'Standard') {
-    template = await (
-      await hre.ethers.getContractFactory('RoyaltyLoan', deployer)
-    ).deploy();
-  } else {
-    template = await (
-      await hre.ethers.getContractFactory('BeneficiaryRoyaltyLoan', deployer)
-    ).deploy();
-  }
+  const template = await (
+    await hre.ethers.getContractFactory('RoyaltyLoan', deployer)
+  ).deploy();
 
   await template.waitForDeployment();
   const newAddress = await template.getAddress();
@@ -27,17 +17,10 @@ const deployNewTemplate = async (type: TemplateType) => {
 
   const latestDeployment = await getLatestDeployment();
 
-  if (type === 'Standard') {
-    await saveNewDeployment({
-      ...latestDeployment,
-      standardRoyaltyLoanTemplate: newAddress,
-    });
-  } else {
-    await saveNewDeployment({
-      ...latestDeployment,
-      beneficiaryRoyaltyLoanTemplate: newAddress,
-    });
-  }
+  await saveNewDeployment({
+    ...latestDeployment,
+    royaltyLoanTemplate: newAddress,
+  });
 
   const factory = await hre.ethers.getContractAt(
     'RoyaltyLoanFactory',
@@ -45,14 +28,11 @@ const deployNewTemplate = async (type: TemplateType) => {
     deployer,
   );
 
-  const tx = await factory.setTemplateAddress(
-    type === 'Standard' ? 0n : 1n,
-    newAddress,
-  );
+  const tx = await factory.setTemplateAddress(newAddress);
   console.log(`Setting new template address in tx ${tx.hash}...`);
   await tx.wait();
 
   console.log('Done');
 };
 
-void deployNewTemplate('Standard');
+void deployNewTemplate();

@@ -21,9 +21,7 @@ const main = async () => {
 
   const deploymentFile = {
     deployer: deployer.address,
-    standardRoyaltyLoanTemplate: factoryDeployment.standardRoyaltyLoanTemplate,
-    beneficiaryRoyaltyLoanTemplate:
-      factoryDeployment.beneficiaryRoyaltyLoanTemplate,
+    royaltyLoanTemplate: factoryDeployment.royaltyLoanTemplate,
     royaltyLoanFactory: factoryDeployment.royaltyLoanFactory,
     agreementFactory: AGREEMENT_FACTORY_ADDRESS,
     paymentToken: paymentTokenAddress,
