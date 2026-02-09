@@ -9,9 +9,9 @@ import '@openzeppelin/contracts/utils/introspection/ERC165Checker.sol';
 import '@openzeppelin/contracts/interfaces/IERC1155.sol';
 import '@openzeppelin/contracts/proxy/Clones.sol';
 import '@royalty-loans/contracts-agreements/contracts/interfaces/IAgreementFactory.sol';
-import './interfaces/IRoyaltyLoan.sol';
+import './interfaces/IRoyaltyAdvance.sol';
 
-contract RoyaltyLoanFactory is
+contract RoyaltyAdvanceFactory is
   Initializable,
   OwnableUpgradeable,
   UUPSUpgradeable,
@@ -22,7 +22,7 @@ contract RoyaltyLoanFactory is
   error ZeroTemplateAddress();
   error ZeroDuration();
   error ZeroPaymentTokenAddress();
-  error ZeroMaxCollateralsPerLoan();
+  error ZeroMaxCollateralsPerAdvance();
   error NotAgreementFactory();
   error ZeroCollateralTokenAddress();
   error TooManyCollaterals();
@@ -46,17 +46,17 @@ contract RoyaltyLoanFactory is
     address newAgreementFactory
   );
 
-  event MaxCollateralsPerLoanChanged(
-    uint256 previousMaxCollateralsPerLoan,
-    uint256 newMaxCollateralsPerLoan
+  event MaxCollateralsPerAdvanceChanged(
+    uint256 previousMaxCollateralsPerAdvance,
+    uint256 newMaxCollateralsPerAdvance
   );
 
-  event LoanContractCreated(
-    address loanContract,
-    address borrower,
-    address receiver,
+  event AdvanceContractCreated(
+    address advanceContract,
+    address recipient,
+    address collateralReceiver,
     ICollateral.Collateral[] collaterals,
-    uint256 loanAmount,
+    uint256 advanceAmount,
     uint256 feePpm,
     uint256 offerDuration,
     address paymentTokenAddress,
@@ -67,7 +67,7 @@ contract RoyaltyLoanFactory is
   address public agreementFactoryAddress;
   uint256 public offerDuration;
   address public templateAddress;
-  uint256 public maxCollateralsPerLoan;
+  uint256 public maxCollateralsPerAdvance;
 
   uint256[50] __gap;
 
@@ -81,13 +81,13 @@ contract RoyaltyLoanFactory is
     address _paymentTokenAddress,
     address _agreementFactoryAddress,
     uint256 _offerDuration,
-    uint256 _maxCollateralsPerLoan
+    uint256 _maxCollateralsPerAdvance
   ) public initializer {
     _setTemplateAddress(_templateAddress);
     _setOfferDuration(_offerDuration);
     _setPaymentTokenAddress(_paymentTokenAddress);
     _setAgreementFactoryAddress(_agreementFactoryAddress);
-    _setMaxCollateralsPerLoan(_maxCollateralsPerLoan);
+    _setMaxCollateralsPerAdvance(_maxCollateralsPerAdvance);
     __ReentrancyGuard_init();
     __Ownable_init(msg.sender);
   }
@@ -160,24 +160,26 @@ contract RoyaltyLoanFactory is
     _setAgreementFactoryAddress(_agreementFactoryAddress);
   }
 
-  function _setMaxCollateralsPerLoan(uint256 _maxCollateralsPerLoan) private {
-    if (_maxCollateralsPerLoan == 0) {
-      revert ZeroMaxCollateralsPerLoan();
+  function _setMaxCollateralsPerAdvance(
+    uint256 _maxCollateralsPerAdvance
+  ) private {
+    if (_maxCollateralsPerAdvance == 0) {
+      revert ZeroMaxCollateralsPerAdvance();
     }
-    uint256 previousMaxCollateralsPerLoan = maxCollateralsPerLoan;
+    uint256 previousMaxCollateralsPerAdvance = maxCollateralsPerAdvance;
 
-    maxCollateralsPerLoan = _maxCollateralsPerLoan;
+    maxCollateralsPerAdvance = _maxCollateralsPerAdvance;
 
-    emit MaxCollateralsPerLoanChanged(
-      previousMaxCollateralsPerLoan,
-      maxCollateralsPerLoan
+    emit MaxCollateralsPerAdvanceChanged(
+      previousMaxCollateralsPerAdvance,
+      maxCollateralsPerAdvance
     );
   }
 
-  function setMaxCollateralsPerLoan(
-    uint256 _maxCollateralsPerLoan
+  function setMaxCollateralsPerAdvance(
+    uint256 _maxCollateralsPerAdvance
   ) external onlyOwner {
-    _setMaxCollateralsPerLoan(_maxCollateralsPerLoan);
+    _setMaxCollateralsPerAdvance(_maxCollateralsPerAdvance);
   }
 
   function _validateCollateral(address collateralAddress) private view {
@@ -198,15 +200,15 @@ contract RoyaltyLoanFactory is
     }
   }
 
-  function createLoanContract(
+  function createAdvanceContract(
     ICollateral.Collateral[] calldata collaterals,
-    address receiver,
-    uint256 loanAmount,
+    address collateralReceiver,
+    uint256 advanceAmount,
     uint256 feePpm
   ) external nonReentrant returns (address) {
     uint256 collateralsLength = collaterals.length;
 
-    if (collateralsLength > maxCollateralsPerLoan) {
+    if (collateralsLength > maxCollateralsPerAdvance) {
       revert TooManyCollaterals();
     }
 
@@ -236,22 +238,22 @@ contract RoyaltyLoanFactory is
       }
     }
 
-    IRoyaltyLoan(clone).initialize(
+    IRoyaltyAdvance(clone).initialize(
       collaterals,
       paymentTokenAddress,
       msg.sender,
-      receiver,
+      collateralReceiver,
       feePpm,
-      loanAmount,
+      advanceAmount,
       offerDuration
     );
 
-    emit LoanContractCreated(
+    emit AdvanceContractCreated(
       clone,
       msg.sender,
-      receiver,
+      collateralReceiver,
       collaterals,
-      loanAmount,
+      advanceAmount,
       feePpm,
       offerDuration,
       paymentTokenAddress,

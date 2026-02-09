@@ -4,10 +4,10 @@ import { getLatestDeployment, saveNewDeployment } from './deploymentUtils';
 const deployNewTemplate = async () => {
   const [deployer] = await hre.ethers.getSigners();
 
-  console.log(`Deploying royaltyLoanTemplate...`);
+  console.log(`Deploying royaltyAdvanceTemplate...`);
 
   const template = await (
-    await hre.ethers.getContractFactory('RoyaltyLoan', deployer)
+    await hre.ethers.getContractFactory('RoyaltyAdvance', deployer)
   ).deploy();
 
   await template.waitForDeployment();
@@ -19,12 +19,12 @@ const deployNewTemplate = async () => {
 
   await saveNewDeployment({
     ...latestDeployment,
-    royaltyLoanTemplate: newAddress,
+    royaltyAdvanceTemplate: newAddress,
   });
 
   const factory = await hre.ethers.getContractAt(
-    'RoyaltyLoanFactory',
-    latestDeployment.royaltyLoanFactory,
+    'RoyaltyAdvanceFactory',
+    latestDeployment.royaltyAdvanceFactory,
     deployer,
   );
 

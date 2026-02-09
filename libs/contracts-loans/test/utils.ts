@@ -1,55 +1,55 @@
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { BigNumberish, ethers, HDNodeWallet, Wallet } from 'ethers';
 import {
-  RoyaltyLoanFactory,
+  RoyaltyAdvanceFactory,
   ERC20TokenMock,
   AgreementERC1155,
-  RoyaltyLoan,
-  RoyaltyLoan__factory,
+  RoyaltyAdvance,
+  RoyaltyAdvance__factory,
   AgreementFactory__factory,
   AgreementERC1155__factory,
 } from '../typechain';
-import { ICollateral } from '../typechain/contracts/Loans/RoyaltyLoan';
+import { ICollateral } from '../typechain/contracts/Advances/RoyaltyAdvance';
 import { defaults, HolderStruct } from './fixture';
 import { getEvent } from '@royalty-loans/contracts-agreements';
 
-export const createLoanCreator = (args: {
-  loanFactory: RoyaltyLoanFactory;
+export const createAdvanceCreator = (args: {
+  advanceFactory: RoyaltyAdvanceFactory;
   paymentToken: ERC20TokenMock;
-  lender: SignerWithAddress;
+  advancer: SignerWithAddress;
 }) => ({
-  standard: createStandardLoanCreator(args),
+  standard: createStandardAdvanceCreator(args),
 });
 
-const createStandardLoanCreator =
+const createStandardAdvanceCreator =
   ({
-    loanFactory,
+    advanceFactory,
     paymentToken,
-    lender,
+    advancer,
   }: {
-    loanFactory: RoyaltyLoanFactory;
+    advanceFactory: RoyaltyAdvanceFactory;
     paymentToken: ERC20TokenMock;
-    lender: SignerWithAddress;
+    advancer: SignerWithAddress;
   }) =>
   async (
-    borrower: SignerWithAddress,
+    recipient: SignerWithAddress,
     collateralsWithOpts: {
       collateralToken: AgreementERC1155;
       collateralAmount?: BigNumberish;
     }[],
     overrides?: {
-      loanAmount?: BigNumberish;
+      advanceAmount?: BigNumberish;
       feePpm?: BigNumberish;
-      receiver?: string;
+      collateralReceiver?: string;
     },
-  ): Promise<RoyaltyLoan> => {
+  ): Promise<RoyaltyAdvance> => {
     const collaterals: ICollateral.CollateralStruct[] = [];
 
     for (const coll of collateralsWithOpts) {
       await (
         await coll.collateralToken
-          .connect(borrower)
-          .setApprovalForAll(await loanFactory.getAddress(), true)
+          .connect(recipient)
+          .setApprovalForAll(await advanceFactory.getAddress(), true)
       ).wait();
 
       collaterals.push({
@@ -59,42 +59,42 @@ const createStandardLoanCreator =
       });
     }
 
-    const receiver =
-      overrides?.receiver !== undefined
-        ? overrides?.receiver
-        : borrower.address;
+    const collateralReceiver =
+      overrides?.collateralReceiver !== undefined
+        ? overrides?.collateralReceiver
+        : recipient.address;
 
     const receipt = await (
-      await loanFactory
-        .connect(borrower)
-        .createLoanContract(
+      await advanceFactory
+        .connect(recipient)
+        .createAdvanceContract(
           collaterals,
-          receiver,
-          overrides?.loanAmount ?? defaults.loanAmount,
+          collateralReceiver,
+          overrides?.advanceAmount ?? defaults.advanceAmount,
           overrides?.feePpm ?? defaults.feePpm,
         )
     ).wait();
 
-    const loanContractAddress = (
-      await loanFactory.queryFilter(
-        loanFactory.getEvent('LoanContractCreated'),
+    const advanceContractAddress = (
+      await advanceFactory.queryFilter(
+        advanceFactory.getEvent('AdvanceContractCreated'),
         receipt?.blockNumber,
         receipt?.blockNumber,
       )
-    )[0].args.loanContract;
+    )[0].args.advanceContract;
 
-    const royaltyLoan = RoyaltyLoan__factory.connect(
-      loanContractAddress,
-      borrower,
+    const royaltyAdvance = RoyaltyAdvance__factory.connect(
+      advanceContractAddress,
+      recipient,
     );
 
     await (
       await paymentToken
-        .connect(lender)
-        .approve(loanContractAddress, ethers.MaxUint256)
+        .connect(advancer)
+        .approve(advanceContractAddress, ethers.MaxUint256)
     ).wait();
 
-    return royaltyLoan;
+    return royaltyAdvance;
   };
 
 type ExpectedBalance = {
