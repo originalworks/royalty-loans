@@ -1,5 +1,5 @@
 {
-  "name": "@royalty-loans/contracts-loans",
+  "name": "@royalty-loans/contracts-advances",
   "version": "0.0.1",
   "private": true,
   "main": "./index.ts",
@@ -33,21 +33,21 @@
         "executor": "nx:run-commands",
         "options": {
           "command": "npx hardhat compile",
-          "cwd": "libs/contracts-loans"
+          "cwd": "libs/contracts-advances"
         }
       },
       "test": {
         "executor": "nx:run-commands",
         "options": {
           "command": "npx hardhat test",
-          "cwd": "libs/contracts-loans"
+          "cwd": "libs/contracts-advances"
         }
       },
       "lint": {
         "executor": "nx:run-commands",
         "options": {
           "command": "eslint \"{src,test}/**/*.ts\" --fix",
-          "cwd": "libs/contracts-loans"
+          "cwd": "libs/contracts-advances"
         }
       },
       "typecheck": {
