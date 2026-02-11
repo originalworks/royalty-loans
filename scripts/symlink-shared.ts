@@ -10,7 +10,7 @@ const sharedContractsPath = path.join(
 );
 
 // List your contracts libs here
-const targets = ['contracts-agreements', 'contracts-loans'];
+const targets = ['contracts-agreements', 'contracts-advances'];
 
 for (const target of targets) {
   const targetSharedPath = path.join(
