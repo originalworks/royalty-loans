@@ -10,7 +10,7 @@
       "path": "./apps/admin"
     },
     {
-      "path": "./libs/contracts-loans"
+      "path": "./libs/contracts-advances"
     },
     {
       "path": "./libs/contracts-agreements"

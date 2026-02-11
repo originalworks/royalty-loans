@@ -5,8 +5,8 @@ import {
   AgreementERC20__factory,
   ERC20TokenMock,
   ERC20TokenMock__factory,
-  RoyaltyLoan__factory,
-  RoyaltyLoanFactory__factory,
+  RoyaltyAdvance__factory,
+  RoyaltyAdvanceFactory__factory,
 } from '../typechain';
 
 import {
@@ -16,33 +16,32 @@ import {
 import { deployProxy } from '@royalty-loans/contracts-shared';
 
 import { AddressLike, BigNumberish } from 'ethers';
-import { ICollateral } from '../typechain/contracts/Loans/interfaces/IRoyaltyLoan';
-import { createLoanCreator, deployAgreementERC1155Creator } from './utils';
+import { ICollateral } from '../typechain/contracts/Advances/interfaces/IRoyaltyAdvance';
+import { createAdvanceCreator, deployAgreementERC1155Creator } from './utils';
 
-export enum RoyaltyLoanError {
+export enum RoyaltyAdvanceError {
   NoCollateralsProvided = 'NoCollateralsProvided',
   ZeroCollateralTokenAddress = 'ZeroCollateralTokenAddress',
   ZeroCollateralAmount = 'ZeroCollateralAmount',
   CollateralNotTransferred = 'CollateralNotTransferred',
-  ZeroLoanAmount = 'ZeroLoanAmount',
+  ZeroAdvanceAmount = 'ZeroAdvanceAmount',
   FeePpmTooHigh = 'FeePpmTooHigh',
   ZeroPaymentTokenAddress = 'ZeroPaymentTokenAddress',
   ZeroDuration = 'ZeroDuration',
-  LoanAlreadyActive = 'LoanAlreadyActive',
-  LoanOfferExpired = 'LoanOfferExpired',
-  LoanOfferRevoked = 'LoanOfferRevoked',
-  LoanNotActive = 'LoanNotActive',
+  AdvanceAlreadyActive = 'AdvanceAlreadyActive',
+  AdvanceOfferExpired = 'AdvanceOfferExpired',
+  AdvanceOfferRevoked = 'AdvanceOfferRevoked',
+  AdvanceNotActive = 'AdvanceNotActive',
   NoPaymentTokenToProcess = 'NoPaymentTokenToProcess',
-  OnlyBorrowerAllowed = 'OnlyBorrowerAllowed',
-  ZeroBeneficiaryAddress = 'ZeroBeneficiaryAddress',
-  ZeroReceiverAddress = 'ZeroReceiverAddress',
+  OnlyRecipientAllowed = 'OnlyRecipientAllowed',
+  ZeroCollateralReceiverAddress = 'ZeroCollateralReceiverAddress',
 }
 
-export enum RoyaltyLoanFactoryError {
+export enum RoyaltyAdvanceFactoryError {
   ZeroTemplateAddress = 'ZeroTemplateAddress',
   ZeroDuration = 'ZeroDuration',
   ZeroPaymentTokenAddress = 'ZeroPaymentTokenAddress',
-  ZeroMaxCollateralsPerLoan = 'ZeroMaxCollateralsPerLoan',
+  ZeroMaxCollateralsPerAdvance = 'ZeroMaxCollateralsPerAdvance',
   NotAgreementFactory = 'NotAgreementFactory',
   ZeroCollateralTokenAddress = 'ZeroCollateralTokenAddress',
   CollateralNotERC1155 = 'CollateralNotERC1155',
@@ -56,7 +55,7 @@ export type HolderStruct = {
   balance: BigNumberish;
 };
 
-export const LoanState = {
+export const AdvanceState = {
   Uninitialized: 0n,
   Pending: 1n,
   Revoked: 2n,
@@ -68,17 +67,17 @@ export const defaults = {
   collateralTokenId: 1n,
   collateralAmount: 1000n,
   feePpm: 200000n,
-  loanAmount: ethers.parseUnits('10', 6), // 10 USDC
+  advanceAmount: ethers.parseUnits('10', 6), // 10 USDC
   feeAmount: (ethers.parseUnits('10', 6) * 200000n) / 1000000n, // 2 USDC
   duration: 10n, // 10s,
 };
 
-export type RoyaltyLoanInitArgs = {
+export type RoyaltyAdvanceInitArgs = {
   collaterals: ICollateral.CollateralStruct[];
   paymentTokenAddress: AddressLike;
-  borrowerAddress: AddressLike;
+  recipientAddress: AddressLike;
   feePpm: BigNumberish;
-  loanAmount: BigNumberish;
+  advanceAmount: BigNumberish;
   duration: BigNumberish;
 };
 
@@ -104,7 +103,7 @@ const getCurrentBalancesCreator =
 export const fixture = async () => {
   const signers = await hre.ethers.getSigners();
 
-  const [deployer, lender] = signers;
+  const [deployer, advancer] = signers;
 
   const { splitCurrencies, agreementFactory } = await deployInitialSetup({
     creationFee: 0n,
@@ -144,14 +143,14 @@ export const fixture = async () => {
     deployer,
   );
 
-  const loanTemplate = await (
-    await new RoyaltyLoan__factory(deployer).deploy()
+  const advanceTemplate = await (
+    await new RoyaltyAdvance__factory(deployer).deploy()
   ).waitForDeployment();
 
-  const loanFactory = await deployProxy(
-    new RoyaltyLoanFactory__factory(deployer),
+  const advanceFactory = await deployProxy(
+    new RoyaltyAdvanceFactory__factory(deployer),
     [
-      await loanTemplate.getAddress(),
+      await advanceTemplate.getAddress(),
       await paymentToken.getAddress(),
       await agreementFactory.getAddress(),
       defaults.duration,
@@ -159,18 +158,22 @@ export const fixture = async () => {
     ],
   );
 
-  await loanFactory.waitForDeployment();
+  await advanceFactory.waitForDeployment();
 
   return {
     signers,
     defaults,
-    loanTemplate,
-    loanFactory,
+    advanceTemplate,
+    advanceFactory,
     agreementFactory,
     deployAgreementERC1155,
     deployAgreementERC20,
     paymentToken,
     getCurrentBalances: getCurrentBalancesCreator(paymentToken),
-    createLoan: createLoanCreator({ loanFactory, paymentToken, lender }),
+    createAdvance: createAdvanceCreator({
+      advanceFactory,
+      paymentToken,
+      advancer,
+    }),
   };
 };

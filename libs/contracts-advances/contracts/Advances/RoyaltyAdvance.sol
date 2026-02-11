@@ -8,9 +8,9 @@ import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@royalty-loans/contracts-agreements/contracts/interfaces/IAgreement.sol';
-import './interfaces/IRoyaltyLoan.sol';
+import './interfaces/IRoyaltyAdvance.sol';
 
-enum LoanState {
+enum AdvanceState {
   Uninitialized,
   Pending,
   Revoked,
@@ -18,8 +18,8 @@ enum LoanState {
   Repaid
 }
 
-contract RoyaltyLoan is
-  IRoyaltyLoan,
+contract RoyaltyAdvance is
+  IRoyaltyAdvance,
   ERC1155Holder,
   Initializable,
   ReentrancyGuard
@@ -30,29 +30,29 @@ contract RoyaltyLoan is
   error CollateralNotTransferred(uint256 collateralIndex);
   error ZeroCollateralTokenAddress(uint256 collateralIndex);
   error ZeroCollateralAmount(uint256 collateralIndex);
-  error ZeroBorrowerAddress();
-  error ZeroReceiverAddress();
+  error ZeroRecipientAddress();
+  error ZeroCollateralReceiverAddress();
   error ZeroPaymentTokenAddress();
   error ZeroDuration();
-  error ZeroLoanAmount();
+  error ZeroAdvanceAmount();
   error FeePpmTooHigh();
-  error LoanAlreadyActive();
-  error LoanOfferExpired();
-  error LoanOfferRevoked();
-  error LoanNotActive();
+  error AdvanceAlreadyActive();
+  error AdvanceOfferExpired();
+  error AdvanceOfferRevoked();
+  error AdvanceNotActive();
   error NoPaymentTokenToProcess();
-  error OnlyBorrowerAllowed();
+  error OnlyRecipientAllowed();
 
   Collateral[] public collaterals;
   IERC20 public paymentToken;
-  address public borrower;
-  address public lender;
-  address public receiver;
+  address public recipient;
+  address public advancer;
+  address public collateralReceiver;
   uint256 public feePpm;
-  uint256 public loanAmount;
+  uint256 public advanceAmount;
   uint256 public expirationDate;
 
-  LoanState public loanState;
+  AdvanceState public advanceState;
 
   uint256 public totalDue;
 
@@ -64,10 +64,10 @@ contract RoyaltyLoan is
   function initialize(
     Collateral[] calldata _collaterals,
     address _paymentTokenAddress,
-    address _borrowerAddress,
-    address _receiverAddress,
+    address _recipientAddress,
+    address _collateralReceiverAddress,
     uint256 _feePpm,
-    uint256 _loanAmount,
+    uint256 _advanceAmount,
     uint256 _duration
   ) public initializer {
     uint256 collateralsLength = _collaterals.length;
@@ -96,36 +96,37 @@ contract RoyaltyLoan is
         i++;
       }
     }
-    if (_borrowerAddress == address(0)) revert ZeroBorrowerAddress();
-    if (_receiverAddress == address(0)) revert ZeroReceiverAddress();
-    if (_loanAmount == 0) revert ZeroLoanAmount();
+    if (_recipientAddress == address(0)) revert ZeroRecipientAddress();
+    if (_collateralReceiverAddress == address(0))
+      revert ZeroCollateralReceiverAddress();
+    if (_advanceAmount == 0) revert ZeroAdvanceAmount();
     if (_feePpm > 1_000_000) revert FeePpmTooHigh();
     if (_paymentTokenAddress == address(0)) revert ZeroPaymentTokenAddress();
     if (_duration == 0) revert ZeroDuration();
 
     paymentToken = IERC20(_paymentTokenAddress);
-    borrower = _borrowerAddress;
-    receiver = _receiverAddress;
+    recipient = _recipientAddress;
+    collateralReceiver = _collateralReceiverAddress;
     feePpm = _feePpm;
-    loanAmount = _loanAmount;
-    totalDue = loanAmount + ((loanAmount * feePpm) / 1_000_000);
+    advanceAmount = _advanceAmount;
+    totalDue = advanceAmount + ((advanceAmount * feePpm) / 1_000_000);
     expirationDate = block.timestamp + _duration;
-    loanState = LoanState.Pending;
+    advanceState = AdvanceState.Pending;
   }
 
-  function provideLoan() external nonReentrant {
-    LoanState state = loanState;
+  function provideAdvance() external nonReentrant {
+    AdvanceState state = advanceState;
 
-    if (state == LoanState.Active) revert LoanAlreadyActive();
-    if (block.timestamp > expirationDate) revert LoanOfferExpired();
-    if (state == LoanState.Revoked) revert LoanOfferRevoked();
+    if (state == AdvanceState.Active) revert AdvanceAlreadyActive();
+    if (block.timestamp > expirationDate) revert AdvanceOfferExpired();
+    if (state == AdvanceState.Revoked) revert AdvanceOfferRevoked();
 
-    lender = msg.sender;
-    paymentToken.safeTransferFrom(msg.sender, borrower, loanAmount);
+    advancer = msg.sender;
+    paymentToken.safeTransferFrom(msg.sender, recipient, advanceAmount);
 
-    loanState = LoanState.Active;
+    advanceState = AdvanceState.Active;
 
-    emit LoanProvided(lender);
+    emit AdvanceProvided(advancer);
   }
 
   function claimCollateralBalance(address _collateralTokenAddress) private {
@@ -138,7 +139,7 @@ contract RoyaltyLoan is
   }
 
   function processRepayment() external nonReentrant {
-    if (loanState != LoanState.Active) revert LoanNotActive();
+    if (advanceState != AdvanceState.Active) revert AdvanceNotActive();
 
     uint256 collateralsLength = collaterals.length;
 
@@ -158,7 +159,7 @@ contract RoyaltyLoan is
       for (uint i = 0; i < collateralsLength; ) {
         IERC1155(collaterals[i].tokenAddress).safeTransferFrom(
           address(this),
-          receiver,
+          collateralReceiver,
           collaterals[i].tokenId,
           collaterals[i].tokenAmount,
           ''
@@ -169,57 +170,57 @@ contract RoyaltyLoan is
         }
       }
 
-      paymentToken.safeTransfer(lender, totalDue);
+      paymentToken.safeTransfer(advancer, totalDue);
 
       if (currentBalance > totalDue) {
         uint256 excess = currentBalance - totalDue;
 
-        paymentToken.safeTransfer(receiver, excess);
+        paymentToken.safeTransfer(collateralReceiver, excess);
       }
 
-      emit LoanRepaid(totalDue);
+      emit AdvanceRepaid(totalDue);
 
       totalDue = 0;
-      loanState = LoanState.Repaid;
+      advanceState = AdvanceState.Repaid;
     } else {
       // Partial repayment
       totalDue = totalDue - currentBalance;
 
-      paymentToken.safeTransfer(lender, currentBalance);
+      paymentToken.safeTransfer(advancer, currentBalance);
 
-      emit LoanPartiallyRepaid(currentBalance);
+      emit AdvancePartiallyRepaid(currentBalance);
     }
   }
 
   function reclaimExcessPaymentToken() external nonReentrant {
-    LoanState state = loanState;
+    AdvanceState state = advanceState;
 
-    if (state == LoanState.Active) revert LoanAlreadyActive();
+    if (state == AdvanceState.Active) revert AdvanceAlreadyActive();
 
     uint256 currentBalance = paymentToken.balanceOf(address(this));
 
     if (currentBalance == 0) revert NoPaymentTokenToProcess();
 
-    if (state == LoanState.Repaid) {
-      paymentToken.safeTransfer(receiver, currentBalance);
+    if (state == AdvanceState.Repaid) {
+      paymentToken.safeTransfer(collateralReceiver, currentBalance);
     } else {
-      paymentToken.safeTransfer(borrower, currentBalance);
+      paymentToken.safeTransfer(recipient, currentBalance);
     }
   }
 
-  function revokeLoan() external nonReentrant {
-    LoanState state = loanState;
+  function revokeAdvance() external nonReentrant {
+    AdvanceState state = advanceState;
 
-    if (state == LoanState.Active) revert LoanAlreadyActive();
-    if (state == LoanState.Revoked) revert LoanOfferRevoked();
-    if (msg.sender != borrower) revert OnlyBorrowerAllowed();
+    if (state == AdvanceState.Active) revert AdvanceAlreadyActive();
+    if (state == AdvanceState.Revoked) revert AdvanceOfferRevoked();
+    if (msg.sender != recipient) revert OnlyRecipientAllowed();
 
     uint256 collateralsLength = collaterals.length;
 
     for (uint i = 0; i < collateralsLength; ) {
       IERC1155(collaterals[i].tokenAddress).safeTransferFrom(
         address(this),
-        borrower,
+        recipient,
         collaterals[i].tokenId,
         collaterals[i].tokenAmount,
         ''
@@ -232,10 +233,10 @@ contract RoyaltyLoan is
 
     uint256 currentBalance = paymentToken.balanceOf(address(this));
     if (currentBalance > 0) {
-      paymentToken.safeTransfer(borrower, currentBalance);
+      paymentToken.safeTransfer(recipient, currentBalance);
     }
 
-    loanState = LoanState.Revoked;
-    emit LoanRevoked();
+    advanceState = AdvanceState.Revoked;
+    emit AdvanceRevoked();
   }
 }

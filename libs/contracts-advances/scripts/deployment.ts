@@ -1,5 +1,5 @@
 import hre from 'hardhat';
-import { deployRoyaltyLoanFactory } from './RoyaltyLoanFactory';
+import { deployRoyaltyAdvanceFactory } from './RoyaltyAdvanceFactory';
 import { saveNewDeployment } from './deploymentUtils';
 
 const AGREEMENT_FACTORY_ADDRESS = '0x';
@@ -12,7 +12,7 @@ const main = async () => {
   }
 
   console.log('Deploying loanFactory...');
-  const factoryDeployment = await deployRoyaltyLoanFactory(
+  const factoryDeployment = await deployRoyaltyAdvanceFactory(
     deployer,
     paymentTokenAddress,
     AGREEMENT_FACTORY_ADDRESS,
@@ -21,8 +21,8 @@ const main = async () => {
 
   const deploymentFile = {
     deployer: deployer.address,
-    royaltyLoanTemplate: factoryDeployment.royaltyLoanTemplate,
-    royaltyLoanFactory: factoryDeployment.royaltyLoanFactory,
+    royaltyAdvanceTemplate: factoryDeployment.royaltyAdvanceTemplate,
+    royaltyAdvanceFactory: factoryDeployment.royaltyAdvanceFactory,
     agreementFactory: AGREEMENT_FACTORY_ADDRESS,
     paymentToken: paymentTokenAddress,
   };

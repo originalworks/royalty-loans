@@ -1,8 +1,8 @@
 import {
   AgreementERC1155,
   ERC20TokenMock,
-  RoyaltyLoan,
-  RoyaltyLoanFactory,
+  RoyaltyAdvance,
+  RoyaltyAdvanceFactory,
 } from '../typechain';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { fixture } from './fixture';
@@ -11,26 +11,26 @@ const log = true;
 interface RunSimulationParams {
   unclaimedExcessOnAgreement?: boolean;
   unclaimedExcessOnAgreementBeforeInit?: boolean;
-  excessOnLoan?: boolean;
+  excessOnAdvance?: boolean;
   log?: boolean;
 }
 
-type RunSimulationFailReason = 'createLoan' | 'processRepayment';
+type RunSimulationFailReason = 'createAdvance' | 'processRepayment';
 
 interface RunSimulationResult {
   success: boolean;
   reason?: RunSimulationFailReason;
 }
 
-describe.skip('RoyaltyLoan - gas usage', () => {
+describe.skip('RoyaltyAdvance - gas usage', () => {
   let deployer: SignerWithAddress;
-  let borrower: SignerWithAddress;
+  let recipient: SignerWithAddress;
   let lender: SignerWithAddress;
 
   let paymentToken: ERC20TokenMock;
-  let loanFactory: RoyaltyLoanFactory;
+  let advanceFactory: RoyaltyAdvanceFactory;
   let defaults: Awaited<ReturnType<typeof fixture>>['defaults'];
-  let createLoan: Awaited<ReturnType<typeof fixture>>['createLoan'];
+  let createAdvance: Awaited<ReturnType<typeof fixture>>['createAdvance'];
 
   let deployAgreementERC1155: Awaited<
     ReturnType<typeof fixture>
@@ -44,23 +44,26 @@ describe.skip('RoyaltyLoan - gas usage', () => {
   beforeEach(async () => {
     const deployment = await fixture();
 
-    [deployer, lender, borrower] = deployment.signers;
+    [deployer, lender, recipient] = deployment.signers;
     ({
       paymentToken,
-      createLoan,
+      createAdvance,
       deployAgreementERC1155,
       defaults,
-      loanFactory,
+      advanceFactory,
     } = deployment);
     await (
-      await paymentToken.mintTo(lender.address, deployment.defaults.loanAmount)
+      await paymentToken.mintTo(
+        lender.address,
+        deployment.defaults.advanceAmount,
+      )
     ).wait();
 
     runSimulation = async (
       collateralsCt: number,
       params?: RunSimulationParams,
     ) => {
-      const excessOnLoan = !!params?.excessOnLoan;
+      const excessOnAdvance = !!params?.excessOnAdvance;
       const unclaimedExcessOnAgreement = !!params?.unclaimedExcessOnAgreement;
       const unclaimedExcessOnAgreementBeforeInit =
         !!params?.unclaimedExcessOnAgreementBeforeInit;
@@ -77,7 +80,7 @@ describe.skip('RoyaltyLoan - gas usage', () => {
       for (let i = 0; i < collateralsCt; i++) {
         const collateral = await deployAgreementERC1155([
           {
-            account: borrower.address,
+            account: recipient.address,
             balance: collateralAmount,
             isAdmin: true,
           },
@@ -97,51 +100,51 @@ describe.skip('RoyaltyLoan - gas usage', () => {
         collateralAmount,
       }));
 
-      let loan: RoyaltyLoan | undefined;
+      let advance: RoyaltyAdvance | undefined;
 
       try {
         const blockNumber = await deployer.provider.getBlockNumber();
 
-        loan = await createLoan.standard(borrower, mappedColalterals);
+        advance = await createAdvance.standard(recipient, mappedColalterals);
 
         if (log) {
-          const events = await loanFactory.queryFilter(
-            loanFactory.getEvent('LoanContractCreated'),
+          const events = await advanceFactory.queryFilter(
+            advanceFactory.getEvent('AdvanceContractCreated'),
             blockNumber,
           );
-          const loanAddress = (await loan!.getAddress()).toLowerCase();
+          const advanceAddress = (await advance!.getAddress()).toLowerCase();
           const event = events.find(
-            (e) => e.args.loanContract.toLowerCase() === loanAddress,
+            (e) => e.args.advanceContract.toLowerCase() === advanceAddress,
           );
           const receipt = await event?.getTransactionReceipt();
           const gasUsed = receipt!.gasUsed;
 
           console.log(
-            `CreateLoan:       ${gasUsed.toLocaleString()}/30,000,000 (${Number((gasUsed * 100n) / 30000000n).toFixed(2)}%)`,
+            `CreateAdvance:       ${gasUsed.toLocaleString()}/30,000,000 (${Number((gasUsed * 100n) / 30000000n).toFixed(2)}%)`,
           );
         }
       } catch {
         if (log) {
-          console.log('** Revert on createLoan **');
+          console.log('** Revert on createAdvance **');
         }
         return {
           success: false,
-          reason: 'createLoan',
+          reason: 'createAdvance',
         };
       }
 
-      if (!loan) {
-        throw new Error('Loan not created');
+      if (!advance) {
+        throw new Error('Advance not created');
       }
 
-      await (await loan.connect(lender).provideLoan()).wait();
+      await (await advance.connect(lender).provideAdvance()).wait();
 
       await (
         await paymentToken.mintTo(
-          await loan.getAddress(),
-          defaults.loanAmount +
+          await advance.getAddress(),
+          defaults.advanceAmount +
             defaults.feeAmount +
-            (excessOnLoan ? excess : 0n),
+            (excessOnAdvance ? excess : 0n),
         )
       ).wait();
 
@@ -154,7 +157,7 @@ describe.skip('RoyaltyLoan - gas usage', () => {
       }
 
       try {
-        const receipt = await (await loan.processRepayment()).wait();
+        const receipt = await (await advance.processRepayment()).wait();
         const gasUsed = receipt!.gasUsed;
         if (log) {
           console.log(
@@ -186,7 +189,7 @@ describe.skip('RoyaltyLoan - gas usage', () => {
       try {
         const { success, reason } = await runSimulation(collateralsCt, {
           log,
-          excessOnLoan: true,
+          excessOnAdvance: true,
         });
         if (!success) {
           throw new Error(reason);
@@ -202,33 +205,33 @@ describe.skip('RoyaltyLoan - gas usage', () => {
 
 // (no params)
 // ** Collaterals:   109
-// CreateLoan:       26,360,391/30,000,000 (87.00%)
+// CreateAdvance:       26,360,391/30,000,000 (87.00%)
 // ProcessRepayment: 18,139,239/30,000,000 (60.00%)
 // ===============================================
 // ** Collaterals:   110
-// ** Revert on createLoan **
+// ** Revert on createAdvance **
 
 // (unclaimedExcessOnAgreementBeforeInit: true)
 // ** Collaterals:   79
-// CreateLoan:       26,791,377/30,000,000 (89.00%)
+// CreateAdvance:       26,791,377/30,000,000 (89.00%)
 // ProcessRepayment: 13,185,177/30,000,000 (43.00%)
 // ===============================================
 // ** Collaterals:   80
-// ** Revert on createLoan **
+// ** Revert on createAdvance **
 
 // (unclaimedExcessOnAgreement: true)
 // ** Collaterals:   96
-// CreateLoan:       23,263,923/30,000,000 (77.00%)
+// CreateAdvance:       23,263,923/30,000,000 (77.00%)
 // ProcessRepayment: 26,028,902/30,000,000 (86.00%)
 // ===============================================
 // ** Collaterals:   97
-// CreateLoan:       23,502,189/30,000,000 (78.00%)
+// CreateAdvance:       23,502,189/30,000,000 (78.00%)
 // ** Revert on processRepayment **
 
-// (excessOnLoan: true)
+// (excessOnAdvance: true)
 // ** Collaterals:   109
-// CreateLoan:       26,360,391/30,000,000 (87.00%)
+// CreateAdvance:       26,360,391/30,000,000 (87.00%)
 // ProcessRepayment: 18,148,655/30,000,000 (60.00%)
 // ===============================================
 // ** Collaterals:   110
-// ** Revert on createLoan **
+// ** Revert on createAdvance **
