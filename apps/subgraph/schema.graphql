@@ -1,4 +1,4 @@
-enum LoanStatus {
+enum AdvanceStatus {
   Pending
   Active
   Revoked
@@ -7,10 +7,10 @@ enum LoanStatus {
 }
 
 enum ExpenseKind {
-  LoanRepaid
-  LoanCreated
-  LoanProvided
-  LoanRevoked
+  AdvanceRepaid
+  AdvanceCreated
+  AdvanceProvided
+  AdvanceRevoked
   ERC20Transfer
   ERC20Approve
 }
@@ -21,30 +21,30 @@ type Stats @entity(immutable: false) {
   expensesCount: BigInt!
 }
 
-type LoanContractCollateral @entity(immutable: true) {
+type AdvanceContractCollateral @entity(immutable: true) {
   id: Bytes!
-  loanContract: LoanContract!
+  advanceContract: AdvanceContract!
   tokenAddress: Bytes! # address
   tokenId: BigInt!
   tokenAmount: BigInt!
 }
 
-type LoanContract @entity(immutable: false) {
+type AdvanceContract @entity(immutable: false) {
   id: Bytes!
-  loanContract: Bytes! # address
+  advanceContract: Bytes! # address
   borrower: Bytes! # address
-  isPackLoan: Boolean!
-  collaterals: [LoanContractCollateral!]! @derivedFrom(field: "loanContract")
-  loanAmount: BigInt!
+  isPackAdvance: Boolean!
+  collaterals: [AdvanceContractCollateral!]! @derivedFrom(field: "advanceContract")
+  advanceAmount: BigInt!
   recoupmentAmount: BigInt!
   repaidAmount: BigInt!
   actualRepaid: BigInt!
   feePpm: BigInt!
-  status: LoanStatus!
+  status: AdvanceStatus!
   timestamp: BigInt!
   transactionHash: Bytes!
-  expenses: [Expense!]! @derivedFrom(field: "loanContract")
-  loanRepaid: LoanRepaid
+  expenses: [Expense!]! @derivedFrom(field: "advanceContract")
+  advanceRepaid: AdvanceRepaid
   paymentTokenAddress: Bytes!
   templateAddress: Bytes!
   expirationDate: BigInt!
@@ -54,8 +54,8 @@ type LoanContract @entity(immutable: false) {
 type Expense @entity(immutable: true) {
   id: Bytes!
   from: Bytes
-  loanContract: LoanContract!
-  collaterals: [LoanContractCollateral!]!
+  advanceContract: AdvanceContract!
+  collaterals: [AdvanceContractCollateral!]!
   transactionHash: Bytes!
   kind: ExpenseKind!
   value: BigInt
@@ -68,32 +68,32 @@ type Expense @entity(immutable: true) {
   timestamp: BigInt!
 }
 
-type LoanProvided @entity(immutable: true) {
+type AdvanceProvided @entity(immutable: true) {
   id: Bytes!
   lender: Bytes!
   timestamp: BigInt!
   transactionHash: Bytes!
 }
 
-type LoanPartialyRepaid @entity(immutable: true) {
+type AdvancePartiallyRepaid @entity(immutable: true) {
   id: Bytes!
-  loanContract: Bytes!
+  advanceContract: Bytes!
   repaymentAmount: BigInt!
   timestamp: BigInt!
   transactionHash: Bytes!
 }
 
-type LoanRepaid @entity(immutable: true) {
+type AdvanceRepaid @entity(immutable: true) {
   id: Bytes!
-  loanContract: Bytes!
+  advanceContract: Bytes!
   repaymentAmount: BigInt!
   timestamp: BigInt!
   transactionHash: Bytes!
 }
 
-type LoanRevoked @entity(immutable: true) {
+type AdanceRevoked @entity(immutable: true) {
   id: Bytes!
-  loanContract: Bytes!
+  advanceContract: Bytes!
   timestamp: BigInt!
   transactionHash: Bytes!
 }
