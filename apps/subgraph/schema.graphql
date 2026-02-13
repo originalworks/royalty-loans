@@ -32,6 +32,7 @@ type AdvanceContractCollateral @entity(immutable: true) {
 type AdvanceContract @entity(immutable: false) {
   id: Bytes!
   advanceContract: Bytes! # address
+  creator: Bytes! # address
   recipient: Bytes! # address
   collateralReceiver: Bytes! # address
   isPackAdvance: Boolean!

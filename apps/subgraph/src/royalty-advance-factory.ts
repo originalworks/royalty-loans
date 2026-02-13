@@ -22,6 +22,7 @@ export function handleAdvanceContractCreated(
   const collaterals = event.params.collaterals;
 
   const entity = new AdvanceContract(event.params.advanceContract);
+  entity.creator = event.transaction.from;
   entity.advanceContract = event.params.advanceContract;
   entity.recipient = event.params.advanceContract;
   entity.collateralReceiver = event.params.advanceContract;
