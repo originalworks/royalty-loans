@@ -32,7 +32,8 @@ type AdvanceContractCollateral @entity(immutable: true) {
 type AdvanceContract @entity(immutable: false) {
   id: Bytes!
   advanceContract: Bytes! # address
-  borrower: Bytes! # address
+  recipient: Bytes! # address
+  collateralReceiver: Bytes! # address
   isPackAdvance: Boolean!
   collaterals: [AdvanceContractCollateral!]! @derivedFrom(field: "advanceContract")
   advanceAmount: BigInt!
@@ -70,7 +71,7 @@ type Expense @entity(immutable: true) {
 
 type AdvanceProvided @entity(immutable: true) {
   id: Bytes!
-  lender: Bytes!
+  advancer: Bytes!
   timestamp: BigInt!
   transactionHash: Bytes!
 }
@@ -91,7 +92,7 @@ type AdvanceRepaid @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
-type AdanceRevoked @entity(immutable: true) {
+type AdvanceRevoked @entity(immutable: true) {
   id: Bytes!
   advanceContract: Bytes!
   timestamp: BigInt!

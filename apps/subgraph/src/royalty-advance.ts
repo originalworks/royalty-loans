@@ -1,86 +1,97 @@
 import {
-  LoanRepaid,
-  LoanRevoked,
-  LoanContract,
-  LoanProvided,
-  LoanPartialyRepaid,
+  AdvanceRepaid,
+  AdvanceRevoked,
+  AdvanceContract,
+  AdvanceProvided,
+  AdvancePartiallyRepaid,
 } from '../generated/schema';
 import {
-  LoanRepaid as LoanRepaidEvent,
-  LoanRevoked as LoanRevokedEvent,
-  LoanProvided as LoanProvidedEvent,
-  LoanPartialyRepaid as LoanPartialyRepaidEvent,
-} from '../generated/templates/RoyaltyLoan/RoyaltyLoan';
+  AdvanceRepaid as AdvanceRepaidEvent,
+  AdvanceRevoked as AdvanceRevokedEvent,
+  AdvanceProvided as AdvanceProvidedEvent,
+  AdvancePartiallyRepaid as AdvancePartiallyRepaidEvent,
+} from '../generated/templates/RoyaltyAdvance/RoyaltyAdvance';
 import { createExpense } from './expense';
 
-export function handleLoanProvided(event: LoanProvidedEvent): void {
-  const entity = new LoanProvided(event.address);
-  entity.lender = event.params.lender;
+export function handleAdvanceProvided(event: AdvanceProvidedEvent): void {
+  const entity = new AdvanceProvided(event.address);
+  entity.advancer = event.params.advancer;
   entity.timestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
   entity.save();
 
-  const loan = LoanContract.load(event.address);
-  if (loan !== null) {
-    loan.status = 'Active';
-    loan.save();
+  const advance = AdvanceContract.load(event.address);
+  if (advance !== null) {
+    advance.status = 'Active';
+    advance.save();
   }
 
-  createExpense(event.transaction.hash, event.address, 'LoanProvided', event);
+  createExpense(
+    event.transaction.hash,
+    event.address,
+    'AdvanceProvided',
+    event,
+  );
 }
 
-export function handleLoanPartialyRepaid(event: LoanPartialyRepaidEvent): void {
-  const entity = new LoanPartialyRepaid(
+export function handleAdvancePartiallyRepaid(
+  event: AdvancePartiallyRepaidEvent,
+): void {
+  const entity = new AdvancePartiallyRepaid(
     event.transaction.hash.concatI32(event.logIndex.toI32()),
   );
-  entity.loanContract = event.address;
+  entity.advanceContract = event.address;
   entity.repaymentAmount = event.params.repaymentAmount;
   entity.timestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
   entity.save();
 
-  const loan = LoanContract.load(event.address);
-  if (loan !== null) {
-    loan.repaidAmount = loan.repaidAmount.plus(event.params.repaymentAmount);
-    loan.save();
+  const advance = AdvanceContract.load(event.address);
+  if (advance !== null) {
+    advance.repaidAmount = advance.repaidAmount.plus(
+      event.params.repaymentAmount,
+    );
+    advance.save();
   }
 
-  createExpense(event.transaction.hash, event.address, 'LoanRepaid', event);
+  createExpense(event.transaction.hash, event.address, 'AdvanceRepaid', event);
 }
 
-export function handleLoanRepaid(event: LoanRepaidEvent): void {
-  const entity = new LoanRepaid(
+export function handleAdvanceRepaid(event: AdvanceRepaidEvent): void {
+  const entity = new AdvanceRepaid(
     event.transaction.hash.concatI32(event.logIndex.toI32()),
   );
-  entity.loanContract = event.address;
+  entity.advanceContract = event.address;
   entity.repaymentAmount = event.params.repaymentAmount;
   entity.timestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
   entity.save();
 
-  const loan = LoanContract.load(event.address);
-  if (loan !== null) {
-    loan.repaidAmount = loan.repaidAmount.plus(event.params.repaymentAmount);
-    loan.status = 'Recouped';
-    loan.loanRepaid = entity.id;
-    loan.save();
+  const advance = AdvanceContract.load(event.address);
+  if (advance !== null) {
+    advance.repaidAmount = advance.repaidAmount.plus(
+      event.params.repaymentAmount,
+    );
+    advance.status = 'Recouped';
+    advance.advanceRepaid = entity.id;
+    advance.save();
   }
 
-  createExpense(event.transaction.hash, event.address, 'LoanRepaid', event);
+  createExpense(event.transaction.hash, event.address, 'AdvanceRepaid', event);
 }
 
-export function handleLoanRevoked(event: LoanRevokedEvent): void {
-  const entity = new LoanRevoked(event.address);
-  entity.loanContract = event.address;
+export function handleAdvanceRevoked(event: AdvanceRevokedEvent): void {
+  const entity = new AdvanceRevoked(event.address);
+  entity.advanceContract = event.address;
   entity.timestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
   entity.save();
 
-  const loan = LoanContract.load(event.address);
-  if (loan !== null) {
-    loan.status = 'Revoked';
-    loan.save();
+  const advance = AdvanceContract.load(event.address);
+  if (advance !== null) {
+    advance.status = 'Revoked';
+    advance.save();
   }
 
-  createExpense(event.transaction.hash, event.address, 'LoanRevoked', event);
+  createExpense(event.transaction.hash, event.address, 'AdvanceRevoked', event);
 }

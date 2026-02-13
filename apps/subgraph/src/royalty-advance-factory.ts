@@ -1,33 +1,34 @@
-import { BigInt, Address } from '@graphprotocol/graph-ts';
+import { BigInt } from '@graphprotocol/graph-ts';
 
-import { RoyaltyLoan } from '../generated/templates';
+import {
+  AdvanceContract,
+  AdvanceContractCollateral,
+} from '../generated/schema';
+import { RoyaltyAdvance } from '../generated/templates';
 import {
   Initialized as InitializedEvent,
-  LoanContractCreated as LoanContractCreatedEventNew,
-  LoanContractCreated1 as LoanContractCreatedEventOld,
-} from '../generated/RoyaltyLoanFactory/RoyaltyLoanFactory';
-import { LoanContract, LoanContractCollateral } from '../generated/schema';
+  AdvanceContractCreated as AdvanceContractCreatedEvent,
+} from '../generated/RoyaltyAdvanceFactory/RoyaltyAdvanceFactory';
 import { createExpense } from './expense';
 import { initializeStats, recordStats } from './helpers';
-
-const offerDuration = 432000;
 
 export function handleInitialized(event: InitializedEvent): void {
   initializeStats();
 }
 
-export function handleLoanContractCreatedNew(
-  event: LoanContractCreatedEventNew,
+export function handleAdvanceContractCreated(
+  event: AdvanceContractCreatedEvent,
 ): void {
   const collaterals = event.params.collaterals;
 
-  const entity = new LoanContract(event.params.loanContract);
-  entity.loanContract = event.params.loanContract;
-  entity.borrower = event.params.borrower;
-  entity.isPackLoan = collaterals.length > 1;
-  entity.loanAmount = event.params.loanAmount;
-  entity.recoupmentAmount = event.params.loanAmount.plus(
-    event.params.loanAmount
+  const entity = new AdvanceContract(event.params.advanceContract);
+  entity.advanceContract = event.params.advanceContract;
+  entity.recipient = event.params.advanceContract;
+  entity.collateralReceiver = event.params.advanceContract;
+  entity.isPackAdvance = collaterals.length > 1;
+  entity.advanceAmount = event.params.advanceAmount;
+  entity.recoupmentAmount = event.params.advanceAmount.plus(
+    event.params.advanceAmount
       .times(event.params.feePpm)
       .div(BigInt.fromI32(1000000)),
   );
@@ -47,67 +48,19 @@ export function handleLoanContractCreatedNew(
 
   for (let i = 0; i < collaterals.length; i++) {
     const element = collaterals[i];
-    const collateral = new LoanContractCollateral(
-      event.params.loanContract.concat(element.tokenAddress),
+    const collateral = new AdvanceContractCollateral(
+      event.params.advanceContract.concat(element.tokenAddress),
     );
-    collateral.loanContract = entity.id;
+    collateral.advanceContract = entity.id;
     collateral.tokenAddress = element.tokenAddress;
     collateral.tokenId = element.tokenId;
     collateral.tokenAmount = element.tokenAmount;
     collateral.save();
   }
 
-  RoyaltyLoan.create(event.params.loanContract);
+  RoyaltyAdvance.create(event.params.advanceContract);
 
-  createExpense(event.transaction.hash, entity.id, 'LoanCreated', event);
-
-  recordStats(true);
-}
-
-export function handleLoanContractCreatedOld(
-  event: LoanContractCreatedEventOld,
-): void {
-  const collaterals = event.params.collaterals;
-
-  const entity = new LoanContract(event.params.loanContract);
-  entity.loanContract = event.params.loanContract;
-  entity.borrower = event.params.borrower;
-  entity.isPackLoan = collaterals.length > 1;
-  entity.loanAmount = event.params.loanAmount;
-  entity.recoupmentAmount = event.params.loanAmount.plus(
-    event.params.loanAmount
-      .times(event.params.feePpm)
-      .div(BigInt.fromI32(1000000)),
-  );
-  entity.repaidAmount = BigInt.zero();
-  entity.actualRepaid = BigInt.zero();
-  entity.feePpm = event.params.feePpm;
-  entity.status = 'Pending';
-  entity.timestamp = event.block.timestamp;
-  entity.transactionHash = event.transaction.hash;
-  entity.paymentTokenAddress = Address.zero();
-  entity.templateAddress = Address.zero();
-  entity.expirationDate = event.block.timestamp.plus(
-    BigInt.fromI32(offerDuration),
-  );
-  entity.offerDuration = BigInt.fromI32(offerDuration);
-  entity.save();
-
-  for (let i = 0; i < collaterals.length; i++) {
-    const element = collaterals[i];
-    const collateral = new LoanContractCollateral(
-      event.params.loanContract.concat(element.tokenAddress),
-    );
-    collateral.loanContract = entity.id;
-    collateral.tokenAddress = element.tokenAddress;
-    collateral.tokenId = element.tokenId;
-    collateral.tokenAmount = element.tokenAmount;
-    collateral.save();
-  }
-
-  RoyaltyLoan.create(event.params.loanContract);
-
-  createExpense(event.transaction.hash, entity.id, 'LoanCreated', event);
+  createExpense(event.transaction.hash, entity.id, 'AdvanceCreated', event);
 
   recordStats(true);
 }

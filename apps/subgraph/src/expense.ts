@@ -1,11 +1,11 @@
 import { BigInt, Bytes, ethereum } from '@graphprotocol/graph-ts';
 
-import { Expense, LoanContract } from '../generated/schema';
+import { AdvanceContract, Expense } from '../generated/schema';
 import { recordStats } from './helpers';
 
 export function createExpense(
   txHash: Bytes,
-  loanContract: Bytes,
+  advanceContract: Bytes,
   kind: string,
   event: ethereum.Event,
   value: BigInt | null = null,
@@ -13,7 +13,7 @@ export function createExpense(
 ): Expense {
   const expenseId = txHash.concat(Bytes.fromUTF8(':expense'));
   const expense = new Expense(expenseId);
-  expense.loanContract = loanContract;
+  expense.advanceContract = advanceContract;
   expense.transactionHash = txHash;
   expense.kind = kind;
   expense.from = from;
@@ -34,9 +34,9 @@ export function createExpense(
   expense.timestamp = event.block.timestamp;
 
   expense.collaterals = [];
-  const loan = LoanContract.load(loanContract);
-  if (loan !== null) {
-    const collaterals = loan.collaterals.load();
+  const advance = AdvanceContract.load(advanceContract);
+  if (advance !== null) {
+    const collaterals = advance.collaterals.load();
     const collateralIds: Bytes[] = [];
     for (let i = 0; i < collaterals.length; i++) {
       collateralIds.push(collaterals[i].id);

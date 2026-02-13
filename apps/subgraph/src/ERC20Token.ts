@@ -2,36 +2,36 @@ import {
   Approval as ApprovalEvent,
   Transfer as TransferEvent,
 } from '../generated/ERC20Token/ERC20';
-import { LoanContract } from '../generated/schema';
+import { AdvanceContract } from '../generated/schema';
 import { createExpense } from './expense';
 
 export function handleERC20Transfer(event: TransferEvent): void {
-  const loanContract = LoanContract.load(event.params.to);
+  const advanceContract = AdvanceContract.load(event.params.to);
 
-  if (loanContract !== null) {
+  if (advanceContract !== null) {
     createExpense(
       event.transaction.hash,
-      loanContract.id,
+      advanceContract.id,
       'ERC20Transfer',
       event,
       event.params.value,
       event.params.from,
     );
 
-    loanContract.actualRepaid = loanContract.actualRepaid.plus(
+    advanceContract.actualRepaid = advanceContract.actualRepaid.plus(
       event.params.value,
     );
-    loanContract.save();
+    advanceContract.save();
   }
 }
 
 export function handleERC20Approval(event: ApprovalEvent): void {
-  const loanContract = LoanContract.load(event.params.spender);
+  const advanceContract = AdvanceContract.load(event.params.spender);
 
-  if (loanContract !== null) {
+  if (advanceContract !== null) {
     createExpense(
       event.transaction.hash,
-      loanContract.id,
+      advanceContract.id,
       'ERC20Approve',
       event,
     );
