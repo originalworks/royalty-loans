@@ -7,5 +7,11 @@ export const BASE_RPC_URL = import.meta.env.VITE_BASE_RPC_URL;
 export const BASE_SUBGRAPH_URL = import.meta.env.VITE_BASE_SUBGRAPH_URL;
 export const POLYGON_RPC_URL = import.meta.env.VITE_POLYGON_RPC_URL;
 export const POLYGON_SUBGRAPH_URL = import.meta.env.VITE_POLYGON_SUBGRAPH_URL;
+export const GNOSIS_RPC_URL = import.meta.env.VITE_GNOSIS_RPC_URL;
+export const GNOSIS_EXPLORER_API_URL =
+  import.meta.env.VITE_GNOSIS_EXPLORER_API_URL;
+export const GNOSIS_EXPLORER_API_KEY =
+  import.meta.env.VITE_GNOSIS_EXPLORER_API_KEY;
+export const GNOSIS_EXPLORER_URL = import.meta.env.VITE_GNOSIS_EXPLORER_URL;
 export const PROD_DOMAIN = import.meta.env.VITE_PROD_DOMAIN;
 export const STAGE_DOMAIN = import.meta.env.VITE_STAGE_DOMAIN;
