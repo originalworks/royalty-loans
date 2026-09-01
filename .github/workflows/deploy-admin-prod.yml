@@ -47,6 +47,11 @@ jobs:
           VITE_GNOSIS_EXPLORER_API_URL: https://api.blockscout.com/100/api/v2
           VITE_GNOSIS_EXPLORER_API_KEY: ${{ secrets.VITE_GNOSIS_EXPLORER_API_KEY }}
           VITE_GNOSIS_EXPLORER_URL: https://gnosis.blockscout.com
+          VITE_SENTRY_HOST: https://us.sentry.io
+          VITE_SENTRY_API_URL: https://us.sentry.io/api/0
+          VITE_SENTRY_AUTH_TOKEN: ${{ secrets.VITE_SENTRY_AUTH_TOKEN }}
+          VITE_SENTRY_ORG: ${{ secrets.VITE_SENTRY_ORG }}
+          VITE_SENTRY_PROJECT: ${{ secrets.VITE_SENTRY_PROJECT }}
           VITE_PROD_DOMAIN: ${{ secrets.PROD_DOMAIN }}
           VITE_STAGE_DOMAIN: ${{ secrets.STAGE_DOMAIN }}
         run: npx nx run admin:build --no-cloud

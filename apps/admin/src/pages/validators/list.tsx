@@ -20,11 +20,45 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 
 import { GNOSIS_RPC_URL } from '../../config/config';
+import { SENTRY_ISSUE_QUERY } from '../../config/sentry';
 import { useValidators } from '../../hooks/useValidatorLookup';
-import { getExplorerTxLink } from '../../utils/blockscout';
+import { getExplorerTxLink, getSentryConfigured } from '../../utils';
 import { CustomColumnMenu } from '../../components';
 
 const ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/;
+
+function renderSentryCount(
+  row: { status: string },
+  count: number | null,
+  link: string | null,
+) {
+  if (row.status === 'loading') {
+    return <CircularProgress size={20} />;
+  }
+
+  if (count === null) {
+    return <TextField value="-" />;
+  }
+
+  if (count === 0) {
+    return <TextField value="0" />;
+  }
+
+  if (link) {
+    return (
+      <Link
+        href={link}
+        target="_blank"
+        rel="noopener noreferrer"
+        sx={{ fontWeight: 600 }}
+      >
+        {count}
+      </Link>
+    );
+  }
+
+  return <TextField value={String(count)} />;
+}
 
 export const ValidatorsList = () => {
   const [address, setAddress] = useState('');
@@ -134,6 +168,30 @@ export const ValidatorsList = () => {
         },
       },
       {
+        field: 'sentryErrors',
+        headerName: `Sentry Errors (${SENTRY_ISSUE_QUERY.statsPeriod})`,
+        minWidth: 160,
+        display: 'flex',
+        align: 'center',
+        headerAlign: 'center',
+        sortable: false,
+        disableColumnMenu: true,
+        renderCell: ({ row }) =>
+          renderSentryCount(row, row.sentryErrorCount, row.sentryErrorLink),
+      },
+      {
+        field: 'sentryWarnings',
+        headerName: `Sentry Warnings (${SENTRY_ISSUE_QUERY.statsPeriod})`,
+        minWidth: 180,
+        display: 'flex',
+        align: 'center',
+        headerAlign: 'center',
+        sortable: false,
+        disableColumnMenu: true,
+        renderCell: ({ row }) =>
+          renderSentryCount(row, row.sentryWarningCount, row.sentryWarningLink),
+      },
+      {
         field: 'actions',
         headerName: 'Actions',
         minWidth: 80,
@@ -180,6 +238,14 @@ export const ValidatorsList = () => {
           <Alert severity="warning">
             Set VITE_GNOSIS_RPC_URL in your environment to enable validator
             lookups.
+          </Alert>
+        )}
+
+        {!getSentryConfigured() && (
+          <Alert severity="info">
+            Set VITE_SENTRY_HOST, VITE_SENTRY_API_URL, VITE_SENTRY_ORG, and
+            VITE_SENTRY_PROJECT to enable Sentry error and warning lookups. The
+            auth token must include the event:read scope.
           </Alert>
         )}
 

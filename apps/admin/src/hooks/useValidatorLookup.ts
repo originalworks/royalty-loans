@@ -4,6 +4,7 @@ import { gnosis } from 'viem/chains';
 
 import { GNOSIS_RPC_URL } from '../config/config';
 import { fetchLastOutgoingTx } from '../utils/blockscout';
+import { fetchValidatorSentrySummary } from '../utils/sentry';
 
 const STORAGE_KEY = 'validators-addresses';
 
@@ -19,6 +20,10 @@ export type ValidatorRow = {
   balance: string | null;
   lastTxHash: string | null;
   lastTxTimestamp: number | null;
+  sentryErrorCount: number | null;
+  sentryWarningCount: number | null;
+  sentryErrorLink: string | null;
+  sentryWarningLink: string | null;
   status: 'loading' | 'error' | 'ready';
   error?: string;
 };
@@ -103,7 +108,16 @@ export const useValidators = () => {
     );
 
     try {
-      const data = await fetchValidatorData(address);
+      const [data, sentrySummary] = await Promise.all([
+        fetchValidatorData(address),
+        fetchValidatorSentrySummary(address).catch(() => ({
+          errorCount: 0,
+          warningCount: 0,
+          latestError: null,
+          latestWarning: null,
+        })),
+      ]);
+
       setRows((prev) =>
         prev.map((row) =>
           row.address === address
@@ -112,6 +126,10 @@ export const useValidators = () => {
                 balance: data.balance,
                 lastTxHash: data.lastTxHash,
                 lastTxTimestamp: data.lastTxTimestamp,
+                sentryErrorCount: sentrySummary.errorCount,
+                sentryWarningCount: sentrySummary.warningCount,
+                sentryErrorLink: sentrySummary.latestError?.permalink ?? null,
+                sentryWarningLink: sentrySummary.latestWarning?.permalink ?? null,
                 status: 'ready' as const,
               }
             : row,
@@ -147,6 +165,10 @@ export const useValidators = () => {
           balance: null,
           lastTxHash: null,
           lastTxTimestamp: null,
+          sentryErrorCount: null,
+          sentryWarningCount: null,
+          sentryErrorLink: null,
+          sentryWarningLink: null,
           status: 'loading' as const,
         })),
       );
