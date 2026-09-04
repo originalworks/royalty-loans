@@ -56,7 +56,17 @@ async function blockscoutGet<T>(
     return null;
   }
 
-  const response = await fetch(url);
+  const headers: HeadersInit = {
+    Accept: 'application/json',
+  };
+
+  // Prefer Bearer auth for the Pro API; query apikey remains as a fallback
+  // for environments that inject it via the Vite proxy.
+  if (GNOSIS_EXPLORER_API_KEY && !url.startsWith('/')) {
+    headers.Authorization = `Bearer ${GNOSIS_EXPLORER_API_KEY}`;
+  }
+
+  const response = await fetch(url, { headers });
   if (!response.ok) {
     return null;
   }
@@ -95,22 +105,33 @@ export async function fetchLastOutgoingTx(
 ): Promise<LastOutgoingTx> {
   const params = new URLSearchParams({
     filter: 'from',
-    sort: 'block_number',
-    order: 'desc',
-    items_count: '1',
   });
 
   const data = await blockscoutGet<
     BlockscoutListResponse<BlockscoutTransaction>
   >(`/addresses/${address}/transactions`, params);
 
-  const tx = data?.items?.[0];
+  // Newest pending txs often omit timestamp/block fields; prefer the latest
+  // confirmed outgoing transaction.
+  const tx = data?.items?.find(
+    (item) =>
+      typeof item.hash === 'string' &&
+      item.hash.length > 0 &&
+      typeof item.timestamp === 'string' &&
+      item.timestamp.length > 0,
+  );
+
   if (!tx?.hash || !tx.timestamp) {
+    return null;
+  }
+
+  const timestamp = new Date(tx.timestamp).getTime();
+  if (!Number.isFinite(timestamp)) {
     return null;
   }
 
   return {
     hash: tx.hash,
-    timestamp: new Date(tx.timestamp).getTime(),
+    timestamp,
   };
 }

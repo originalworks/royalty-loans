@@ -10,6 +10,17 @@ export default defineConfig(({ mode }) => {
       target: 'https://api.blockscout.com/100/api/v2',
       changeOrigin: true,
       rewrite: (path: string) => path.replace(/^\/blockscout-api/, ''),
+      configure: (proxy: { on: (event: string, listener: (...args: unknown[]) => void) => void }) => {
+        proxy.on('proxyReq', (...args: unknown[]) => {
+          const proxyReq = args[0] as {
+            setHeader: (name: string, value: string) => void;
+          };
+          const token = env.VITE_GNOSIS_EXPLORER_API_KEY;
+          if (token) {
+            proxyReq.setHeader('Authorization', `Bearer ${token}`);
+          }
+        });
+      },
     },
   };
 

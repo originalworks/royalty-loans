@@ -4,9 +4,17 @@ import { gnosis } from 'viem/chains';
 
 import { GNOSIS_RPC_URL } from '../config/config';
 import { fetchLastOutgoingTx } from '../utils/blockscout';
-import { fetchValidatorSentrySummary } from '../utils/sentry';
+import {
+  fetchValidatorSentrySummary,
+  pickLatestIssueFromSummary,
+} from '../utils/sentry';
 
 const STORAGE_KEY = 'validators-addresses';
+
+type StoredValidator = {
+  address: string;
+  username: string | null;
+};
 
 export type ValidatorLookupResult = {
   balance: string;
@@ -17,6 +25,7 @@ export type ValidatorLookupResult = {
 export type ValidatorRow = {
   id: string;
   address: string;
+  username: string | null;
   balance: string | null;
   lastTxHash: string | null;
   lastTxTimestamp: number | null;
@@ -24,6 +33,10 @@ export type ValidatorRow = {
   sentryWarningCount: number | null;
   sentryErrorLink: string | null;
   sentryWarningLink: string | null;
+  latestIssueTitle: string | null;
+  latestIssueLevel: string | null;
+  latestIssueLastSeen: string | null;
+  latestIssueLink: string | null;
   status: 'loading' | 'error' | 'ready';
   error?: string;
 };
@@ -63,7 +76,7 @@ export async function fetchValidatorData(
   return { balance, lastTxHash, lastTxTimestamp };
 }
 
-function loadAddresses(): string[] {
+function loadValidators(): StoredValidator[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return [];
@@ -73,32 +86,41 @@ function loadAddresses(): string[] {
 
     return parsed
       .map((item) => {
-        if (typeof item === 'string') return item.toLowerCase();
+        if (typeof item === 'string') {
+          return { address: item.toLowerCase(), username: null };
+        }
         if (
           typeof item === 'object' &&
           item !== null &&
           typeof (item as { address?: string }).address === 'string'
         ) {
-          return (item as { address: string }).address.toLowerCase();
+          const record = item as StoredValidator;
+          return {
+            address: record.address.toLowerCase(),
+            username:
+              typeof record.username === 'string' ? record.username : null,
+          };
         }
         return null;
       })
-      .filter((address): address is string => !!address);
+      .filter((entry): entry is StoredValidator => !!entry);
   } catch {
     return [];
   }
 }
 
-function saveAddresses(addresses: string[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(addresses));
+function saveValidators(validators: StoredValidator[]) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(validators));
 }
 
 export const useValidators = () => {
-  const [addresses, setAddresses] = useState<string[]>(loadAddresses);
+  const [validators, setValidators] = useState<StoredValidator[]>(loadValidators);
   const [rows, setRows] = useState<ValidatorRow[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const refreshAddress = useCallback(async (address: string) => {
+  const refreshAddress = useCallback(async (validator: StoredValidator) => {
+    const { address } = validator;
+
     setRows((prev) =>
       prev.map((row) =>
         row.address === address
@@ -118,11 +140,14 @@ export const useValidators = () => {
         })),
       ]);
 
+      const latestIssue = pickLatestIssueFromSummary(sentrySummary);
+
       setRows((prev) =>
         prev.map((row) =>
           row.address === address
             ? {
                 ...row,
+                username: validator.username ?? row.username,
                 balance: data.balance,
                 lastTxHash: data.lastTxHash,
                 lastTxTimestamp: data.lastTxTimestamp,
@@ -130,6 +155,10 @@ export const useValidators = () => {
                 sentryWarningCount: sentrySummary.warningCount,
                 sentryErrorLink: sentrySummary.latestError?.permalink ?? null,
                 sentryWarningLink: sentrySummary.latestWarning?.permalink ?? null,
+                latestIssueTitle: latestIssue?.title ?? null,
+                latestIssueLevel: latestIssue?.level ?? null,
+                latestIssueLastSeen: latestIssue?.timestamp ?? null,
+                latestIssueLink: latestIssue?.permalink ?? null,
                 status: 'ready' as const,
               }
             : row,
@@ -151,17 +180,18 @@ export const useValidators = () => {
   }, []);
 
   const refreshAll = useCallback(
-    async (addressList: string[]) => {
-      if (addressList.length === 0) {
+    async (validatorList: StoredValidator[]) => {
+      if (validatorList.length === 0) {
         setRows([]);
         return;
       }
 
       setIsRefreshing(true);
       setRows(
-        addressList.map((address) => ({
-          id: address,
-          address,
+        validatorList.map((validator) => ({
+          id: validator.address,
+          address: validator.address,
+          username: validator.username ?? null,
           balance: null,
           lastTxHash: null,
           lastTxTimestamp: null,
@@ -169,46 +199,56 @@ export const useValidators = () => {
           sentryWarningCount: null,
           sentryErrorLink: null,
           sentryWarningLink: null,
+          latestIssueTitle: null,
+          latestIssueLevel: null,
+          latestIssueLastSeen: null,
+          latestIssueLink: null,
           status: 'loading' as const,
         })),
       );
 
-      await Promise.all(addressList.map((address) => refreshAddress(address)));
+      await Promise.all(validatorList.map((validator) => refreshAddress(validator)));
       setIsRefreshing(false);
     },
     [refreshAddress],
   );
 
   useEffect(() => {
-    void refreshAll(addresses);
-  }, [addresses, refreshAll]);
+    void refreshAll(validators);
+  }, [validators, refreshAll]);
 
   const addValidator = useCallback(
-    (address: string) => {
+    (address: string, username?: string | null) => {
       const normalized = address.trim().toLowerCase();
 
       if (!isAddress(normalized)) {
         return 'Invalid address';
       }
-      if (addresses.includes(normalized)) {
+      if (validators.some((entry) => entry.address === normalized)) {
         return 'Validator already added';
       }
 
-      const updated = [...addresses, normalized];
-      setAddresses(updated);
-      saveAddresses(updated);
+      const updated = [
+        ...validators,
+        {
+          address: normalized,
+          username: username ?? null,
+        },
+      ];
+      setValidators(updated);
+      saveValidators(updated);
       return null;
     },
-    [addresses],
+    [validators],
   );
 
   const removeValidator = useCallback(
     (address: string) => {
-      const updated = addresses.filter((entry) => entry !== address);
-      setAddresses(updated);
-      saveAddresses(updated);
+      const updated = validators.filter((entry) => entry.address !== address);
+      setValidators(updated);
+      saveValidators(updated);
     },
-    [addresses],
+    [validators],
   );
 
   return {
@@ -216,6 +256,7 @@ export const useValidators = () => {
     isRefreshing,
     addValidator,
     removeValidator,
-    refreshAll: () => refreshAll(addresses),
+    refreshAll: () => refreshAll(validators),
+    monitoredAddresses: validators.map((entry) => entry.address),
   };
 };

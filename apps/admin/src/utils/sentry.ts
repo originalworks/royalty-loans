@@ -1,16 +1,37 @@
+/**
+ * Sentry helpers for the validators monitoring page.
+ *
+ * 1. Discover wallets — Explore logs aggregated by user.id (`dataset=ourlogs`).
+ * 2. Per-validator errors — Discover error events filtered with
+ *    `query=user.id:{address}` (`dataset=errors`), same as the Sentry UI.
+ *
+ * Both use GET /organizations/{org}/events/ and need org:read.
+ */
+
 import {
   SENTRY_API_URL,
   SENTRY_AUTH_TOKEN,
+  SENTRY_HOST,
   SENTRY_ORG,
   SENTRY_PROJECT,
 } from '../config/config';
 import {
-  SENTRY_ISSUE_QUERY,
-  buildIssueListParams,
-  buildValidatorIssueQuery,
+  SENTRY_ERROR_EVENTS_QUERY,
+  SENTRY_EVENTS_QUERY,
+  buildLogsAggregateParams,
+  buildValidatorErrorEventsParams,
+  type SentryIssueLevelFilter,
 } from '../config/sentry';
 
-export { buildValidatorIssueQuery, SENTRY_ISSUE_QUERY } from '../config/sentry';
+export {
+  SENTRY_ISSUE_QUERY,
+  SENTRY_EVENTS_QUERY,
+  SENTRY_ERROR_EVENTS_QUERY,
+} from '../config/sentry';
+
+// ---------------------------------------------------------------------------
+// Public types
+// ---------------------------------------------------------------------------
 
 export type SentryIssueLevel = 'fatal' | 'error' | 'warning' | 'info' | 'debug';
 
@@ -31,212 +52,407 @@ export type SentryIssueSummary = {
   latestWarning: SentryIssue | null;
 };
 
-const DEFAULT_SENTRY_API_URL = 'https://sentry.io/api/0';
+export type SentryLatestIssue = {
+  id: string;
+  title: string;
+  level: SentryIssueLevel;
+  timestamp: string;
+  permalink: string;
+};
+
+/** One row in the "Discover from Sentry" dialog. */
+export type SentryValidatorCandidate = {
+  address: string;
+  username: string | null;
+  eventCount: number;
+  latestIssue: SentryLatestIssue | null;
+};
+
+// ---------------------------------------------------------------------------
+// Constants & small helpers
+// ---------------------------------------------------------------------------
+
+const VALIDATOR_ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/;
+
+type DiscoverRow = Record<string, unknown>;
+
+type DiscoverResponse = {
+  data?: DiscoverRow[];
+};
 
 function isSentryConfigured(): boolean {
   return Boolean(SENTRY_API_URL && SENTRY_ORG && SENTRY_PROJECT);
 }
 
-function getApiBaseUrl(): string | null {
-  if (!SENTRY_API_URL) {
-    return null;
-  }
+function asString(value: unknown): string | null {
+  if (typeof value === 'string' && value.length > 0) return value;
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  return null;
+}
 
-  return SENTRY_API_URL.replace(/\/$/, '');
+function asValidatorAddress(value: unknown): string | null {
+  const raw = asString(value)?.toLowerCase() ?? null;
+  return raw && VALIDATOR_ADDRESS_PATTERN.test(raw) ? raw : null;
+}
+
+function isIssueLevel(value: unknown): value is SentryIssueLevel {
+  return (
+    value === 'fatal' ||
+    value === 'error' ||
+    value === 'warning' ||
+    value === 'info' ||
+    value === 'debug'
+  );
+}
+
+function asEventCount(value: unknown): number {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
+/** Discover/Explore fields may arrive dotted (`user.id`) or camelCase. */
+function getDiscoverField(row: DiscoverRow, field: string): unknown {
+  if (field in row) return row[field];
+
+  const camel = field.replace(/\.([a-z])/g, (_, letter: string) =>
+    letter.toUpperCase(),
+  );
+  if (camel in row) return row[camel];
+
+  return undefined;
+}
+
+function buildIssuePermalink(issueId: string): string {
+  const host = SENTRY_HOST.replace(/\/$/, '');
+  return `${host}/organizations/${SENTRY_ORG}/issues/${issueId}/`;
+}
+
+// ---------------------------------------------------------------------------
+// HTTP
+// ---------------------------------------------------------------------------
+
+function getApiBaseUrl(): string | null {
+  return SENTRY_API_URL ? SENTRY_API_URL.replace(/\/$/, '') : null;
 }
 
 function getRequestHeaders(): HeadersInit {
-  const headers: HeadersInit = {
-    Accept: 'application/json',
-  };
-
-  const apiBase = getApiBaseUrl();
-  const usesProxy = apiBase?.startsWith('/');
-
-  if (SENTRY_AUTH_TOKEN && !usesProxy) {
+  const headers: HeadersInit = { Accept: 'application/json' };
+  const base = getApiBaseUrl();
+  // Auth is injected by the Vite proxy for relative `/sentry-api` URLs.
+  if (SENTRY_AUTH_TOKEN && base && !base.startsWith('/')) {
     headers.Authorization = `Bearer ${SENTRY_AUTH_TOKEN}`;
   }
-
   return headers;
 }
 
-function getOrganizationIssuesPath(): string | null {
-  if (!SENTRY_ORG) {
-    return null;
-  }
-  return `/organizations/${SENTRY_ORG}/issues/`;
-}
+function buildRequestUrl(
+  path: string,
+  params?: URLSearchParams,
+): string | null {
+  const base = getApiBaseUrl();
+  if (!base) return null;
 
-function buildRequestUrl(path: string, params?: URLSearchParams): string | null {
-  const baseUrl = getApiBaseUrl();
-  if (!baseUrl) {
-    return null;
-  }
-
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const normalized = path.startsWith('/') ? path : `/${path}`;
   const query = params?.toString();
-
-  return query
-    ? `${baseUrl}${normalizedPath}?${query}`
-    : `${baseUrl}${normalizedPath}`;
-}
-
-function parseIssue(issue: Record<string, unknown>): SentryIssue | null {
-  const id = issue.id;
-  const title =
-    typeof issue.title === 'string'
-      ? issue.title
-      : typeof (issue.metadata as { title?: string } | undefined)?.title ===
-          'string'
-        ? (issue.metadata as { title: string }).title
-        : null;
-
-  if (typeof id !== 'string' || !title) {
-    return null;
-  }
-
-  const level = issue.level;
-  if (
-    level !== 'fatal' &&
-    level !== 'error' &&
-    level !== 'warning' &&
-    level !== 'info' &&
-    level !== 'debug'
-  ) {
-    return null;
-  }
-
-  return {
-    id,
-    title,
-    level,
-    count: typeof issue.count === 'string' ? issue.count : '0',
-    lastSeen: typeof issue.lastSeen === 'string' ? issue.lastSeen : '',
-    permalink: typeof issue.permalink === 'string' ? issue.permalink : '',
-    status: typeof issue.status === 'string' ? issue.status : 'unresolved',
-  };
-}
-
-function sumEventCount(issues: SentryIssue[]): number {
-  return issues.reduce((total, issue) => total + Number.parseInt(issue.count, 10), 0);
-}
-
-function latestIssue(issues: SentryIssue[]): SentryIssue | null {
-  if (issues.length === 0) {
-    return null;
-  }
-
-  return [...issues].sort(
-    (left, right) =>
-      new Date(right.lastSeen).getTime() - new Date(left.lastSeen).getTime(),
-  )[0];
+  return query ? `${base}${normalized}?${query}` : `${base}${normalized}`;
 }
 
 async function readSentryError(response: Response): Promise<string> {
   try {
     const payload = (await response.json()) as { detail?: string };
-    if (typeof payload.detail === 'string' && payload.detail.length > 0) {
-      return payload.detail;
-    }
+    if (payload.detail) return payload.detail;
   } catch {
-    // Ignore non-JSON error bodies.
+    // non-JSON body
   }
-
   return response.statusText || 'Unknown error';
 }
 
-async function sentryGet<T>(path: string, params?: URLSearchParams): Promise<T | null> {
-  const url = buildRequestUrl(path, params);
-  if (!url) {
-    return null;
+function parseNextCursor(linkHeader: string | null): string | null {
+  if (!linkHeader) return null;
+
+  const next = linkHeader
+    .split(',')
+    .map((part) => part.trim())
+    .find((part) => part.includes('rel="next"'));
+
+  if (!next?.includes('results="true"')) return null;
+
+  const match = next.match(/[?&]cursor=([^&>]+)/);
+  return match?.[1] ? decodeURIComponent(match[1]) : null;
+}
+
+type PageResult<T> = { items: T[]; nextCursor: string | null };
+
+async function fetchAllPages<T>(
+  fetchPage: (cursor?: string) => Promise<PageResult<T> | null>,
+  maxPages: number,
+): Promise<T[]> {
+  const all: T[] = [];
+  let cursor: string | undefined;
+
+  for (let page = 0; page < maxPages; page += 1) {
+    const result = await fetchPage(cursor);
+    if (!result || result.items.length === 0) break;
+
+    all.push(...result.items);
+    if (!result.nextCursor) break;
+    cursor = result.nextCursor;
   }
 
-  const response = await fetch(url, {
-    headers: getRequestHeaders(),
-  });
+  return all;
+}
+
+/** GET /organizations/{org}/events/ with Link-header pagination. */
+async function fetchOrganizationEventsPage(
+  params: URLSearchParams,
+): Promise<PageResult<DiscoverRow> | null> {
+  if (!SENTRY_ORG) return null;
+
+  const url = buildRequestUrl(
+    `/organizations/${SENTRY_ORG}/events/`,
+    params,
+  );
+  if (!url) return null;
+
+  const response = await fetch(url, { headers: getRequestHeaders() });
 
   if (!response.ok) {
     const detail = await readSentryError(response);
-
     if (response.status === 403) {
       throw new Error(
-        `Sentry API forbidden: ${detail}. Ensure the token has the event:read scope and targets the correct region host.`,
+        `Sentry API forbidden: ${detail}. Organization events require the org:read scope.`,
       );
     }
-
     throw new Error(`Sentry API request failed (${response.status}): ${detail}`);
   }
 
-  const contentType = response.headers.get('content-type') ?? '';
-  if (!contentType.includes('application/json')) {
-    throw new Error('Sentry API returned a non-JSON response');
-  }
+  const payload = (await response.json()) as DiscoverResponse | DiscoverRow[];
+  const items = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload.data)
+      ? payload.data
+      : [];
 
-  return response.json() as Promise<T>;
+  return {
+    items,
+    nextCursor: parseNextCursor(response.headers.get('link')),
+  };
 }
 
-export async function fetchProjectIssues(query: string): Promise<SentryIssue[]> {
-  if (!isSentryConfigured()) {
-    return [];
-  }
+// ---------------------------------------------------------------------------
+// Per-validator error events (dataset=errors, query=user.id:…)
+// ---------------------------------------------------------------------------
 
-  const issuesPath = getOrganizationIssuesPath();
-  if (!issuesPath) {
-    return [];
-  }
+function eventRowToIssue(
+  row: DiscoverRow,
+  fallbackLevel: SentryIssueLevel,
+): SentryIssue | null {
+  const issueId = asString(getDiscoverField(row, 'issue.id'));
+  const title = asString(getDiscoverField(row, 'title'));
+  if (!issueId || !title) return null;
 
-  const data = await sentryGet<Record<string, unknown>[]>(
-    issuesPath,
-    buildIssueListParams(query),
+  const levelValue = getDiscoverField(row, 'level');
+  const level = isIssueLevel(levelValue) ? levelValue : fallbackLevel;
+  const timestamp = asString(getDiscoverField(row, 'timestamp')) ?? '';
+
+  return {
+    id: issueId,
+    title,
+    level,
+    count: '1',
+    lastSeen: timestamp,
+    permalink: buildIssuePermalink(issueId),
+    status: 'unresolved',
+  };
+}
+
+/**
+ * Fetch Discover error events for one validator.
+ * Filtering is done by Sentry via `query=user.id:{address}` (and optional level).
+ */
+async function fetchValidatorErrorEvents(
+  address: string,
+  level?: SentryIssueLevelFilter,
+): Promise<DiscoverRow[]> {
+  return fetchAllPages(
+    (cursor) =>
+      fetchOrganizationEventsPage(
+        buildValidatorErrorEventsParams(address, { level, cursor }),
+      ),
+    SENTRY_ERROR_EVENTS_QUERY.maxPages,
   );
-
-  if (!Array.isArray(data)) {
-    return [];
-  }
-
-  return data
-    .map((issue) => parseIssue(issue))
-    .filter((issue): issue is SentryIssue => issue !== null);
 }
 
+function summarizeErrorEvents(
+  rows: DiscoverRow[],
+  fallbackLevel: SentryIssueLevel,
+  options?: { excludeLevel?: SentryIssueLevel },
+): { count: number; latest: SentryIssue | null } {
+  const issueIds = new Set<string>();
+  let latest: SentryIssue | null = null;
+
+  for (const row of rows) {
+    const levelValue = getDiscoverField(row, 'level');
+    if (
+      options?.excludeLevel &&
+      levelValue === options.excludeLevel
+    ) {
+      continue;
+    }
+
+    const issue = eventRowToIssue(row, fallbackLevel);
+    if (!issue) continue;
+
+    issueIds.add(issue.id);
+    // Rows arrive sorted by -timestamp; first valid row is the latest.
+    if (!latest) latest = issue;
+  }
+
+  return { count: issueIds.size, latest };
+}
+
+export function pickLatestIssueFromSummary(
+  summary: SentryIssueSummary,
+): SentryLatestIssue | null {
+  const candidates = [summary.latestError, summary.latestWarning].filter(
+    (value): value is SentryIssue => value !== null,
+  );
+  if (candidates.length === 0) return null;
+
+  const issue = [...candidates].sort(
+    (a, b) =>
+      new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime(),
+  )[0];
+
+  return {
+    id: issue.id,
+    title: issue.title,
+    level: issue.level,
+    timestamp: issue.lastSeen,
+    permalink: issue.permalink,
+  };
+}
+
+/**
+ * Error/warning summary for one validator.
+ * Uses Discover `dataset=errors` with `query=user.id:{address}` — filtering
+ * happens on the API (same as the Sentry Discover table).
+ */
 export async function fetchValidatorSentrySummary(
   address: string,
 ): Promise<SentryIssueSummary> {
-  const emptySummary: SentryIssueSummary = {
+  const empty: SentryIssueSummary = {
     errorCount: 0,
     warningCount: 0,
     latestError: null,
     latestWarning: null,
   };
+  if (!isSentryConfigured()) return empty;
 
-  if (!isSentryConfigured()) {
-    return emptySummary;
-  }
+  // Errors: exact UI filter (`user.id` only on dataset=errors).
+  // Warnings: same endpoint with `level:warning` added server-side.
+  const [errorRows, warningRows] = await Promise.all([
+    fetchValidatorErrorEvents(address),
+    fetchValidatorErrorEvents(address, 'warning'),
+  ]);
 
-  const issuesByLevel = Object.fromEntries(
-    await Promise.all(
-      SENTRY_ISSUE_QUERY.levels.map(async (level) => [
-        level,
-        await fetchProjectIssues(buildValidatorIssueQuery(address, level)),
-      ]),
-    ),
-  ) as Partial<Record<(typeof SENTRY_ISSUE_QUERY.levels)[number], SentryIssue[]>>;
-
-  const errors = issuesByLevel.error ?? [];
-  const warnings = issuesByLevel.warning ?? [];
+  const errors = summarizeErrorEvents(errorRows, 'error', {
+    excludeLevel: 'warning',
+  });
+  const warnings = summarizeErrorEvents(warningRows, 'warning');
 
   return {
-    errorCount: sumEventCount(errors),
-    warningCount: sumEventCount(warnings),
-    latestError: latestIssue(errors),
-    latestWarning: latestIssue(warnings),
+    errorCount: errors.count,
+    warningCount: warnings.count,
+    latestError: errors.latest,
+    latestWarning: warnings.latest,
   };
+}
+
+async function enrichWithLatestIssues(
+  candidates: SentryValidatorCandidate[],
+): Promise<SentryValidatorCandidate[]> {
+  return Promise.all(
+    candidates.map(async (candidate) => {
+      try {
+        const summary = await fetchValidatorSentrySummary(candidate.address);
+        const latestIssue = pickLatestIssueFromSummary(summary);
+        return latestIssue ? { ...candidate, latestIssue } : candidate;
+      } catch {
+        return candidate;
+      }
+    }),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Discovery — Explore logs aggregated by user.id
+// ---------------------------------------------------------------------------
+
+function parseLogsAggregateRows(
+  rows: DiscoverRow[],
+): SentryValidatorCandidate[] {
+  const byAddress = new Map<string, SentryValidatorCandidate>();
+
+  for (const row of rows) {
+    const address = asValidatorAddress(getDiscoverField(row, 'user.id'));
+    if (!address) continue;
+
+    const username = asString(getDiscoverField(row, 'user.name'));
+    const eventCount = asEventCount(getDiscoverField(row, 'count(message)'));
+
+    const existing = byAddress.get(address);
+    if (!existing) {
+      byAddress.set(address, {
+        address,
+        username,
+        eventCount,
+        latestIssue: null,
+      });
+      continue;
+    }
+
+    byAddress.set(address, {
+      address,
+      username: existing.username ?? username,
+      eventCount: existing.eventCount + eventCount,
+      latestIssue: null,
+    });
+  }
+
+  return [...byAddress.values()].sort(
+    (left, right) => right.eventCount - left.eventCount,
+  );
+}
+
+async function discoverFromLogsAggregates(): Promise<
+  SentryValidatorCandidate[]
+> {
+  const rows = await fetchAllPages(
+    (cursor) =>
+      fetchOrganizationEventsPage(buildLogsAggregateParams(cursor)),
+    SENTRY_EVENTS_QUERY.maxPages,
+  );
+  return parseLogsAggregateRows(rows);
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+export async function fetchValidatorCandidatesFromSentry(): Promise<
+  SentryValidatorCandidate[]
+> {
+  if (!isSentryConfigured()) return [];
+
+  const candidates = await discoverFromLogsAggregates();
+  return enrichWithLatestIssues(candidates);
 }
 
 export function getSentryConfigured(): boolean {
   return isSentryConfigured();
-}
-
-export function getDefaultSentryApiUrl(): string {
-  return DEFAULT_SENTRY_API_URL;
 }

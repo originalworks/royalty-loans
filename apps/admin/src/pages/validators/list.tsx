@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import {
   List,
@@ -9,83 +9,130 @@ import {
   Alert,
   Box,
   Button,
+  Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   IconButton,
   Link,
   Stack,
-  TextField as InputField,
+  Typography,
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 
 import { GNOSIS_RPC_URL } from '../../config/config';
-import { SENTRY_ISSUE_QUERY } from '../../config/sentry';
+import { SENTRY_EVENTS_QUERY } from '../../config/sentry';
 import { useValidators } from '../../hooks/useValidatorLookup';
-import { getExplorerTxLink, getSentryConfigured } from '../../utils';
+import {
+  fetchValidatorCandidatesFromSentry,
+  getExplorerTxLink,
+  getSentryConfigured,
+  type SentryValidatorCandidate,
+} from '../../utils';
 import { CustomColumnMenu } from '../../components';
 
-const ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/;
-
-function renderSentryCount(
-  row: { status: string },
-  count: number | null,
-  link: string | null,
-) {
+function renderLatestIssueTitle(row: {
+  status: string;
+  latestIssueTitle: string | null;
+  latestIssueLink: string | null;
+}) {
   if (row.status === 'loading') {
     return <CircularProgress size={20} />;
   }
 
-  if (count === null) {
-    return <TextField value="-" />;
+  if (!row.latestIssueTitle) {
+    return <TextField value="None" />;
   }
 
-  if (count === 0) {
-    return <TextField value="0" />;
-  }
-
-  if (link) {
+  if (row.latestIssueLink) {
     return (
       <Link
-        href={link}
+        href={row.latestIssueLink}
         target="_blank"
         rel="noopener noreferrer"
-        sx={{ fontWeight: 600 }}
+        sx={{ fontSize: '0.875rem' }}
       >
-        {count}
+        {row.latestIssueTitle}
       </Link>
     );
   }
 
-  return <TextField value={String(count)} />;
+  return <TextField value={row.latestIssueTitle} />;
 }
 
 export const ValidatorsList = () => {
-  const [address, setAddress] = useState('');
-  const [validationError, setValidationError] = useState<string | null>(null);
-  const { rows, isRefreshing, addValidator, removeValidator, refreshAll } =
-    useValidators();
+  const [discoverOpen, setDiscoverOpen] = useState(false);
+  const [discoverLoading, setDiscoverLoading] = useState(false);
+  const [discoverError, setDiscoverError] = useState<string | null>(null);
+  const [candidates, setCandidates] = useState<SentryValidatorCandidate[]>([]);
+  const {
+    rows,
+    isRefreshing,
+    addValidator,
+    removeValidator,
+    refreshAll,
+    monitoredAddresses,
+  } = useValidators();
 
-  const handleAdd = () => {
-    const normalized = address.trim().toLowerCase();
+  const loadCandidates = useCallback(async () => {
+    setDiscoverLoading(true);
+    setDiscoverError(null);
 
-    if (!ADDRESS_PATTERN.test(normalized)) {
-      setValidationError('Enter a valid 0x address');
-      return;
+    try {
+      const discovered = await fetchValidatorCandidatesFromSentry();
+      setCandidates(discovered);
+    } catch (err) {
+      setDiscoverError(
+        err instanceof Error ? err.message : 'Failed to load Sentry events',
+      );
+      setCandidates([]);
+    } finally {
+      setDiscoverLoading(false);
     }
+  }, []);
 
-    const error = addValidator(normalized);
-    if (error) {
-      setValidationError(error);
-      return;
-    }
-
-    setValidationError(null);
-    setAddress('');
+  const handleOpenDiscover = () => {
+    setDiscoverOpen(true);
+    void loadCandidates();
   };
+
+  const handleAddCandidate = useCallback(
+    (candidate: SentryValidatorCandidate) => {
+      const error = addValidator(candidate.address, candidate.username);
+      if (error) {
+        setDiscoverError(error);
+      }
+    },
+    [addValidator],
+  );
+
+  const availableCandidates = useMemo(
+    () =>
+      candidates.filter(
+        (candidate) => !monitoredAddresses.includes(candidate.address),
+      ),
+    [candidates, monitoredAddresses],
+  );
 
   const columns = useMemo<GridColDef[]>(
     () => [
+      {
+        field: 'username',
+        headerName: 'Username',
+        minWidth: 160,
+        flex: 0.6,
+        display: 'flex',
+        align: 'left',
+        headerAlign: 'left',
+        renderCell: ({ row }) => (
+          <TextField value={row.username ?? '-'} />
+        ),
+      },
       {
         field: 'address',
         headerName: 'Address',
@@ -164,32 +211,34 @@ export const ValidatorsList = () => {
         disableColumnMenu: true,
         renderCell: ({ row }) => {
           if (row.status === 'loading' || !row.lastTxTimestamp) return null;
-          return <DateField value={row.lastTxTimestamp} />;
+          return <DateField value={row.lastTxTimestamp} format={'YYYY-MM-DD HH:mm:ss'}/>;
         },
       },
       {
-        field: 'sentryErrors',
-        headerName: `Sentry Errors (${SENTRY_ISSUE_QUERY.statsPeriod})`,
-        minWidth: 160,
+        field: 'latestIssueTitle',
+        headerName: 'Latest Issue',
+        flex: 1,
+        minWidth: 280,
         display: 'flex',
-        align: 'center',
-        headerAlign: 'center',
+        align: 'left',
+        headerAlign: 'left',
         sortable: false,
         disableColumnMenu: true,
-        renderCell: ({ row }) =>
-          renderSentryCount(row, row.sentryErrorCount, row.sentryErrorLink),
+        renderCell: ({ row }) => renderLatestIssueTitle(row),
       },
       {
-        field: 'sentryWarnings',
-        headerName: `Sentry Warnings (${SENTRY_ISSUE_QUERY.statsPeriod})`,
+        field: 'latestIssueLastSeen',
+        headerName: 'Latest Issue At',
         minWidth: 180,
         display: 'flex',
         align: 'center',
         headerAlign: 'center',
         sortable: false,
         disableColumnMenu: true,
-        renderCell: ({ row }) =>
-          renderSentryCount(row, row.sentryWarningCount, row.sentryWarningLink),
+        renderCell: ({ row }) => {
+          if (row.status === 'loading' || !row.latestIssueLastSeen) return null;
+          return <DateField value={row.latestIssueLastSeen} format={'YYYY-MM-DD HH:mm:ss'}/>;
+        },
       },
       {
         field: 'actions',
@@ -212,6 +261,137 @@ export const ValidatorsList = () => {
       },
     ],
     [removeValidator],
+  );
+
+  const candidateColumns = useMemo<GridColDef[]>(
+    () => [
+      {
+        field: 'username',
+        headerName: 'Username',
+        minWidth: 160,
+        flex: 0.6,
+        display: 'flex',
+        align: 'left',
+        headerAlign: 'left',
+        renderCell: ({ row }) => (
+          <TextField value={row.username ?? '-'} />
+        ),
+      },
+      {
+        field: 'address',
+        headerName: 'Address (user.id)',
+        flex: 1,
+        minWidth: 380,
+        display: 'flex',
+        align: 'left',
+        headerAlign: 'left',
+        renderCell: ({ value }) => <TextField value={value} />,
+      },
+      {
+        field: 'latestIssueTitle',
+        headerName: 'Latest Issue',
+        flex: 1,
+        minWidth: 260,
+        display: 'flex',
+        align: 'left',
+        headerAlign: 'left',
+        sortable: false,
+        valueGetter: (_value, row: SentryValidatorCandidate) =>
+          row.latestIssue?.title ?? 'None',
+        renderCell: ({ row }) => {
+          const title = row.latestIssue?.title;
+          const link = row.latestIssue?.permalink;
+
+          if (!title) {
+            return <TextField value="None" />;
+          }
+
+          if (link) {
+            return (
+              <Link
+                href={link}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ fontSize: '0.875rem' }}
+              >
+                {title}
+              </Link>
+            );
+          }
+
+          return <TextField value={title} />;
+        },
+      },
+      {
+        field: 'latestIssueLevel',
+        headerName: 'Level',
+        minWidth: 100,
+        display: 'flex',
+        align: 'center',
+        headerAlign: 'center',
+        sortable: false,
+        valueGetter: (_value, row: SentryValidatorCandidate) =>
+          row.latestIssue?.level ?? '',
+        renderCell: ({ row }) => {
+          const level = row.latestIssue?.level;
+          if (!level) return null;
+
+          return (
+            <Chip
+              label={level}
+              size="small"
+              color={level === 'warning' ? 'warning' : 'error'}
+              variant="outlined"
+            />
+          );
+        },
+      },
+      {
+        field: 'latestIssueTimestamp',
+        headerName: 'Latest Issue At',
+        minWidth: 180,
+        display: 'flex',
+        align: 'center',
+        headerAlign: 'center',
+        sortable: false,
+        valueGetter: (_value, row: SentryValidatorCandidate) =>
+          row.latestIssue?.timestamp ?? null,
+        renderCell: ({ row }) => {
+          const timestamp = row.latestIssue?.timestamp;
+          if (!timestamp) return <TextField value="-" />;
+          return <DateField value={timestamp} />;
+        },
+      },
+      {
+        field: 'eventCount',
+        headerName: `Events (${SENTRY_EVENTS_QUERY.statsPeriod})`,
+        minWidth: 140,
+        display: 'flex',
+        align: 'center',
+        headerAlign: 'center',
+        sortable: false,
+      },
+      {
+        field: 'actions',
+        headerName: 'Actions',
+        minWidth: 90,
+        display: 'flex',
+        align: 'center',
+        headerAlign: 'center',
+        sortable: false,
+        renderCell: ({ row }) => (
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => handleAddCandidate(row)}
+            disabled={!GNOSIS_RPC_URL}
+          >
+            Add
+          </Button>
+        ),
+      },
+    ],
+    [handleAddCandidate],
   );
 
   return (
@@ -244,39 +424,24 @@ export const ValidatorsList = () => {
         {!getSentryConfigured() && (
           <Alert severity="info">
             Set VITE_SENTRY_HOST, VITE_SENTRY_API_URL, VITE_SENTRY_ORG, and
-            VITE_SENTRY_PROJECT to enable Sentry error and warning lookups. The
-            auth token must include the event:read scope.
+            VITE_SENTRY_PROJECT to discover validators from Sentry logs. The
+            auth token needs org:read (Explore logs) and event:read (issues).
           </Alert>
         )}
 
-        <Box display="flex" gap={2} alignItems="flex-start">
-          <InputField
-            label="Validator address (Gnosis)"
-            placeholder="0x..."
-            value={address}
-            onChange={(event) =>
-              setAddress(event.target.value.toLowerCase())
-            }
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                handleAdd();
-              }
-            }}
-            error={!!validationError}
-            helperText={validationError}
-            fullWidth
-            slotProps={{
-              inputLabel: { shrink: true },
-            }}
-          />
+        <Box display="flex" gap={2} alignItems="center">
           <Button
             variant="contained"
-            onClick={handleAdd}
-            disabled={!address.trim() || !GNOSIS_RPC_URL}
-            sx={{ mt: 1, minWidth: 80 }}
+            startIcon={<AddIcon />}
+            onClick={handleOpenDiscover}
+            disabled={!getSentryConfigured()}
           >
-            Add
+            Discover from Sentry
           </Button>
+          <Typography variant="body2" color="text.secondary">
+            Loads recent Sentry events, groups them by validator address
+            (user.id), and lets you add them to the monitoring list.
+          </Typography>
         </Box>
 
         <DataGrid
@@ -292,6 +457,66 @@ export const ValidatorsList = () => {
           slots={{ columnMenu: CustomColumnMenu }}
         />
       </Stack>
+
+      <Dialog
+        open={discoverOpen}
+        onClose={() => setDiscoverOpen(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle>Discover validators from Sentry</DialogTitle>
+        <DialogContent dividers>
+          <Stack gap={2}>
+            <Typography variant="body2" color="text.secondary">
+              Validators are identified by Sentry user.id values that look like
+              0x addresses. Each row shows the most recent issue seen for that
+              validator in the last {SENTRY_EVENTS_QUERY.statsPeriod}.
+            </Typography>
+
+            {discoverError && <Alert severity="error">{discoverError}</Alert>}
+
+            {discoverLoading ? (
+              <Box display="flex" justifyContent="center" py={6}>
+                <CircularProgress />
+              </Box>
+            ) : availableCandidates.length === 0 ? (
+              <Alert severity="info">
+                {candidates.length === 0
+                  ? 'No validator addresses were found in recent Sentry events.'
+                  : 'All discovered validators are already on the monitoring list.'}
+              </Alert>
+            ) : (
+              <DataGrid
+                rows={availableCandidates}
+                columns={candidateColumns}
+                getRowId={(row) => row.address}
+                disableRowSelectionOnClick
+                pageSizeOptions={[10, 25, 50]}
+                initialState={{
+                  pagination: { paginationModel: { pageSize: 10 } },
+                }}
+                disableColumnFilter
+              />
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            startIcon={
+              discoverLoading ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : (
+                <RefreshIcon />
+              )
+            }
+            onClick={() => void loadCandidates()}
+            disabled={discoverLoading}
+          >
+            Reload
+          </Button>
+          <Button onClick={() => setDiscoverOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </List>
   );
 };
