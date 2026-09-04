@@ -65,6 +65,28 @@ function renderLatestIssueTitle(row: {
   return <TextField value={row.latestIssueTitle} />;
 }
 
+function renderHeartbeatStatus(row: {
+  heartbeatStatus: string;
+}) {
+  if (row.heartbeatStatus === 'loading') {
+    return <CircularProgress size={20} />;
+  }
+
+  if (row.heartbeatStatus === 'ok') {
+    return <Chip label="OK" size="small" color="success" />;
+  }
+
+  if (row.heartbeatStatus === 'stale') {
+    return <Chip label="Stale" size="small" color="error" />;
+  }
+
+  if (row.heartbeatStatus === 'error') {
+    return <Chip label="Error" size="small" color="error" variant="outlined" />;
+  }
+
+  return <Chip label="Missing" size="small" color="error" variant="outlined" />;
+}
+
 export const ValidatorsList = () => {
   const [discoverOpen, setDiscoverOpen] = useState(false);
   const [discoverLoading, setDiscoverLoading] = useState(false);
@@ -132,6 +154,41 @@ export const ValidatorsList = () => {
         renderCell: ({ row }) => (
           <TextField value={row.username ?? '-'} />
         ),
+      },
+      {
+        field: 'heartbeatStatus',
+        headerName: 'Status',
+        minWidth: 110,
+        display: 'flex',
+        align: 'center',
+        headerAlign: 'center',
+        sortable: false,
+        disableColumnMenu: true,
+        renderCell: ({ row }) => renderHeartbeatStatus(row),
+      },
+      {
+        field: 'lastHeartbeatAt',
+        headerName: 'Status Confirmed At',
+        minWidth: 180,
+        display: 'flex',
+        align: 'center',
+        headerAlign: 'center',
+        sortable: false,
+        disableColumnMenu: true,
+        renderCell: ({ row }) => {
+          if (row.heartbeatStatus === 'loading') {
+            return <CircularProgress size={20} />;
+          }
+          if (!row.lastHeartbeatAt) {
+            return <TextField value="-" />;
+          }
+          return (
+            <DateField
+              value={row.lastHeartbeatAt}
+              format={'YYYY-MM-DD HH:mm:ss'}
+            />
+          );
+        },
       },
       {
         field: 'address',

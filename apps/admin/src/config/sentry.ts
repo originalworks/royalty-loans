@@ -47,6 +47,23 @@ export const SENTRY_ERROR_EVENTS_QUERY = {
   sort: '-timestamp',
 } as const;
 
+/**
+ * Latest custom heartbeat log per validator (Explore / ourlogs).
+ *
+ * Message shape: `heartbeat: [timestamp]`
+ * Polled every 60s; stale if older than 60s.
+ */
+export const SENTRY_HEARTBEAT_QUERY = {
+  statsPeriod: '1h',
+  dataset: 'ourlogs',
+  perPage: 1,
+  fields: ['timestamp', 'message', 'user.id'] as const,
+  sort: '-timestamp',
+  messageQuery: 'heartbeat',
+  pollIntervalMs: 60_000,
+  staleAfterMs: 120_000,
+} as const;
+
 /** @deprecated Prefer SENTRY_STATS_PERIOD / SENTRY_ERROR_EVENTS_QUERY. Kept for UI labels. */
 export const SENTRY_ISSUE_QUERY = {
   statsPeriod: SENTRY_STATS_PERIOD,
@@ -110,6 +127,34 @@ export function buildValidatorErrorEventsParams(
 
   if (options?.cursor) {
     params.set('cursor', options.cursor);
+  }
+
+  return params;
+}
+
+/**
+ * Params for the latest custom `heartbeat: …` Explore log for one validator.
+ */
+export function buildValidatorHeartbeatParams(
+  address: string,
+): URLSearchParams {
+  const params = new URLSearchParams({
+    dataset: SENTRY_HEARTBEAT_QUERY.dataset,
+    statsPeriod: SENTRY_HEARTBEAT_QUERY.statsPeriod,
+    per_page: String(SENTRY_HEARTBEAT_QUERY.perPage),
+    sort: SENTRY_HEARTBEAT_QUERY.sort,
+    sampling: 'NORMAL',
+    query: `user.id:${address} ${SENTRY_HEARTBEAT_QUERY.messageQuery}`,
+  });
+
+  params.append('caseInsensitive', '');
+
+  for (const field of SENTRY_HEARTBEAT_QUERY.fields) {
+    params.append('field', field);
+  }
+
+  if (SENTRY_PROJECT) {
+    params.append('project', SENTRY_PROJECT);
   }
 
   return params;

@@ -1,11 +1,14 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { createPublicClient, formatEther, http, isAddress } from 'viem';
 import { gnosis } from 'viem/chains';
 
 import { GNOSIS_RPC_URL } from '../config/config';
+import { SENTRY_HEARTBEAT_QUERY } from '../config/sentry';
 import { fetchLastOutgoingTx } from '../utils/blockscout';
 import {
+  fetchLatestValidatorHeartbeat,
   fetchValidatorSentrySummary,
+  isHeartbeatStale,
   pickLatestIssueFromSummary,
 } from '../utils/sentry';
 
@@ -22,6 +25,8 @@ export type ValidatorLookupResult = {
   lastTxTimestamp: number | null;
 };
 
+export type HeartbeatStatus = 'loading' | 'ok' | 'stale' | 'missing' | 'error';
+
 export type ValidatorRow = {
   id: string;
   address: string;
@@ -37,6 +42,8 @@ export type ValidatorRow = {
   latestIssueLevel: string | null;
   latestIssueLastSeen: string | null;
   latestIssueLink: string | null;
+  lastHeartbeatAt: number | null;
+  heartbeatStatus: HeartbeatStatus;
   status: 'loading' | 'error' | 'ready';
   error?: string;
 };
@@ -113,10 +120,34 @@ function saveValidators(validators: StoredValidator[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(validators));
 }
 
+function emptyRow(validator: StoredValidator): ValidatorRow {
+  return {
+    id: validator.address,
+    address: validator.address,
+    username: validator.username ?? null,
+    balance: null,
+    lastTxHash: null,
+    lastTxTimestamp: null,
+    sentryErrorCount: null,
+    sentryWarningCount: null,
+    sentryErrorLink: null,
+    sentryWarningLink: null,
+    latestIssueTitle: null,
+    latestIssueLevel: null,
+    latestIssueLastSeen: null,
+    latestIssueLink: null,
+    lastHeartbeatAt: null,
+    heartbeatStatus: 'loading',
+    status: 'loading',
+  };
+}
+
 export const useValidators = () => {
   const [validators, setValidators] = useState<StoredValidator[]>(loadValidators);
   const [rows, setRows] = useState<ValidatorRow[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const validatorsRef = useRef(validators);
+  validatorsRef.current = validators;
 
   const refreshAddress = useCallback(async (validator: StoredValidator) => {
     const { address } = validator;
@@ -179,6 +210,43 @@ export const useValidators = () => {
     }
   }, []);
 
+  const refreshHeartbeat = useCallback(async (address: string) => {
+    try {
+      const heartbeat = await fetchLatestValidatorHeartbeat(address);
+      const lastHeartbeatAt = heartbeat?.timestampMs ?? null;
+      const heartbeatStatus: HeartbeatStatus = lastHeartbeatAt
+        ? isHeartbeatStale(lastHeartbeatAt)
+          ? 'stale'
+          : 'ok'
+        : 'missing';
+
+      setRows((prev) =>
+        prev.map((row) =>
+          row.address === address
+            ? { ...row, lastHeartbeatAt, heartbeatStatus }
+            : row,
+        ),
+      );
+    } catch {
+      setRows((prev) =>
+        prev.map((row) =>
+          row.address === address
+            ? { ...row, heartbeatStatus: 'error' as const }
+            : row,
+        ),
+      );
+    }
+  }, []);
+
+  const refreshAllHeartbeats = useCallback(
+    async (validatorList: StoredValidator[]) => {
+      await Promise.all(
+        validatorList.map((validator) => refreshHeartbeat(validator.address)),
+      );
+    },
+    [refreshHeartbeat],
+  );
+
   const refreshAll = useCallback(
     async (validatorList: StoredValidator[]) => {
       if (validatorList.length === 0) {
@@ -187,35 +255,31 @@ export const useValidators = () => {
       }
 
       setIsRefreshing(true);
-      setRows(
-        validatorList.map((validator) => ({
-          id: validator.address,
-          address: validator.address,
-          username: validator.username ?? null,
-          balance: null,
-          lastTxHash: null,
-          lastTxTimestamp: null,
-          sentryErrorCount: null,
-          sentryWarningCount: null,
-          sentryErrorLink: null,
-          sentryWarningLink: null,
-          latestIssueTitle: null,
-          latestIssueLevel: null,
-          latestIssueLastSeen: null,
-          latestIssueLink: null,
-          status: 'loading' as const,
-        })),
-      );
+      setRows(validatorList.map(emptyRow));
 
-      await Promise.all(validatorList.map((validator) => refreshAddress(validator)));
+      await Promise.all([
+        ...validatorList.map((validator) => refreshAddress(validator)),
+        refreshAllHeartbeats(validatorList),
+      ]);
       setIsRefreshing(false);
     },
-    [refreshAddress],
+    [refreshAddress, refreshAllHeartbeats],
   );
 
   useEffect(() => {
     void refreshAll(validators);
   }, [validators, refreshAll]);
+
+  // Poll the latest `heartbeat: …` log every 60s for each monitored validator.
+  useEffect(() => {
+    if (validators.length === 0) return;
+
+    const intervalId = window.setInterval(() => {
+      void refreshAllHeartbeats(validatorsRef.current);
+    }, SENTRY_HEARTBEAT_QUERY.pollIntervalMs);
+
+    return () => window.clearInterval(intervalId);
+  }, [validators.length, refreshAllHeartbeats]);
 
   const addValidator = useCallback(
     (address: string, username?: string | null) => {

@@ -4,8 +4,9 @@
  * 1. Discover wallets — Explore logs aggregated by user.id (`dataset=ourlogs`).
  * 2. Per-validator errors — Discover error events filtered with
  *    `query=user.id:{address}` (`dataset=errors`), same as the Sentry UI.
+ * 3. Per-validator heartbeats — latest custom `heartbeat: …` Explore log.
  *
- * Both use GET /organizations/{org}/events/ and need org:read.
+ * All use GET /organizations/{org}/events/ and need org:read.
  */
 
 import {
@@ -18,8 +19,10 @@ import {
 import {
   SENTRY_ERROR_EVENTS_QUERY,
   SENTRY_EVENTS_QUERY,
+  SENTRY_HEARTBEAT_QUERY,
   buildLogsAggregateParams,
   buildValidatorErrorEventsParams,
+  buildValidatorHeartbeatParams,
   type SentryIssueLevelFilter,
 } from '../config/sentry';
 
@@ -27,6 +30,7 @@ export {
   SENTRY_ISSUE_QUERY,
   SENTRY_EVENTS_QUERY,
   SENTRY_ERROR_EVENTS_QUERY,
+  SENTRY_HEARTBEAT_QUERY,
 } from '../config/sentry';
 
 // ---------------------------------------------------------------------------
@@ -66,6 +70,13 @@ export type SentryValidatorCandidate = {
   username: string | null;
   eventCount: number;
   latestIssue: SentryLatestIssue | null;
+};
+
+/** Latest custom heartbeat log for a validator. */
+export type SentryHeartbeat = {
+  message: string;
+  /** Epoch ms parsed from `heartbeat: …` or the log timestamp. */
+  timestampMs: number;
 };
 
 // ---------------------------------------------------------------------------
@@ -387,6 +398,71 @@ async function enrichWithLatestIssues(
       }
     }),
   );
+}
+
+// ---------------------------------------------------------------------------
+// Per-validator heartbeat logs (dataset=ourlogs, message contains "heartbeat")
+// ---------------------------------------------------------------------------
+
+const HEARTBEAT_MESSAGE_PATTERN = /heartbeat:\s*(.+)$/i;
+
+function parseHeartbeatTimestamp(
+  message: string,
+  fallbackTimestamp: string | null,
+): number | null {
+  const match = message.match(HEARTBEAT_MESSAGE_PATTERN);
+  const raw = match?.[1]?.trim();
+
+  if (raw) {
+    const asNumber = Number(raw);
+    if (Number.isFinite(asNumber)) {
+      // Seconds vs milliseconds — treat small values as unix seconds.
+      return asNumber < 1e12 ? asNumber * 1000 : asNumber;
+    }
+
+    const asDate = Date.parse(raw);
+    if (Number.isFinite(asDate)) return asDate;
+  }
+
+  if (fallbackTimestamp) {
+    const fallback = Date.parse(fallbackTimestamp);
+    if (Number.isFinite(fallback)) return fallback;
+  }
+
+  return null;
+}
+
+/**
+ * Fetch the latest custom `heartbeat: [timestamp]` Explore log for one
+ * validator (`dataset=ourlogs`, `query=user.id:{address} heartbeat`).
+ */
+export async function fetchLatestValidatorHeartbeat(
+  address: string,
+): Promise<SentryHeartbeat | null> {
+  if (!isSentryConfigured()) return null;
+
+  const page = await fetchOrganizationEventsPage(
+    buildValidatorHeartbeatParams(address),
+  );
+  const row = page?.items[0];
+  if (!row) return null;
+
+  const message = asString(getDiscoverField(row, 'message'));
+  if (!message || !message.toLowerCase().includes('heartbeat')) return null;
+
+  const logTimestamp = asString(getDiscoverField(row, 'timestamp'));
+  const timestampMs = parseHeartbeatTimestamp(message, logTimestamp);
+  if (timestampMs === null) return null;
+
+  return { message, timestampMs };
+}
+
+export function isHeartbeatStale(
+  timestampMs: number | null,
+  nowMs: number = Date.now(),
+): boolean {
+  if (timestampMs === null) return true;
+  return nowMs - timestampMs > SENTRY_HEARTBEAT_QUERY.staleAfterMs;
 }
 
 // ---------------------------------------------------------------------------
