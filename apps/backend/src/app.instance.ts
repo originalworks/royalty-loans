@@ -6,7 +6,10 @@ import { AppModule } from './app.module';
 import { Logger } from 'nestjs-pino';
 
 const createApp = (appInstance: NestExpressApplication) => {
-  appInstance.enableCors();
+  // Link is required for Sentry Discover pagination cursors.
+  appInstance.enableCors({
+    exposedHeaders: ['Link'],
+  });
   appInstance.useLogger(appInstance.get(Logger));
 
   return appInstance.useGlobalPipes(

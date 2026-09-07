@@ -7,6 +7,8 @@
     "DbSecret": "/ow/stage/db/secret-arn",
     "RootDbName": "/ow/stage/db/name",
     "Auth0Issuer": "/ow/stage/auth0/issuer",
-    "Auth0Audience": "/ow/stage/auth0/audience"
+    "Auth0Audience": "/ow/stage/auth0/audience",
+    "SentryHost": "/ow/stage/sentry/host",
+    "SentryAuthToken": "/ow/stage/sentry/auth-token"
   }
 }

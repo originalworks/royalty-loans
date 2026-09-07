@@ -6,6 +6,7 @@ import { DataSourceOptions } from 'typeorm';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoanTermsModule } from './loanTerms/loanTerms.module';
 import { AuthModule } from './auth/auth.module';
+import { SentryProxyModule } from './sentryProxy/sentryProxy.module';
 
 @Module({})
 export class AppModule {
@@ -19,6 +20,7 @@ export class AppModule {
       PinoLoggerModule,
       LoanTermsModule,
       AuthModule,
+      SentryProxyModule,
     ];
 
     return {
