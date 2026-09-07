@@ -48,7 +48,6 @@ jobs:
           VITE_GNOSIS_EXPLORER_API_KEY: ${{ secrets.VITE_GNOSIS_EXPLORER_API_KEY }}
           VITE_GNOSIS_EXPLORER_URL: https://gnosis.blockscout.com
           VITE_SENTRY_HOST: https://us.sentry.io
-          VITE_SENTRY_API_URL: ${{ secrets.VITE_BACKEND_URL_PROD }}sentry-api
           VITE_SENTRY_ORG: original-works
           VITE_SENTRY_PROJECT: validator-node
           VITE_PROD_DOMAIN: ${{ secrets.PROD_DOMAIN }}

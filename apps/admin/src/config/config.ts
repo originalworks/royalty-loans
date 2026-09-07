@@ -15,9 +15,12 @@ export const GNOSIS_EXPLORER_API_KEY =
 export const GNOSIS_EXPLORER_URL = import.meta.env.VITE_GNOSIS_EXPLORER_URL;
 export const SENTRY_HOST =
   import.meta.env.VITE_SENTRY_HOST ?? 'https://sentry.io';
-/** Local: `/sentry-api` (Vite proxy). Stage/prod: `${BACKEND_URL}sentry-api`. */
+/** Local: `/sentry-api` (Vite proxy). Otherwise `${BACKEND_URL}/sentry-api`. */
 export const SENTRY_API_URL =
-  import.meta.env.VITE_SENTRY_API_URL ?? `${SENTRY_HOST}/api/0`;
+  import.meta.env.VITE_SENTRY_API_URL ||
+  (BACKEND_URL
+    ? `${String(BACKEND_URL).replace(/\/$/, '')}/sentry-api`
+    : `${SENTRY_HOST}/api/0`);
 export const SENTRY_ORG = import.meta.env.VITE_SENTRY_ORG;
 export const SENTRY_PROJECT = import.meta.env.VITE_SENTRY_PROJECT;
 export const PROD_DOMAIN = import.meta.env.VITE_PROD_DOMAIN;
