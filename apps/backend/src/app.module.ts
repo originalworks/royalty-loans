@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoanTermsModule } from './loanTerms/loanTerms.module';
 import { AuthModule } from './auth/auth.module';
 import { SentryProxyModule } from './sentryProxy/sentryProxy.module';
+import { BlockscoutProxyModule } from './blockscoutProxy/blockscoutProxy.module';
 
 @Module({})
 export class AppModule {
@@ -21,6 +22,7 @@ export class AppModule {
       LoanTermsModule,
       AuthModule,
       SentryProxyModule,
+      BlockscoutProxyModule,
     ];
 
     return {

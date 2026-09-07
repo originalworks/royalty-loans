@@ -44,8 +44,6 @@ jobs:
           VITE_POLYGON_RPC_URL: ${{ secrets.VITE_POLYGON_RPC_URL }}
           VITE_POLYGON_SUBGRAPH_URL: ${{ secrets.VITE_POLYGON_SUBGRAPH_URL }}
           VITE_GNOSIS_RPC_URL: https://rpc.gnosischain.com
-          VITE_GNOSIS_EXPLORER_API_URL: https://api.blockscout.com/100/api/v2
-          VITE_GNOSIS_EXPLORER_API_KEY: ${{ secrets.VITE_GNOSIS_EXPLORER_API_KEY }}
           VITE_GNOSIS_EXPLORER_URL: https://gnosis.blockscout.com
           VITE_SENTRY_HOST: https://us.sentry.io
           VITE_SENTRY_ORG: original-works
