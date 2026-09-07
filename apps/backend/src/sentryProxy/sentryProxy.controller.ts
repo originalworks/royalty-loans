@@ -20,7 +20,7 @@ export class SentryProxyController {
 
   /** `:path*` matches zero or more segments under /sentry-api. */
   @All('sentry-api/:path*')
-  async proxy(@Req() req: Request, @Res() res: Response) {
+  async proxy(@Req() req: Request, @Res() res: Response): Promise<void> {
     const pathSuffix = req.path.replace(/^\/sentry-api\/?/, '');
     const queryIndex = req.url.indexOf('?');
     const queryString = queryIndex >= 0 ? req.url.slice(queryIndex) : '';
@@ -46,6 +46,6 @@ export class SentryProxyController {
       `Responding ${result.status} for upstream ${result.targetUrl}`,
     );
 
-    return res.status(result.status).send(result.body);
+    res.status(result.status).send(result.body);
   }
 }
