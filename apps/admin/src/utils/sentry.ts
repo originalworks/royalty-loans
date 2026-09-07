@@ -9,9 +9,10 @@
  * All use GET /organizations/{org}/events/ and need org:read.
  */
 
+import axios from 'axios';
+
 import {
   SENTRY_API_URL,
-  SENTRY_AUTH_TOKEN,
   SENTRY_HOST,
   SENTRY_ORG,
   SENTRY_PROJECT,
@@ -153,9 +154,13 @@ function getApiBaseUrl(): string | null {
 function getRequestHeaders(): HeadersInit {
   const headers: HeadersInit = { Accept: 'application/json' };
   const base = getApiBaseUrl();
-  // Auth is injected by the Vite proxy for relative `/sentry-api` URLs.
-  if (SENTRY_AUTH_TOKEN && base && !base.startsWith('/')) {
-    headers.Authorization = `Bearer ${SENTRY_AUTH_TOKEN}`;
+  // Relative `/sentry-api`: Vite proxy injects the Sentry token.
+  // Absolute URL: backend proxy — send the Auth0 token.
+  if (base && !base.startsWith('/')) {
+    const auth = axios.defaults.headers.common.Authorization;
+    if (typeof auth === 'string' && auth.length > 0) {
+      headers.Authorization = auth;
+    }
   }
   return headers;
 }

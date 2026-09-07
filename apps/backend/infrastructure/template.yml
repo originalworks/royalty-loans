@@ -18,6 +18,10 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
   Auth0Audience:
     Type: AWS::SSM::Parameter::Value<String>
+  SentryHost:
+    Type: AWS::SSM::Parameter::Value<String>
+  SentryAuthToken:
+    Type: AWS::SSM::Parameter::Value<String>
 
 Globals:
   Function:
@@ -44,6 +48,8 @@ Globals:
         DB_DATABASE: !Ref DBName
         AUTH0_ISSUER: !Ref Auth0Issuer
         AUTH0_AUDIENCE: !Ref Auth0Audience
+        SENTRY_HOST: !Ref SentryHost
+        SENTRY_AUTH_TOKEN: !Ref SentryAuthToken
 
 Resources:
   RoyaltyLoansRole:
