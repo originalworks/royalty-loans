@@ -45,6 +45,7 @@ import { AppIcon } from './components/app-icon';
 import { ColorModeContextProvider } from './contexts/color-mode';
 import { LoanOfferShow, LoanOffersList } from './pages/loan-offers';
 import { TransactionShow, TransactionsList } from './pages/transactions';
+import { ValidatorsList } from './pages/validators';
 
 const gqlBaseClient = new Client({
   url: BASE_SUBGRAPH_URL,
@@ -183,6 +184,13 @@ function App() {
                     list: '/transactions',
                     show: '/transactions/show/:id',
                   },
+                  {
+                    name: 'validators',
+                    list: '/validators',
+                    meta: {
+                      label: 'Validators',
+                    },
+                  },
                 ]}
                 options={{
                   syncWithLocation: true,
@@ -222,6 +230,9 @@ function App() {
                     <Route path="/transactions">
                       <Route index element={<TransactionsList />} />
                       <Route path="show/:id" element={<TransactionShow />} />
+                    </Route>
+                    <Route path="/validators">
+                      <Route index element={<ValidatorsList />} />
                     </Route>
                     <Route path="*" element={<ErrorComponent />} />
                   </Route>
