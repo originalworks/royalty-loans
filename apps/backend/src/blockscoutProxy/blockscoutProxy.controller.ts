@@ -1,7 +1,9 @@
 import {
   All,
   Controller,
+  Get,
   Logger,
+  Param,
   Req,
   Res,
   UseGuards,
@@ -18,9 +20,17 @@ export class BlockscoutProxyController {
 
   constructor(private readonly blockscoutProxyService: BlockscoutProxyService) {}
 
+  @Get('blockscout-api/addresses/:address/last-outgoing-tx')
+  async lastOutgoingTx(@Param('address') address: string) {
+    BlockscoutProxyController.logger.log(
+      `Incoming GET last-outgoing-tx address=${address}`,
+    );
+    return this.blockscoutProxyService.fetchLastOutgoingTx(address);
+  }
+
   /** `:path*` matches zero or more segments under /blockscout-api. */
   @All('blockscout-api/:path*')
-  async proxy(@Req() req: Request, @Res() res: Response) {
+  async proxy(@Req() req: Request, @Res() res: Response): Promise<void> {
     const pathSuffix = req.path.replace(/^\/blockscout-api\/?/, '');
     const queryIndex = req.url.indexOf('?');
     const queryString = queryIndex >= 0 ? req.url.slice(queryIndex) : '';
@@ -43,6 +53,6 @@ export class BlockscoutProxyController {
       `Responding ${result.status} for upstream ${result.targetUrl}`,
     );
 
-    return res.status(result.status).send(result.body);
+    res.status(result.status).send(result.body);
   }
 }

@@ -5,21 +5,23 @@ import {
   GNOSIS_EXPLORER_URL,
 } from '../config/config';
 
-export type BlockscoutTransaction = {
-  hash?: string;
-  timestamp?: string;
-};
-
-type BlockscoutListResponse<T> = {
-  items?: T[];
-};
-
 export type LastOutgoingTx = {
   hash: string;
   timestamp: number;
 } | null;
 
 const DEFAULT_EXPLORER_WEB_URL = 'https://gnosis.blockscout.com';
+
+type EthTxListResponse = {
+  status?: string;
+  message?: string;
+  result?:
+    | Array<{
+        hash?: string;
+        timeStamp?: string;
+      }>
+    | string;
+};
 
 function getApiBaseUrl(): string | null {
   if (!GNOSIS_EXPLORER_API_URL) {
@@ -29,12 +31,15 @@ function getApiBaseUrl(): string | null {
   return GNOSIS_EXPLORER_API_URL.replace(/\/$/, '');
 }
 
+function usesBackendProxy(): boolean {
+  const base = getApiBaseUrl();
+  return Boolean(base && !base.startsWith('/'));
+}
+
 function getRequestHeaders(): HeadersInit {
   const headers: HeadersInit = { Accept: 'application/json' };
-  const base = getApiBaseUrl();
-  // Relative `/blockscout-api`: Vite proxy injects the Blockscout token.
   // Absolute URL: backend proxy — send the Auth0 token.
-  if (base && !base.startsWith('/')) {
+  if (usesBackendProxy()) {
     const auth = axios.defaults.headers.common.Authorization;
     if (typeof auth === 'string' && auth.length > 0) {
       headers.Authorization = auth;
@@ -43,39 +48,14 @@ function getRequestHeaders(): HeadersInit {
   return headers;
 }
 
-function buildRequestUrl(path: string, params?: URLSearchParams): string | null {
+function buildBackendRequestUrl(path: string): string | null {
   const baseUrl = getApiBaseUrl();
   if (!baseUrl) {
     return null;
   }
 
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  const query = params?.toString();
-  return query
-    ? `${baseUrl}${normalizedPath}?${query}`
-    : `${baseUrl}${normalizedPath}`;
-}
-
-async function blockscoutGet<T>(
-  path: string,
-  params?: URLSearchParams,
-): Promise<T | null> {
-  const url = buildRequestUrl(path, params);
-  if (!url) {
-    return null;
-  }
-
-  const response = await fetch(url, { headers: getRequestHeaders() });
-  if (!response.ok) {
-    return null;
-  }
-
-  const contentType = response.headers.get('content-type') ?? '';
-  if (!contentType.includes('application/json')) {
-    return null;
-  }
-
-  return response.json() as Promise<T>;
+  return `${baseUrl}${normalizedPath}`;
 }
 
 export function getExplorerTxLink(txHash: string): string | null {
@@ -92,45 +72,62 @@ export function getExplorerTxLink(txHash: string): string | null {
     return `${DEFAULT_EXPLORER_WEB_URL}/tx/${txHash}`;
   }
 
-  const webBase = apiBase
-    .replace(/\/\d+\/api\/v2$/, '')
-    .replace(/\/api\/v2$/, '');
-
-  return `${webBase}/tx/${txHash}`;
+  return `${DEFAULT_EXPLORER_WEB_URL}/tx/${txHash}`;
 }
 
 export async function fetchLastOutgoingTx(
   address: string,
 ): Promise<LastOutgoingTx> {
-  const params = new URLSearchParams({
-    filter: 'from',
-  });
+  if (usesBackendProxy()) {
+    const url = buildBackendRequestUrl(
+      `/addresses/${address}/last-outgoing-tx`,
+    );
+    if (!url) return null;
 
-  const data = await blockscoutGet<
-    BlockscoutListResponse<BlockscoutTransaction>
-  >(`/addresses/${address}/transactions`, params);
+    const response = await fetch(url, { headers: getRequestHeaders() });
+    if (!response.ok) return null;
 
-  // Newest pending txs often omit timestamp/block fields; prefer the latest
-  // confirmed outgoing transaction.
-  const tx = data?.items?.find(
-    (item) =>
-      typeof item.hash === 'string' &&
-      item.hash.length > 0 &&
-      typeof item.timestamp === 'string' &&
-      item.timestamp.length > 0,
+    const data = (await response.json()) as LastOutgoingTx;
+    if (!data?.hash || !Number.isFinite(data.timestamp)) {
+      return null;
+    }
+    return data;
+  }
+
+  const explorer = (GNOSIS_EXPLORER_URL || DEFAULT_EXPLORER_WEB_URL).replace(
+    /\/$/,
+    '',
   );
+  const params = new URLSearchParams({
+    module: 'account',
+    action: 'txlist',
+    address,
+    page: '1',
+    offset: '1',
+    sort: 'desc',
+    filter_by: 'from',
+  });
+  const url = `${explorer}/api?${params.toString()}`;
 
-  if (!tx?.hash || !tx.timestamp) {
+  const response = await fetch(url, {
+    headers: { Accept: 'application/json' },
+  });
+  if (!response.ok) return null;
+
+  const payload = (await response.json()) as EthTxListResponse;
+  if (payload.status !== '1' || !Array.isArray(payload.result)) {
     return null;
   }
 
-  const timestamp = new Date(tx.timestamp).getTime();
+  const tx = payload.result[0];
+  if (!tx?.hash || !tx.timeStamp) {
+    return null;
+  }
+
+  const timestamp = Number.parseInt(tx.timeStamp, 10) * 1000;
   if (!Number.isFinite(timestamp)) {
     return null;
   }
 
-  return {
-    hash: tx.hash,
-    timestamp,
-  };
+  return { hash: tx.hash, timestamp };
 }
