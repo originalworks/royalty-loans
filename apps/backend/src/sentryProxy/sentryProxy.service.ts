@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -9,10 +10,13 @@ export type SentryProxyResult = {
   contentType: string | null;
   link: string | null;
   body: Buffer;
+  targetUrl: string;
 };
 
 @Injectable()
 export class SentryProxyService {
+  private static readonly logger = new Logger(SentryProxyService.name);
+
   constructor(private readonly configService: ConfigService) {}
 
   async forward(
@@ -35,9 +39,13 @@ export class SentryProxyService {
         ? queryString
         : `?${queryString}`
       : '';
-    const target = `${host}/api/0/${normalizedPath}${query}`;
+    const targetUrl = `${host}/api/0/${normalizedPath}${query}`;
 
-    const upstream = await fetch(target, {
+    SentryProxyService.logger.log(
+      `Proxying ${method} pathSuffix="${pathSuffix}" → ${targetUrl}`,
+    );
+
+    const upstream = await fetch(targetUrl, {
       method,
       headers: {
         Accept: 'application/json',
@@ -47,11 +55,23 @@ export class SentryProxyService {
 
     const body = Buffer.from(await upstream.arrayBuffer());
 
+    SentryProxyService.logger.log(
+      `Upstream ${method} ${targetUrl} → ${upstream.status} (${body.length} bytes)`,
+    );
+
+    if (!upstream.ok) {
+      const preview = body.toString('utf8').slice(0, 500);
+      SentryProxyService.logger.warn(
+        `Upstream error body for ${targetUrl}: ${preview}`,
+      );
+    }
+
     return {
       status: upstream.status,
       contentType: upstream.headers.get('content-type'),
       link: upstream.headers.get('link'),
       body,
+      targetUrl,
     };
   }
 }
