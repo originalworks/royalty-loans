@@ -22,6 +22,10 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
   SentryAuthToken:
     Type: AWS::SSM::Parameter::Value<String>
+  BlockscoutApiUrl:
+    Type: AWS::SSM::Parameter::Value<String>
+  BlockscoutApiKey:
+    Type: AWS::SSM::Parameter::Value<String>
 
 Globals:
   Function:
@@ -50,6 +54,8 @@ Globals:
         AUTH0_AUDIENCE: !Ref Auth0Audience
         SENTRY_HOST: !Ref SentryHost
         SENTRY_AUTH_TOKEN: !Ref SentryAuthToken
+        BLOCKSCOUT_API_URL: !Ref BlockscoutApiUrl
+        BLOCKSCOUT_API_KEY: !Ref BlockscoutApiKey
 
 Resources:
   RoyaltyLoansRole:

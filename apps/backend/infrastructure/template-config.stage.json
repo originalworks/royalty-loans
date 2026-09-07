@@ -9,6 +9,8 @@
     "Auth0Issuer": "/ow/stage/auth0/issuer",
     "Auth0Audience": "/ow/stage/auth0/audience",
     "SentryHost": "/ow/stage/sentry/host",
-    "SentryAuthToken": "/ow/stage/sentry/auth-token"
+    "SentryAuthToken": "/ow/stage/sentry/auth-token",
+    "BlockscoutApiUrl": "/ow/stage/blockscout/api-url",
+    "BlockscoutApiKey": "/ow/stage/blockscout/api-key"
   }
 }

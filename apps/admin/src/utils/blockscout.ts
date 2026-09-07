@@ -1,5 +1,6 @@
+import axios from 'axios';
+
 import {
-  GNOSIS_EXPLORER_API_KEY,
   GNOSIS_EXPLORER_API_URL,
   GNOSIS_EXPLORER_URL,
 } from '../config/config';
@@ -28,6 +29,20 @@ function getApiBaseUrl(): string | null {
   return GNOSIS_EXPLORER_API_URL.replace(/\/$/, '');
 }
 
+function getRequestHeaders(): HeadersInit {
+  const headers: HeadersInit = { Accept: 'application/json' };
+  const base = getApiBaseUrl();
+  // Relative `/blockscout-api`: Vite proxy injects the Blockscout token.
+  // Absolute URL: backend proxy — send the Auth0 token.
+  if (base && !base.startsWith('/')) {
+    const auth = axios.defaults.headers.common.Authorization;
+    if (typeof auth === 'string' && auth.length > 0) {
+      headers.Authorization = auth;
+    }
+  }
+  return headers;
+}
+
 function buildRequestUrl(path: string, params?: URLSearchParams): string | null {
   const baseUrl = getApiBaseUrl();
   if (!baseUrl) {
@@ -35,13 +50,7 @@ function buildRequestUrl(path: string, params?: URLSearchParams): string | null 
   }
 
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  const searchParams = new URLSearchParams(params);
-
-  if (GNOSIS_EXPLORER_API_KEY) {
-    searchParams.set('apikey', GNOSIS_EXPLORER_API_KEY);
-  }
-
-  const query = searchParams.toString();
+  const query = params?.toString();
   return query
     ? `${baseUrl}${normalizedPath}?${query}`
     : `${baseUrl}${normalizedPath}`;
@@ -56,17 +65,7 @@ async function blockscoutGet<T>(
     return null;
   }
 
-  const headers: HeadersInit = {
-    Accept: 'application/json',
-  };
-
-  // Prefer Bearer auth for the Pro API; query apikey remains as a fallback
-  // for environments that inject it via the Vite proxy.
-  if (GNOSIS_EXPLORER_API_KEY && !url.startsWith('/')) {
-    headers.Authorization = `Bearer ${GNOSIS_EXPLORER_API_KEY}`;
-  }
-
-  const response = await fetch(url, { headers });
+  const response = await fetch(url, { headers: getRequestHeaders() });
   if (!response.ok) {
     return null;
   }
@@ -89,7 +88,7 @@ export function getExplorerTxLink(txHash: string): string | null {
     return null;
   }
 
-  if (apiBase === '/blockscout-api') {
+  if (apiBase === '/blockscout-api' || apiBase.endsWith('/blockscout-api')) {
     return `${DEFAULT_EXPLORER_WEB_URL}/tx/${txHash}`;
   }
 

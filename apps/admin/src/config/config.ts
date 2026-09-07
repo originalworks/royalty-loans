@@ -8,10 +8,12 @@ export const BASE_SUBGRAPH_URL = import.meta.env.VITE_BASE_SUBGRAPH_URL;
 export const POLYGON_RPC_URL = import.meta.env.VITE_POLYGON_RPC_URL;
 export const POLYGON_SUBGRAPH_URL = import.meta.env.VITE_POLYGON_SUBGRAPH_URL;
 export const GNOSIS_RPC_URL = import.meta.env.VITE_GNOSIS_RPC_URL;
+/** Local: `/blockscout-api` (Vite proxy). Otherwise `${BACKEND_URL}/blockscout-api`. */
 export const GNOSIS_EXPLORER_API_URL =
-  import.meta.env.VITE_GNOSIS_EXPLORER_API_URL;
-export const GNOSIS_EXPLORER_API_KEY =
-  import.meta.env.VITE_GNOSIS_EXPLORER_API_KEY;
+  import.meta.env.VITE_GNOSIS_EXPLORER_API_URL ||
+  (BACKEND_URL
+    ? `${String(BACKEND_URL).replace(/\/$/, '')}/blockscout-api`
+    : undefined);
 export const GNOSIS_EXPLORER_URL = import.meta.env.VITE_GNOSIS_EXPLORER_URL;
 export const SENTRY_HOST =
   import.meta.env.VITE_SENTRY_HOST ?? 'https://sentry.io';
