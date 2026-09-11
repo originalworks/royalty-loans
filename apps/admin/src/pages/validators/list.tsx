@@ -18,6 +18,7 @@ import {
   IconButton,
   Link,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -26,7 +27,10 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 
 import { GNOSIS_RPC_URL } from '../../config/config';
-import { SENTRY_EVENTS_QUERY } from '../../config/sentry';
+import {
+  SENTRY_EVENTS_QUERY,
+  SENTRY_HEARTBEAT_QUERY,
+} from '../../config/sentry';
 import { useValidators } from '../../hooks/useValidatorLookup';
 import {
   fetchValidatorCandidatesFromSentry,
@@ -35,6 +39,16 @@ import {
   type SentryValidatorCandidate,
 } from '../../utils';
 import { CustomColumnMenu } from '../../components';
+
+const HEARTBEAT_STALE_AFTER_MINUTES =
+  SENTRY_HEARTBEAT_QUERY.staleAfterMs / 60_000;
+
+const HEARTBEAT_STATUS_TOOLTIPS = {
+  ok: `Latest heartbeat is within the last ${HEARTBEAT_STALE_AFTER_MINUTES} minutes.`,
+  bad: `Latest heartbeat is older than ${HEARTBEAT_STALE_AFTER_MINUTES} minutes — the validator may have stopped reporting.`,
+  missing: 'No heartbeat log found for this validator in Sentry.',
+  error: 'Failed to fetch the latest heartbeat from Sentry.',
+} as const;
 
 function renderLatestIssueTitle(row: {
   status: string;
@@ -73,18 +87,34 @@ function renderHeartbeatStatus(row: {
   }
 
   if (row.heartbeatStatus === 'ok') {
-    return <Chip label="OK" size="small" color="success" />;
+    return (
+      <Tooltip title={HEARTBEAT_STATUS_TOOLTIPS.ok}>
+        <Chip label="OK" size="small" color="success" />
+      </Tooltip>
+    );
   }
 
-  if (row.heartbeatStatus === 'stale') {
-    return <Chip label="Stale" size="small" color="error" />;
+  if (row.heartbeatStatus === 'bad') {
+    return (
+      <Tooltip title={HEARTBEAT_STATUS_TOOLTIPS.bad}>
+        <Chip label="Bad" size="small" color="error" />
+      </Tooltip>
+    );
   }
 
   if (row.heartbeatStatus === 'error') {
-    return <Chip label="Error" size="small" color="error" variant="outlined" />;
+    return (
+      <Tooltip title={HEARTBEAT_STATUS_TOOLTIPS.error}>
+        <Chip label="Error" size="small" color="error" variant="outlined" />
+      </Tooltip>
+    );
   }
 
-  return <Chip label="Missing" size="small" color="error" variant="outlined" />;
+  return (
+    <Tooltip title={HEARTBEAT_STATUS_TOOLTIPS.missing}>
+      <Chip label="Missing" size="small" color="error" variant="outlined" />
+    </Tooltip>
+  );
 }
 
 export const ValidatorsList = () => {
