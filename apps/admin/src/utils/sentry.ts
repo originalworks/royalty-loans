@@ -13,7 +13,6 @@ import axios from 'axios';
 
 import {
   SENTRY_API_URL,
-  SENTRY_HOST,
   SENTRY_ORG,
   SENTRY_PROJECT,
 } from '../config/config';
@@ -139,8 +138,7 @@ function getDiscoverField(row: DiscoverRow, field: string): unknown {
 }
 
 function buildIssuePermalink(issueId: string): string {
-  const host = SENTRY_HOST.replace(/\/$/, '');
-  return `${host}/organizations/${SENTRY_ORG}/issues/${issueId}/`;
+  return `https://${SENTRY_ORG}.sentry.io/issues/${issueId}/`;
 }
 
 // ---------------------------------------------------------------------------

@@ -25,7 +25,7 @@ export type ValidatorLookupResult = {
   lastTxTimestamp: number | null;
 };
 
-export type HeartbeatStatus = 'loading' | 'ok' | 'stale' | 'missing' | 'error';
+export type HeartbeatStatus = 'loading' | 'ok' | 'bad' | 'missing' | 'error';
 
 export type ValidatorRow = {
   id: string;
@@ -216,7 +216,7 @@ export const useValidators = () => {
       const lastHeartbeatAt = heartbeat?.timestampMs ?? null;
       const heartbeatStatus: HeartbeatStatus = lastHeartbeatAt
         ? isHeartbeatStale(lastHeartbeatAt)
-          ? 'stale'
+          ? 'bad'
           : 'ok'
         : 'missing';
 
