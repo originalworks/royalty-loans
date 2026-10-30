@@ -1,9 +1,8 @@
 import { DataSource } from 'typeorm';
-import { dbConfigs } from './config/dbConfig';
+import { getDbConfig } from './config/dbConfig';
 
-const dataSource = new DataSource(dbConfigs.local);
+const dataSource = new DataSource(getDbConfig());
 
-console.log(dbConfigs.local);
 if (!dataSource.isInitialized) {
   void dataSource.initialize();
 }

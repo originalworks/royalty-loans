@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { dbConfigs } from './config/dbConfig';
+import { dbCreatorConfig, getDbConfig } from './config/dbConfig';
 import {
   CodeDeployClient,
   LifecycleEventStatus,
@@ -7,7 +7,7 @@ import {
 } from '@aws-sdk/client-codedeploy';
 
 export const createDBIfNotExists = async (dataBaseName: string) => {
-  const dataSource = new DataSource({ ...dbConfigs.migration, logging: true });
+  const dataSource = new DataSource({ ...dbCreatorConfig(), logging: true });
 
   if (!dataSource.isInitialized) {
     await dataSource.initialize();
@@ -32,7 +32,7 @@ export const runMigrations = async (event) => {
   console.log('date', date);
   const codedeploy = new CodeDeployClient({ apiVersion: date });
 
-  const dbConfig = dbConfigs.db;
+  const dbConfig = getDbConfig();
   console.log('Running database migrations');
   const dataBaseName = dbConfig.database?.toString();
 

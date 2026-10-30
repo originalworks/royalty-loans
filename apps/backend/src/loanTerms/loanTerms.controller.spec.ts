@@ -13,7 +13,7 @@ import {
   randomEthAddress,
 } from '../../tests/factory';
 import { clearDatabase } from '../../tests/typeorm.utils';
-import { dbConfigs } from '../config/dbConfig';
+import { testDbConfig } from '../config/dbConfig';
 import { Auth0Guard } from '../auth/auth.guard';
 import { AuthModule } from '../auth/auth.module';
 import { LoanTerm } from './loanTerms.entity';
@@ -31,7 +31,7 @@ describe('AppController', () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({ isGlobal: true }),
-        TypeOrmModule.forRoot(dbConfigs.test),
+        TypeOrmModule.forRoot(testDbConfig()),
         LoanTermsModule,
         AuthModule,
       ],
